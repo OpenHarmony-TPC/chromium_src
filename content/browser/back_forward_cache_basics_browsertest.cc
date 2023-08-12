@@ -32,6 +32,8 @@ using testing::UnorderedElementsAreArray;
 
 namespace content {
 
+using NotRestoredReason = BackForwardCacheMetrics::NotRestoredReason;
+
 // Navigate from A to B and go back.
 IN_PROC_BROWSER_TEST_F(BackForwardCacheBrowserTest, Basic) {
   ASSERT_TRUE(embedded_test_server()->Start());
@@ -742,8 +744,8 @@ IN_PROC_BROWSER_TEST_F(BackForwardCacheBrowserTest,
   web_contents()->GetController().GoBack();
   EXPECT_FALSE(WaitForLoadStop(shell()->web_contents()));
   ExpectNotRestored(
-      {BackForwardCacheMetrics::NotRestoredReason::kHTTPStatusNotOK,
-       BackForwardCacheMetrics::NotRestoredReason::kNoResponseHead},
+      {NotRestoredReason::kHTTPStatusNotOK, NotRestoredReason::kNoResponseHead,
+       NotRestoredReason::kErrorDocument},
       {}, {}, {}, {}, FROM_HERE);
 }
 

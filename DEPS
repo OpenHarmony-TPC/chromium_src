@@ -253,7 +253,7 @@ vars = {
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
-  'angle_revision': '29b222a3c07c541cafa459ae6886134da3493a4b',
+  'angle_revision': 'bfab7e60a15dc6f72e34406d3f2a3996cd8d0be2',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling SwiftShader
   # and whatever else without interference from each other.
@@ -292,7 +292,7 @@ vars = {
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling freetype
   # and whatever else without interference from each other.
-  'freetype_revision': '034e5dbf92ea3a7ea7c9322e47a3a50ff23f7b55',
+  'freetype_revision': 'bec4ef415ef07ad1fa9542978136d9863dd7a6d0',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling freetype
   # and whatever else without interference from each other.
@@ -300,7 +300,7 @@ vars = {
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling HarfBuzz
   # and whatever else without interference from each other.
-  'harfbuzz_revision': '0acf466c44143de2e9b9cc0375cb25ec67cb132f',
+  'harfbuzz_revision': '61486746d3d8937c2b656c3ba72bd666fadef76c',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Emoji Segmenter
   # and whatever else without interference from each other.

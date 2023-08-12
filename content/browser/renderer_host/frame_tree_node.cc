@@ -50,7 +50,7 @@ base::LazyInstance<FrameTreeNodeIdMap>::DestructorAtExit
 }  // namespace
 
 // This observer watches the opener of its owner FrameTreeNode and clears the
-// owner's opener if the opener is destroyed.
+// owner's opener if the opener is destroyed or swaps BrowsingInstance.
 class FrameTreeNode::OpenerDestroyedObserver : public FrameTreeNode::Observer {
  public:
   OpenerDestroyedObserver(FrameTreeNode* owner, bool observing_original_opener)
@@ -61,6 +61,15 @@ class FrameTreeNode::OpenerDestroyedObserver : public FrameTreeNode::Observer {
 
   // FrameTreeNode::Observer
   void OnFrameTreeNodeDestroyed(FrameTreeNode* node) override {
+    NullifyOpener(node);
+  }
+
+  // FrameTreeNode::Observer
+  void OnFrameTreeNodeDisownedOpenee(FrameTreeNode* node) override {
+    NullifyOpener(node);
+  }
+
+  void NullifyOpener(FrameTreeNode* node) {
     if (observing_original_opener_) {
       // The "original owner" is special. It's used for attribution, and clients
       // walk down the original owner chain. Therefore, if a link in the chain
@@ -856,6 +865,15 @@ bool FrameTreeNode::IsErrorPageIsolationEnabled() const {
   // isolation is supported for subframes in crbug.com/1092524.
   return SiteIsolationPolicy::IsErrorPageIsolationEnabled(IsMainFrame() ||
                                                           IsFencedFrameRoot());
+}
+
+void FrameTreeNode::ClearOpenerReferences() {
+  // Simulate the FrameTreeNode being dead to opener observers. They will
+  // nullify their opener.
+  // Note: observers remove themselves from observers_, no need to take care of
+  // that manually.
+  for (auto& observer : observers_)
+    observer.OnFrameTreeNodeDisownedOpenee(this);
 }
 
 }  // namespace content

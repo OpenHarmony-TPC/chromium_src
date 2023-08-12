@@ -63,6 +63,10 @@ class CONTENT_EXPORT FrameTreeNode {
     // Invoked when a FrameTreeNode becomes focused.
     virtual void OnFrameTreeNodeFocused(FrameTreeNode* node) {}
 
+    // Invoked when a FrameTreeNode moves to a different BrowsingInstance and
+    // the popups it opened should be disowned.
+    virtual void OnFrameTreeNodeDisownedOpenee(FrameTreeNode* node) {}
+
     virtual ~Observer() = default;
   };
 
@@ -504,6 +508,10 @@ class CONTENT_EXPORT FrameTreeNode {
 
   // Returns true if error page isolation is enabled.
   bool IsErrorPageIsolationEnabled() const;
+
+  // Clears the opener property of popups referencing this FrameTreeNode as
+  // their opener.
+  void ClearOpenerReferences();
 
  private:
   FRIEND_TEST_ALL_PREFIXES(SitePerProcessPermissionsPolicyBrowserTest,

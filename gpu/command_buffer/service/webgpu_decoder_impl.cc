@@ -404,11 +404,12 @@ class WebGPUDecoderImpl final : public WebGPUDecoder {
 
   int32_t GetPreferredAdapterIndex(PowerPreference power_preference) const;
 
-  void DoRequestDevice(DawnRequestDeviceSerial request_device_serial,
-                       int32_t requested_adapter_index,
-                       uint32_t device_id,
-                       uint32_t device_generation,
-                       const WGPUDeviceProperties& requested_device_properties);
+  error::Error DoRequestDevice(
+      DawnRequestDeviceSerial request_device_serial,
+      int32_t requested_adapter_index,
+      uint32_t device_id,
+      uint32_t device_generation,
+      const WGPUDeviceProperties& requested_device_properties);
   void OnRequestDeviceCallback(DawnRequestDeviceSerial request_device_serial,
                                size_t requested_adapter_index,
                                uint32_t device_id,
@@ -564,16 +565,16 @@ ContextResult WebGPUDecoderImpl::Initialize() {
   return ContextResult::kSuccess;
 }
 
-void WebGPUDecoderImpl::DoRequestDevice(
+error::Error WebGPUDecoderImpl::DoRequestDevice(
     DawnRequestDeviceSerial request_device_serial,
     int32_t requested_adapter_index,
     uint32_t device_id,
     uint32_t device_generation,
     const WGPUDeviceProperties& request_device_properties) {
-  DCHECK_LE(0, requested_adapter_index);
-
-  DCHECK_LT(static_cast<size_t>(requested_adapter_index),
-            dawn_adapters_.size());
+  if (requested_adapter_index < 0 ||
+      static_cast<uint32_t>(requested_adapter_index) >= dawn_adapters_.size()) {
+    return error::kOutOfBounds;
+  }
 
   dawn::native::DawnDeviceDescriptor device_descriptor;
   if (request_device_properties.textureCompressionBC) {
@@ -648,6 +649,8 @@ void WebGPUDecoderImpl::DoRequestDevice(
         std::move(*callback).Run(status, wgpu_device, message);
       },
       new CallbackT(std::move(callback)));
+
+  return error::kNoError;
 }
 
 void WebGPUDecoderImpl::OnRequestDeviceCallback(
@@ -1073,9 +1076,8 @@ error::Error WebGPUDecoderImpl::HandleRequestDevice(
     }
   }
 
-  DoRequestDevice(request_device_serial, adapter_service_id, device_id,
-                  device_generation, device_properties);
-  return error::kNoError;
+  return DoRequestDevice(request_device_serial, adapter_service_id, device_id,
+                         device_generation, device_properties);
 }
 
 error::Error WebGPUDecoderImpl::HandleDawnCommands(

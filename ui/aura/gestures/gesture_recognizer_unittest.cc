@@ -29,6 +29,7 @@
 #include "ui/events/event_utils.h"
 #include "ui/events/gesture_detection/gesture_configuration.h"
 #include "ui/events/gesture_detection/gesture_provider.h"
+#include "ui/events/gestures/gesture_recognizer_impl.h"
 #include "ui/events/gestures/gesture_types.h"
 #include "ui/events/test/event_generator.h"
 #include "ui/events/test/events_test_utils.h"
@@ -4732,6 +4733,43 @@ TEST_F(GestureRecognizerTest, GestureConsumerCleanupBeforeTouchAck) {
   delegate->Reset();
   delegate->ReceivedAck();
   EXPECT_0_EVENTS(delegate->events());
+}
+
+// Verifies that destructing a `GestureRecognizerImpl` instance with gesture
+// providers works as expected (https://crbug.com/1325256).
+TEST_F(GestureRecognizerTest, ResetGestureRecognizerWithGestureProvider) {
+  TimedEvents tes;
+  const int kTouchId = 4;
+  std::unique_ptr<GestureEventConsumeDelegate> delegate(
+      new GestureEventConsumeDelegate());
+  std::unique_ptr<aura::Window> window(CreateTestWindowWithDelegate(
+      delegate.get(), /*id=*/-2345, /*bounds=*/gfx::Rect(0, 0, 50, 50),
+      /*parent=*/root_window()));
+
+  // Touch press then release on `window`.
+  constexpr gfx::Point touch_location(/*x=*/10, /*y=*/20);
+  ui::TouchEvent press(
+      ui::ET_TOUCH_PRESSED, touch_location, /*time_stamp=*/tes.Now(),
+      ui::PointerDetails(ui::EventPointerType::kTouch, kTouchId));
+  delegate->Reset();
+  DispatchEventUsingWindowDispatcher(&press);
+  EXPECT_TRUE(delegate->tap_down());
+  delegate->Reset();
+  ui::TouchEvent release(
+      ui::ET_TOUCH_RELEASED, touch_location,
+      /*time_stamp=*/press.time_stamp() + base::Milliseconds(50),
+      ui::PointerDetails(ui::EventPointerType::kTouch, kTouchId));
+  DispatchEventUsingWindowDispatcher(&release);
+  EXPECT_FALSE(delegate->tap_down());
+
+  // Check that the gesture recognizer owns one gesture provider.
+  EXPECT_EQ(1u, static_cast<ui::GestureRecognizerImpl*>(
+                    aura::Env::GetInstance()->gesture_recognizer())
+                    ->consumer_gesture_provider_.size());
+
+  // Destroy the current gesture recognizer.
+  aura::Env::GetInstance()->SetGestureRecognizer(
+      std::make_unique<ui::GestureRecognizerImpl>());
 }
 
 }  // namespace test

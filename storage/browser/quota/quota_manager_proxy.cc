@@ -15,6 +15,7 @@
 #include "base/location.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/sequence_checker.h"
+#include "base/task/bind_post_task.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/time/time.h"
@@ -123,8 +124,7 @@ void QuotaManagerProxy::GetOrCreateBucket(
 
   quota_manager_impl_->GetOrCreateBucket(
       storage_key, bucket_name,
-      base::BindOnce(&DidGetBucket, std::move(callback_task_runner),
-                     std::move(callback)));
+      base::BindPostTask(std::move(callback_task_runner), std::move(callback)));
 }
 
 void QuotaManagerProxy::GetOrCreateBucketDeprecated(
@@ -151,8 +151,7 @@ void QuotaManagerProxy::GetOrCreateBucketDeprecated(
 
   quota_manager_impl_->GetOrCreateBucketDeprecated(
       storage_key, bucket_name, storage_type,
-      base::BindOnce(&DidGetBucket, std::move(callback_task_runner),
-                     std::move(callback)));
+      base::BindPostTask(std::move(callback_task_runner), std::move(callback)));
 }
 
 void QuotaManagerProxy::CreateBucketForTesting(
@@ -179,8 +178,7 @@ void QuotaManagerProxy::CreateBucketForTesting(
 
   quota_manager_impl_->CreateBucketForTesting(  // IN-TEST
       storage_key, bucket_name, storage_type,
-      base::BindOnce(&DidGetBucket, std::move(callback_task_runner),
-                     std::move(callback)));
+      base::BindPostTask(std::move(callback_task_runner), std::move(callback)));
 }
 
 void QuotaManagerProxy::GetBucket(
@@ -207,8 +205,7 @@ void QuotaManagerProxy::GetBucket(
 
   quota_manager_impl_->GetBucket(
       storage_key, bucket_name, type,
-      base::BindOnce(&DidGetBucket, std::move(callback_task_runner),
-                     std::move(callback)));
+      base::BindPostTask(std::move(callback_task_runner), std::move(callback)));
 }
 
 void QuotaManagerProxy::DeleteBucket(
@@ -234,8 +231,7 @@ void QuotaManagerProxy::DeleteBucket(
 
   quota_manager_impl_->FindAndDeleteBucketData(
       storage_key, bucket_name,
-      base::BindOnce(&DidGetStatus, std::move(callback_task_runner),
-                     std::move(callback)));
+      base::BindPostTask(std::move(callback_task_runner), std::move(callback)));
 }
 
 void QuotaManagerProxy::NotifyStorageAccessed(const StorageKey& storage_key,
