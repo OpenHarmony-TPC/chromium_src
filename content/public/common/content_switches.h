@@ -277,9 +277,11 @@ CONTENT_EXPORT extern const char kEnableSpeechDispatcher[];
 #endif
 
 #if BUILDFLAG(IS_OHOS)
+CONTENT_EXPORT extern const char kOhosHapPath[];
 CONTENT_EXPORT extern const char kEnableMultiRendererProcess[];
 CONTENT_EXPORT extern const char kForBrowser[];
 CONTENT_EXPORT extern const char kOhosCustomScheme[];
+CONTENT_EXPORT extern const char kOhosHanceSurface[];
 #endif
 
 #if BUILDFLAG(IS_WIN)

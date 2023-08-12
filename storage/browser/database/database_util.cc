@@ -39,6 +39,41 @@ bool DatabaseUtil::CrackVfsFileName(const std::u16string& vfs_file_name,
   // 'vfs_file_name' is of the form <origin_identifier>/<db_name>#<suffix>.
   // <suffix> is optional.
   DCHECK(!vfs_file_name.empty());
+#if BUILDFLAG(IS_OHOS)
+  size_t first_slash_index = vfs_file_name.rfind('/');
+  if (first_slash_index == std::u16string::npos) {
+    LOG(ERROR) << "DatabaseUtil::CrackVfsFileName not find /";
+    return false;
+  }
+  std::u16string dbnameAndSuffix = vfs_file_name.substr(
+      first_slash_index + 1, vfs_file_name.length() - first_slash_index - 1);
+  size_t last_pound_index = dbnameAndSuffix.rfind('.');
+  if (last_pound_index == std::u16string::npos) {
+    LOG(ERROR) << "DatabaseUtil::CrackVfsFileName not find .";
+    return false;
+  }
+  std::u16string suffix = dbnameAndSuffix.substr(last_pound_index, dbnameAndSuffix.length() - last_pound_index);
+  if (!IsSafeSuffix(suffix)) {
+    LOG(ERROR) << "DatabaseUtil::CrackVfsFileName IsSafeSuffix failed";
+    return false;
+  }
+  std::u16string path = vfs_file_name.substr(0, first_slash_index);
+  first_slash_index = path.rfind('/');
+  if (first_slash_index == std::u16string::npos) {
+    LOG(ERROR) << "DatabaseUtil::CrackVfsFileName not find /";
+    return false;
+  }
+  std::u16string name = dbnameAndSuffix.substr(0, last_pound_index);
+  std::string origin_id = base::UTF16ToASCII(path.substr(first_slash_index + 1, path.length() - first_slash_index - 1));
+  if (!IsValidOriginIdentifier(origin_id)) {
+    LOG(ERROR) << "DatabaseUtil::CrackVfsFileName IsValidOriginIdentifier failed";
+    return false;
+  }
+  if (sqlite_suffix) *sqlite_suffix = suffix;
+  if (database_name) *database_name = name;
+  if (origin_identifier) *origin_identifier = origin_id;
+  return true;
+#else
   size_t first_slash_index = vfs_file_name.find('/');
   size_t last_pound_index = vfs_file_name.rfind('#');
   // '/' and '#' must be present in the string. Also, the string cannot start
@@ -71,6 +106,7 @@ bool DatabaseUtil::CrackVfsFileName(const std::u16string& vfs_file_name,
     *sqlite_suffix = suffix;
 
   return true;
+#endif
 }
 
 base::FilePath DatabaseUtil::GetFullFilePathForVfsFile(

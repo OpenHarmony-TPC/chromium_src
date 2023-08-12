@@ -16,6 +16,28 @@ namespace net {
 // These values are logged to UMA. Entries should not be renumbered and
 // numeric values should never be reused. Please keep in sync with
 // "SSLLegacyCryptoFallback" in src/tools/metrics/histograms/enums.xml.
+#if BUILDFLAG(IS_OHOS)
+enum class SSLLegacyCryptoFallback {
+  // The connection did not use the fallback.
+  kNoFallback = 0,
+  // The connection used the fallback and negotiated 3DES.
+  kUsed3DES = 1,
+  // The connection used the fallback and negotiated SHA-1.
+  kUsedSHA1 = 2,
+  // The connection used the fallback and sent a SHA-1 certificate.
+  kSentSHA1Cert = 3,
+  // The connection used the fallback, negotiated 3DES, and sent a SHA-1
+  // certificate.
+  kSentSHA1CertAndUsed3DES = 4,
+  // The connection used the fallback, negotiated SHA-1, and sent a SHA-1
+  // certificate.
+  kSentSHA1CertAndUsedSHA1 = 5,
+  // The connection used the fallback for an unknown reason, likely a
+  // transient network error.
+  kUnknownReason = 6,
+  kMaxValue = kUnknownReason,
+};
+#else
 enum class SSLLegacyCryptoFallback {
   // The connection did not use the fallback.
   kNoFallback = 0,
@@ -35,6 +57,7 @@ enum class SSLLegacyCryptoFallback {
   kUnknownReason = 6,
   kMaxValue = kUnknownReason,
 };
+#endif
 
 }  // namespace net
 

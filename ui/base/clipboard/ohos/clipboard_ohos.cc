@@ -6,6 +6,7 @@
 #include "ui/base/clipboard/ohos/clipboard_ohos_read_data.h"
 
 #include "base/check_op.h"
+#include "base/command_line.h"
 #include "base/containers/contains.h"
 #include "base/feature_list.h"
 #include "base/files/file_util.h"
@@ -16,6 +17,7 @@
 #include "base/synchronization/lock.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/common/content_switches.h"
 #include "skia/ext/skia_utils_base.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/clipboard/clipboard_constants.h"
@@ -29,6 +31,7 @@
 
 #include "base/logging.h"
 #include "ohos_adapter_helper.h"
+#include "ohos_resource_adapter.h"
 
 #include <securec.h>
 #include <map>
@@ -45,6 +48,10 @@ namespace {
 const std::string kImgTagPattern = "<img.*?data-ohos=.*?>";
 const std::string kImgTagSrcPattern = "src=*\"([^\"]+)";
 const std::string kImgTagSrcHead = "src=\"";
+const std::string kResourcePathPrefix = "resources/";
+const std::string kResourceResavePathPrefix =
+    "/data/storage/el2/base/cache/resource_resave/";
+
 using InstanceRegistry = std::set<const ClipboardOHOS*, std::less<>>;
 InstanceRegistry* GetInstanceRegistry() {
   static base::NoDestructor<InstanceRegistry> registry;
@@ -71,6 +78,14 @@ bool IsRegisteredInstance(const Clipboard* clipboard) {
   return base::Contains(*GetInstanceRegistry(), clipboard);
 }
 
+std::string RemoveFileSchemePerfix(const std::string img_src) {
+  GURL img_url(img_src);
+  if (img_url.SchemeIsFile()) {
+    return img_url.path();
+  }
+  return img_src;
+}
+
 std::string GetImgLocalPath(const char* img_src) {
   if (!img_src) {
     return "";
@@ -80,9 +95,12 @@ std::string GetImgLocalPath(const char* img_src) {
       img_url.SchemeIsBlob()) {
     return "";
   }
+  if (img_url.SchemeIsOhosResource()) {
+    return std::string(img_src);
+  }
   if (img_url.SchemeIsFile() &&
       base::PathExists(base::FilePath(img_url.path()))) {
-    return img_url.path();
+    return std::string(img_src);
   }
   if (base::PathExists(base::FilePath(img_src))) {
     return std::string(img_src);
@@ -126,6 +144,12 @@ class ClipboardOHOSInternal {
         .GetPasteBoard()
         .AddPasteboardChangedObserver(observer_);
     observer_->SetClipboardInternal(this);
+    std::string hapPath =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            switches::kOhosHapPath);
+    resource_adapter_ =
+        OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter(
+            hapPath);
   }
 
   ~ClipboardOHOSInternal() {
@@ -320,7 +344,6 @@ class ClipboardOHOSInternal {
           std::make_shared<std::string>(currentData->markup_data());
       if (record->SetHtmlText(html)) {
         LOG(INFO) << "set html to record success";
-
       } else {
         LOG(ERROR) << "set html to record failed";
       }
@@ -348,8 +371,13 @@ class ClipboardOHOSInternal {
         std::vector<uint8_t> offset_list(
             offset_data, offset_data + it->second.size() * sizeof(int));
         custom_data.insert(std::make_pair(it->first, offset_list));
-        if (uri_record->SetUri(it->first) &&
+        std::string resave_path = it->first;
+        if (!ResaveResourceImg(it->first, resave_path)) {
+          continue;
+        }
+        if (uri_record->SetUri(RemoveFileSchemePerfix(resave_path)) &&
             uri_record->SetCustomData(custom_data)) {
+          LOG(ERROR) << it->first;
           result_list.push_back(uri_record);
         } else {
           LOG(ERROR) << "WriteHTML extra record failed";
@@ -405,6 +433,43 @@ class ClipboardOHOSInternal {
     return allFormat & static_cast<int>(format);
   }
 
+  bool ResaveResourceImg(const std::string& img_src, std::string& resave_path) {
+    GURL resource_img_src(img_src);
+    if (!resource_img_src.SchemeIsOhosResource()) {
+      LOG(INFO) << "no need to resave";
+      return true;
+    }
+
+    std::string img_path =
+        kResourcePathPrefix + resource_img_src.host() + resource_img_src.path();
+    if (!resource_adapter_ || !resource_adapter_->IsRawFileExist(img_path)) {
+      LOG(ERROR) << "resource_adapter is nullptr or " << img_path
+                 << " is not exists";
+      return false;
+    }
+    std::unique_ptr<uint8_t[]> data;
+    size_t length = 0;
+    if (!resource_adapter_->GetRawFileData(img_path, length, data, false)) {
+      LOG(ERROR) << "read " << img_path << " failed";
+      return false;
+    }
+    LOG(INFO) << img_path << " length:" << length;
+    base::FilePath resave_root_path(kResourceResavePathPrefix);
+    resave_root_path = resave_root_path.Append(base::FilePath(img_path));
+    LOG(ERROR) << "resave_root_path dir:" << resave_root_path.DirName();
+    if (!base::DirectoryExists(resave_root_path.DirName()) &&
+        !base::CreateDirectory(resave_root_path.DirName())) {
+      return false;
+    }
+    resave_path = resave_root_path.AsUTF8Unsafe();
+    if (base::WriteFile(resave_root_path, reinterpret_cast<char*>(data.get()),
+                        length) != length) {
+      LOG(ERROR) << "resave img resource failed";
+      return false;
+    }
+    return true;
+  }
+
   // Current ClipboardData.
   std::unique_ptr<ClipboardData> data_;
 
@@ -413,6 +478,7 @@ class ClipboardOHOSInternal {
   std::shared_ptr<PasteboardObserverOhos> observer_;
   ClipboardState state_ = ClipboardState::kOutOfDate;
   std::shared_ptr<ClipboardOhosReadData> read_data_ = nullptr;
+  std::unique_ptr<OHOS::NWeb::OhosResourceAdapter> resource_adapter_ = nullptr;
 };
 
 class ClipboardDataBuilder {
@@ -533,7 +599,6 @@ class ClipboardDataBuilder {
       std::map<std::string, std::vector<int>>& img_src_set,
       int offset) {
     std::string img_path = GetImgLocalPath(img_src);
-    // LOG(ERROR) << "AddImgUrlToSet:" << img_path;
     if (!img_path.empty()) {
       std::map<std::string, std::vector<int>>::iterator iter =
           img_src_set.find(img_path);

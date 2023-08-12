@@ -123,7 +123,9 @@ int32_t PepperPDFHost::OnHostMsgDidStartLoading(
   if (!render_frame)
     return PP_ERROR_FAILED;
 
+#if BUILDFLAG(IS_OHOS) && BUILDFLAG(ENABLE_PLUGINS)
   render_frame->PluginDidStartLoading();
+#endif
   return PP_OK;
 }
 
@@ -133,7 +135,9 @@ int32_t PepperPDFHost::OnHostMsgDidStopLoading(
   if (!render_frame)
     return PP_ERROR_FAILED;
 
+#if BUILDFLAG(IS_OHOS) && BUILDFLAG(ENABLE_PLUGINS)
   render_frame->PluginDidStopLoading();
+#endif
   return PP_OK;
 }
 

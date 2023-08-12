@@ -68,6 +68,12 @@
 #undef LoadBitmap
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/command_line.h"
+#include "content/public/common/content_switches.h"
+#include "ohos_adapter_helper.h"
+#endif
+
 namespace ui {
 
 namespace {
@@ -366,6 +372,14 @@ void ResourceBundle::LoadSecondaryLocaleDataWithPakFileRegion(
 #if !BUILDFLAG(IS_ANDROID)
 // static
 bool ResourceBundle::LocaleDataPakExists(const std::string& locale) {
+#if BUILDFLAG(IS_OHOS)
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kOhosHapPath)) {
+    if (locale == "zh-CN" || locale == "en-US" || locale == "resources" ||
+        locale == "chrome_100_percent" || locale == "chrome_200_percent") {
+      return true;
+    }
+  }
+#endif
   const auto path = GetLocaleFilePath(locale);
   return !path.empty() && base::PathExists(path);
 }

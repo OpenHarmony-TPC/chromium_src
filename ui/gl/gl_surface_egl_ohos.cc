@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "ui/gl/gl_surface_egl_ohos.h"
+#include "content/public/common/content_switches.h"
 
 #include <surface.h>
 #include <sys/time.h>
@@ -25,11 +26,29 @@ namespace gl {
 scoped_refptr<gl::NativeViewGLSurfaceEGLOhos>
 NativeViewGLSurfaceEGLOhos::CreateNativeViewGLSurfaceEGLOhos(
     gfx::AcceleratedWidget widget) {
-  NativeWindow* window =
-      (NativeWindow*)NWebNativeWindowTracker::Instance().GetNativeWindow(
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(::switches::kOhosHanceSurface)) {
+    LOG(INFO) << "CreateNativeViewGLSurfaceEGLOhos:: enhance surface";
+    WindowsSurfaceInfo* surfaceInfo =
+      (WindowsSurfaceInfo*)NWebNativeWindowTracker::Instance().GetNativeWindow(
           widget);
-  return scoped_refptr<NativeViewGLSurfaceEGLOhos>(
-      new NativeViewGLSurfaceEGLOhos(EGLNativeWindowType(window)));
+    if (surfaceInfo != nullptr) {
+      LOG(INFO) << "clear surface from NWEB";
+      eglDestroySurface(surfaceInfo->display, surfaceInfo->surface);
+      eglDestroyContext(surfaceInfo->display, surfaceInfo->context);
+
+      return scoped_refptr<NativeViewGLSurfaceEGLOhos>(
+        new NativeViewGLSurfaceEGLOhos(EGLNativeWindowType(surfaceInfo->window)));
+    }
+  } else {
+    LOG(INFO) << "CreateNativeViewGLSurfaceEGLOhos:: normal surface";
+    NativeWindow* window =
+        (NativeWindow*)NWebNativeWindowTracker::Instance().GetNativeWindow(
+            widget);
+    return scoped_refptr<NativeViewGLSurfaceEGLOhos>(
+        new NativeViewGLSurfaceEGLOhos(EGLNativeWindowType(window)));
+  }
+  return nullptr;
 }
 
 NativeViewGLSurfaceEGLOhos::NativeViewGLSurfaceEGLOhos(
@@ -54,9 +73,8 @@ gfx::SwapResult NativeViewGLSurfaceEGLOhos::SwapBuffers(
 void NativeViewGLSurfaceEGLOhos::FrameCounter::Start() {
   std::weak_ptr<FrameCounter> frame_counter_weak(shared_from_this());
   std::thread frame_stat_thread([frame_counter_weak]() {
-    while (!frame_counter_weak.expired()) {
+    while (auto frame_counter = frame_counter_weak.lock()) {
       {
-        auto frame_counter = frame_counter_weak.lock();
         std::unique_lock<std::mutex> lk(frame_counter->frame_stat_mtx_);
         int64_t curr_time = GetNowTime();
         if (frame_counter->last_time_ == 0) {

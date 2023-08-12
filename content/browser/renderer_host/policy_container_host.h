@@ -32,7 +32,8 @@ struct CONTENT_EXPORT PolicyContainerPolicies {
       std::vector<network::mojom::ContentSecurityPolicyPtr>
           content_security_policies,
       const network::CrossOriginOpenerPolicy& cross_origin_opener_policy,
-      const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy);
+      const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy,
+      bool can_navigate_top_without_user_gesture);
   PolicyContainerPolicies(const PolicyContainerPolicies&) = delete;
   PolicyContainerPolicies operator=(const PolicyContainerPolicies&) = delete;
   ~PolicyContainerPolicies();
@@ -80,6 +81,14 @@ struct CONTENT_EXPORT PolicyContainerPolicies {
   // See:
   // https://html.spec.whatwg.org/multipage/origin.html#coep
   network::CrossOriginEmbedderPolicy cross_origin_embedder_policy;
+
+  // Tracks if a document is allowed to navigate the top-level frame without
+  // sticky user activation. A document loses this ability when it is
+  // cross-origin with the top-level frame. An exception is made if the parent
+  // embeds the child with sandbox="allow-top-navigation", as opposed to not
+  // using sandboxing. A document that is same-origin to the top-level frame
+  // will always have this value set to true.
+  bool can_navigate_top_without_user_gesture = true;
 };
 
 // PolicyContainerPolicies structs are comparable for equality.
@@ -171,6 +180,10 @@ class CONTENT_EXPORT PolicyContainerHost
   void set_cross_origin_opener_policy(
       const network::CrossOriginOpenerPolicy& policy) {
     policies_->cross_origin_opener_policy = policy;
+  }
+
+  void SetCanNavigateTopWithoutUserGesture(bool value) {
+    policies_->can_navigate_top_without_user_gesture = value;
   }
 
   // Return a PolicyContainer containing copies of the policies and a pending

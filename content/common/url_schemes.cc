@@ -29,7 +29,12 @@ const char* const kDefaultSavableSchemes[] = {
   url::kFileSystemScheme,
   kChromeDevToolsScheme,
   kChromeUIScheme,
+#if BUILDFLAG(IS_OHOS)
+  url::kDataScheme,
+  url::kResourcesScheme
+#else
   url::kDataScheme
+#endif
 };
 
 // These lists are lazily initialized below and are leaked on shutdown to

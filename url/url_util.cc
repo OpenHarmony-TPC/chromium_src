@@ -47,6 +47,7 @@ struct SchemeRegistry {
       {kWsScheme, SCHEME_WITH_HOST_PORT_AND_USER_INFORMATION},  // WebSocket.
       {kFileSystemScheme, SCHEME_WITHOUT_AUTHORITY},
       {kQuicTransportScheme, SCHEME_WITH_HOST_AND_PORT},
+      {kResourcesScheme, SCHEME_WITH_HOST},
   };
 
   // Schemes that are allowed for referrers.
@@ -69,7 +70,7 @@ struct SchemeRegistry {
   // Schemes that normal pages cannot link to or access (i.e., with the same
   // security rules as those applied to "file" URLs).
   std::vector<std::string> local_schemes = {
-      kFileScheme,
+      kFileScheme, kResourcesScheme, 
   };
 
   // Schemes that cause pages loaded with them to not have access to pages
@@ -89,7 +90,7 @@ struct SchemeRegistry {
 
   // Schemes that can be used by web to store data (local storage, etc).
   std::vector<std::string> web_storage_schemes = {
-      kHttpsScheme, kHttpScheme, kFileScheme, kFtpScheme, kWssScheme, kWsScheme,
+      kHttpsScheme, kHttpScheme, kFileScheme, kFtpScheme, kWssScheme, kWsScheme, kResourcesScheme
   };
 
   // Schemes that can bypass the Content-Security-Policy (CSP) checks.

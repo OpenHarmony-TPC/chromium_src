@@ -172,6 +172,10 @@
 #include "ui/gl/gl_surface.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "content/browser/font_unique_name_lookup/font_unique_name_lookup.h"
+#endif
+
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "content/browser/renderer_host/browser_compositor_view_mac.h"
@@ -1404,6 +1408,12 @@ void BrowserMainLoop::PostCreateThreadsImpl() {
 
 #if BUILDFLAG(IS_ANDROID)
   media::SetMediaDrmBridgeClient(GetContentClient()->GetMediaDrmBridgeClient());
+  if (base::FeatureList::IsEnabled(features::kFontSrcLocalMatching)) {
+    FontUniqueNameLookup::GetInstance();
+  }
+#endif
+
+#if BUILDFLAG(IS_OHOS)
   if (base::FeatureList::IsEnabled(features::kFontSrcLocalMatching)) {
     FontUniqueNameLookup::GetInstance();
   }

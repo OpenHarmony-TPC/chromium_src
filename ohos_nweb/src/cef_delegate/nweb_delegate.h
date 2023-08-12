@@ -37,7 +37,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
  public:
   NWebDelegate(int argc, const char* argv[]);
   ~NWebDelegate();
-  bool Init(void* window);
+  bool Init(bool is_enhance_surface, void* window);
 
   bool IsReady() override;
   void OnDestroy(bool is_close_all) override;
@@ -45,8 +45,11 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void RegisterWebAppClientExtensionListener(
       std::shared_ptr<NWebAppClientExtensionCallback>
           web_app_client_extension_listener) override;
+  void UnRegisterWebAppClientExtensionListener() override;
   void RegisterDownLoadListener(
       std::shared_ptr<NWebDownloadCallback> downloadListener) override;
+  void RegisterReleaseSurfaceListener(
+      std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) override;
   void RegisterNWebHandler(std::shared_ptr<NWebHandler> handler) override;
   void RegisterRenderCb(
       std::function<void(const char*)> render_update_cb) override;
@@ -94,9 +97,9 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void CreateWebMessagePorts(std::vector<std::string>& ports) override;
   void PostWebMessage(std::string& message, std::vector<std::string>& ports, std::string& targetUri) override;
   void ClosePort(std::string& port_handle) override;
-  void PostPortMessage(std::string& port_handle, std::string& data) override;
+  void PostPortMessage(std::string& port_handle, std::shared_ptr<NWebMessage> data) override;
   void SetPortMessageCallback(std::string& port_handle,
-      std::shared_ptr<NWebValueCallback<std::string>> callback) override;
+      std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback) override;
   HitTestResult GetHitTestResult() const override;
   int PageLoadProgress() override;
   float Scale() override;
@@ -158,6 +161,13 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void GetImages(std::shared_ptr<NWebValueCallback<bool>> callback) override;
   void RemoveCache(bool include_disk_files) override;
   std::shared_ptr<NWebHistoryList> GetHistoryList() override;
+  void PageUp(bool top) override;
+  void PageDown(bool bottom) override;
+  void ScrollTo(float x, float y) override;
+  void ScrollBy(float delta_x, float delta_y) override;
+  void SlideScroll(float vx, float vy) override;
+  WebState SerializeWebState() override;
+  bool RestoreWebState(WebState state) override;
 
  public:
   int argc_;
@@ -165,7 +175,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
 
  private:
   void RunMessageLoop();
-  void InitializeCef(std::string url, void* window);
+  void InitializeCef(std::string url, bool is_enhance_surface, void* window);
   const CefRefPtr<CefBrowser> GetBrowser() const;
   void RequestVisitedHistory();
   void SetVirtualPixelRatio(float ratio);
@@ -193,6 +203,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
 #if defined(REPORT_SYS_EVENT)
   uint32_t nweb_id_;
 #endif
+  bool is_enhance_surface_ = false;
 };
 }  // namespace OHOS::NWeb
 #endif

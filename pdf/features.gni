@@ -21,5 +21,6 @@ declare_args() {
   # currently depends on PPAPI. It does not make sense to port PPAPI, which is
   # being deprecated, to Fuchsia. Once the PDF Viewer no longer uses PPAPI, the
   # PDF Viewer should be enabled on Fuchsia, like on other desktop platforms.
-  enable_pdf = !is_android && !is_ios && !is_chromecast && !is_fuchsia
+  enable_pdf =
+      !is_android && !is_ios && !is_chromecast && !is_fuchsia && !is_ohos
 }

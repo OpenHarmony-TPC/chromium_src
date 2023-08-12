@@ -107,6 +107,8 @@ class CONTENT_EXPORT WebContentsView {
   // loop has ended.
   virtual bool CloseTabAfterEventTrackingIfNeeded() = 0;
 #endif
+
+  virtual void FullscreenStateChanged(bool is_fullscreen) = 0;
 };
 
 }  // namespace content

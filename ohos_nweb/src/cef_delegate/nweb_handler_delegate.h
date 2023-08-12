@@ -66,6 +66,7 @@ class NWebHandlerDelegate : public CefClient,
       CefRefPtr<NWebRenderHandler> render_handler,
       std::shared_ptr<NWebEventHandler> event_handler,
       std::shared_ptr<NWebFindDelegate> find_delegate,
+      bool is_enhance_surface,
       void* window);
 
   NWebHandlerDelegate(
@@ -73,6 +74,7 @@ class NWebHandlerDelegate : public CefClient,
       CefRefPtr<NWebRenderHandler> render_handler,
       std::shared_ptr<NWebEventHandler> event_handler,
       std::shared_ptr<NWebFindDelegate> find_delegate,
+      bool is_enhance_surface,
       void* window);
   ~NWebHandlerDelegate() = default;
 
@@ -80,10 +82,13 @@ class NWebHandlerDelegate : public CefClient,
 
   void RegisterDownLoadListener(
       std::shared_ptr<NWebDownloadCallback> download_listener);
+  void RegisterReleaseSurfaceListener(
+     std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener);
   void RegisterNWebHandler(std::shared_ptr<NWebHandler> handler);
   void RegisterWebAppClientExtensionListener(
       std::shared_ptr<NWebAppClientExtensionCallback>
           web_app_client_extension_listener);
+  void UnRegisterWebAppClientExtensionListener();
   void RegisterNWebJavaScriptCallBack(
       std::shared_ptr<NWebJavaScriptResultCallBack> callback);
 
@@ -293,6 +298,10 @@ class NWebHandlerDelegate : public CefClient,
   void OnScaleChanged(CefRefPtr<CefBrowser> browser,
                       float old_page_scale_factor,
                       float new_page_scale_factor) override;
+  bool OnCursorChange(CefRefPtr<CefBrowser> browser,
+                      CefCursorHandle cursor,
+                      cef_cursor_type_t type,
+                      const CefCursorInfo& custom_cursor_info) override;
   /* CefDisplayHandler method end */
 
   /* CefFocusHandler method begin */
@@ -333,6 +342,15 @@ class NWebHandlerDelegate : public CefClient,
                     int selected_accept_filter,
                     bool capture,
                     CefRefPtr<CefFileDialogCallback> callback) override;
+  void OnSelectPopupMenu(CefRefPtr<CefBrowser> browser,
+                         const CefRect& bounds,
+                         int item_height,
+                         double item_font_size,
+                         int selected_item,
+                         const std::vector<CefSelectPopupItem>& menu_items,
+                         bool right_aligned,
+                         bool allow_multiple_selection,
+                         CefRefPtr<CefSelectPopupCallback> callback) override;
   /* CefDialogHandler method end */
 
   /* CefContextMenuHandler method begin */
@@ -400,7 +418,10 @@ class NWebHandlerDelegate : public CefClient,
     ImageColorType color_type, ImageAlphaType alpha_type);
   bool GetFavicon(const void** data, size_t& width, size_t& height,
     ImageColorType& colorType, ImageAlphaType& alphaType);
+  float GetScale() const { return scale_; }
 
+  bool GetFocusState();
+  void SetFocusState(bool focusState);
  private:
   void CopyImageToClipboard(CefRefPtr<CefImage> image);
   // List of existing browser windows. Only accessed on the CEF UI thread.
@@ -419,6 +440,7 @@ class NWebHandlerDelegate : public CefClient,
   IMPLEMENT_REFCOUNTING(NWebHandlerDelegate);
 
   std::shared_ptr<NWebDownloadCallback> download_listener_ = nullptr;
+  std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener_ = nullptr;
   std::shared_ptr<NWebHandler> nweb_handler_ = nullptr;
   std::shared_ptr<NWebJavaScriptResultCallBack> nweb_javascript_callback_ =
       nullptr;
@@ -428,6 +450,7 @@ class NWebHandlerDelegate : public CefClient,
 
   // lifecycle wrapped by ace WebGeolocationOhos
   NWebGeolocationCallback* callback_ = nullptr;
+  bool is_enhance_surface_ = false;
   NativeWindow* window_ = nullptr;
 
   CefString image_cache_src_url_;
@@ -453,6 +476,9 @@ class NWebHandlerDelegate : public CefClient,
 #if defined(OHOS_NWEB_EX)
   bool on_load_start_notified_ = false;
 #endif  // OHOS_NWEB_EX
+
+  float scale_ = 100.0;
+  bool focusState_ = false;
 };
 }  // namespace OHOS::NWeb
 

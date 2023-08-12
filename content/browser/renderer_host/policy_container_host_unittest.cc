@@ -28,6 +28,7 @@ struct SameSizeAsPolicyContainerPolicies {
       content_security_policies;
   network::CrossOriginOpenerPolicy cross_origin_opener_policy;
   network::CrossOriginEmbedderPolicy cross_origin_embedder_policy;
+  bool can_navigate_top_without_user_gesture;
 };
 
 }  // namespace
@@ -65,7 +66,8 @@ TEST(PolicyContainerPoliciesTest, CloneIsEqual) {
   auto policies = std::make_unique<PolicyContainerPolicies>(
       network::mojom::ReferrerPolicy::kAlways,
       network::mojom::IPAddressSpace::kUnknown,
-      /*is_web_secure_context=*/true, std::move(csps), coop, coep);
+      /*is_web_secure_context=*/true, std::move(csps), coop, coep,
+      /*can_navigate_top_without_user_gesture=*/true);
 
   EXPECT_THAT(policies->Clone(), Pointee(Eq(ByRef(*policies))));
 }

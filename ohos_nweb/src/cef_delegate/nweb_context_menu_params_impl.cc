@@ -23,7 +23,10 @@ namespace {
 using CmTf = NWebContextMenuParams::ContextMenuTypeFlags;
 using CmMt = NWebContextMenuParams::ContextMenuMediaType;
 using CmEf = NWebContextMenuParams::ContextMenuEditStateFlags;
+using CmIt = NWebContextMenuParams::ContextMenuInputFieldType;
+using CmSt = NWebContextMenuParams::ContextMenuSourceType;
 using QmEf = NWebQuickMenuParams::QuickMenuEditStateFlags;
+
 const std::unordered_map<int, int> kCmTypeFlagMap = {
   {CM_TYPEFLAG_NONE, CmTf::CM_TF_NONE},
   {CM_TYPEFLAG_PAGE, CmTf::CM_TF_PAGE},
@@ -37,22 +40,18 @@ const std::unordered_map<int, int> kCmTypeFlagMap = {
 const std::unordered_map<int, int> kCmMediaTypeMap = {
   {CM_MEDIATYPE_NONE, CmMt::CM_MT_NONE},
   {CM_MEDIATYPE_IMAGE, CmMt::CM_MT_IMAGE},
-  {CM_MEDIATYPE_VIDEO, CmMt::CM_MT_VIDEO},
-  {CM_MEDIATYPE_AUDIO, CmMt::CM_MT_AUDIO},
-  {CM_MEDIATYPE_FILE, CmMt::CM_MT_FILE},
-  {CM_MEDIATYPE_PLUGIN, CmMt::CM_MT_PLUGIN},
+  {CM_MEDIATYPE_VIDEO, CmMt::CM_MT_NONE},
+  {CM_MEDIATYPE_AUDIO, CmMt::CM_MT_NONE},
+  {CM_MEDIATYPE_FILE, CmMt::CM_MT_NONE},
+  {CM_MEDIATYPE_PLUGIN, CmMt::CM_MT_NONE},
 };
 
 const std::unordered_map<int, int> kCmEditStateFlagsMap = {
   {CM_EDITFLAG_NONE, CmEf::CM_ES_NONE},
-  {CM_EDITFLAG_CAN_UNDO, CmEf::CM_ES_CAN_UNDO},
-  {CM_EDITFLAG_CAN_REDO, CmEf::CM_ES_CAN_REDO},
   {CM_EDITFLAG_CAN_CUT, CmEf::CM_ES_CAN_CUT},
   {CM_EDITFLAG_CAN_COPY, CmEf::CM_ES_CAN_COPY},
   {CM_EDITFLAG_CAN_PASTE, CmEf::CM_ES_CAN_PASTE},
-  {CM_EDITFLAG_CAN_DELETE, CmEf::CM_ES_CAN_DELETE},
   {CM_EDITFLAG_CAN_SELECT_ALL, CmEf::CM_ES_CAN_SELECT_ALL},
-  {CM_EDITFLAG_CAN_TRANSLATE, CmEf::CM_ES_CAN_TRANSLATE},
 };
 
 const std::unordered_map<int, int> kQmEditStateFlagsMap = {
@@ -77,6 +76,34 @@ const std::unordered_map<int, int> KMenuEventFlagsMap = {
 
 const std::unordered_map<int32_t, cef_menu_id_t> KMenuCommandIdMap = {
   {CI_IMAGE_COPY, MENU_ID_IMAGE_COPY},
+  {CI_CUT, MENU_ID_CUT},
+  {CI_COPY, MENU_ID_COPY},
+  {CI_PASTE, MENU_ID_PASTE},
+  {CI_DELETE, MENU_ID_DELETE},
+  {CI_SELECT_ALL, MENU_ID_SELECT_ALL},
+};
+
+const std::unordered_map<int, int> kCmInputFieldTypeMap = {
+  {CM_INPUTFIELDTYPE_NONE, CmIt::CM_IT_NONE},
+  {CM_INPUTFIELDTYPE_PLAINTEXT, CmIt::CM_IT_PLAINTEXT},
+  {CM_INPUTFIELDTYPE_PASSWORD, CmIt::CM_IT_PASSWORD},
+  {CM_INPUTFIELDTYPE_NUMBER, CmIt::CM_IT_NUMBER},
+  {CM_INPUTFIELDTYPE_TELEPHONE, CmIt::CM_IT_TELEPHONE},
+  {CM_INPUTFIELDTYPE_OTHER, CmIt::CM_IT_OTHER},
+};
+
+const std::unordered_map<int, int> kCmSourceTypeMap = {
+  {CM_SOURCETYPE_NONE, CmSt::CM_ST_NONE},
+  {CM_SOURCETYPE_MOUSE, CmSt::CM_ST_MOUSE},
+  {CM_SOURCETYPE_KEYBOARD, CmSt::CM_ST_NONE},
+  {CM_SOURCETYPE_TOUCH, CmSt::CM_ST_NONE},
+  {CM_SOURCETYPE_TOUCH_EDIT_MENU, CmSt::CM_ST_NONE},
+  {CM_SOURCETYPE_LONG_PRESS, CmSt::CM_ST_LONG_PRESS},
+  {CM_SOURCETYPE_LONG_TAP, CmSt::CM_ST_NONE},
+  {CM_SOURCETYPE_TOUCH_HANDLE, CmSt::CM_ST_NONE},
+  {CM_SOURCETYPE_STYLUS, CmSt::CM_ST_NONE},
+  {CM_SOURCETYPE_ADJUST_SELECTION, CmSt::CM_ST_NONE},
+  {CM_SOURCETYPE_SELECTION_RESET, CmSt::CM_ST_NONE},
 };
 
 cef_menu_id_t ConvertCommandId(int32_t id) {
@@ -101,29 +128,50 @@ int32_t ConvertMenuFlags(int32_t value,
 
 CmMt ConvertContextMenuMediaType(
   CefContextMenuParams::MediaType value) {
-  std::unordered_map<int, int>::const_iterator iter = 
+  std::unordered_map<int, int>::const_iterator iter =
     kCmMediaTypeMap.find(static_cast<int32_t>(value));
   if (iter != kCmMediaTypeMap.end()) {
     return static_cast<CmMt>(iter->second);
   }
   return CmMt::CM_MT_NONE;
 }
+
+CmIt ConvertContextMenuInputFieldType(CefContextMenuParams::InputFieldType value) {
+  std::unordered_map<int, int>::const_iterator iter =
+    kCmInputFieldTypeMap.find(static_cast<int32_t>(value));
+  if (iter != kCmInputFieldTypeMap.end()) {
+    return static_cast<CmIt>(iter->second);
+  }
+  return CmIt::CM_IT_NONE;
 }
+
+CmSt ConvertContextMenuSourceType(CefContextMenuParams::SourceType value) {
+  std::unordered_map<int, int>::const_iterator iter =
+    kCmSourceTypeMap.find(static_cast<int32_t>(value));
+  if (iter != kCmSourceTypeMap.end()) {
+    return static_cast<CmSt>(iter->second);
+  }
+  return CmSt::CM_ST_NONE;
+}
+} // namespace end
 
 namespace OHOS::NWeb {
 NWebContextMenuParamsImpl::NWebContextMenuParamsImpl(
-  CefRefPtr<CefContextMenuParams> params) : params_(params) {}
+  CefRefPtr<CefContextMenuParams> params,
+  float virutal_device_ratio) :
+      params_(params),
+      virutal_device_ratio_(virutal_device_ratio) {}
 
 int32_t NWebContextMenuParamsImpl::GetXCoord() {
   if (params_ != nullptr) {
-    return params_->GetXCoord();
+    return params_->GetXCoord() * virutal_device_ratio_;
   }
   return -1;
 }
 
 int32_t NWebContextMenuParamsImpl::GetYCoord() {
   if (params_ != nullptr) {
-    return params_->GetYCoord();
+    return params_->GetYCoord() * virutal_device_ratio_;;
   }
   return -1;
 }
@@ -141,14 +189,14 @@ std::string NWebContextMenuParamsImpl::GetLinkUrl() {
   }
   return std::string();
 }
- 
+
 std::string NWebContextMenuParamsImpl::GetUnfilteredLinkUrl() {
   if (params_ != nullptr) {
     return params_->GetUnfilteredLinkUrl().ToString();
   }
   return std::string();
 }
- 
+
 std::string NWebContextMenuParamsImpl::GetSourceUrl() {
   if (params_ != nullptr) {
     return params_->GetSourceUrl().ToString();
@@ -165,14 +213,14 @@ bool NWebContextMenuParamsImpl::HasImageContents() {
 
 std::string NWebContextMenuParamsImpl::GetTitleText() {
   if (params_ != nullptr) {
-    return params_->GetTitleText();
+    return params_->GetTitleText().ToString();
   }
   return std::string();
 }
 
 std::string NWebContextMenuParamsImpl::GetPageUrl() {
   if (params_ != nullptr) {
-    return params_->GetPageUrl();
+    return params_->GetPageUrl().ToString();
   }
   return std::string();
 }
@@ -186,9 +234,10 @@ CmMt NWebContextMenuParamsImpl::GetMediaType() {
 
 bool NWebContextMenuParamsImpl::IsEditable() {
   if (params_ != nullptr) {
-    return params_->HasImageContents();
+    return params_->IsEditable();
   }
-  return params_->IsEditable();
+
+  return false;
 }
 
 int32_t NWebContextMenuParamsImpl::GetEditStateFlags() {
@@ -198,6 +247,27 @@ int32_t NWebContextMenuParamsImpl::GetEditStateFlags() {
   return 0;
 }
 
+CmIt NWebContextMenuParamsImpl::GetInputFieldType() {
+  if (params_ != nullptr) {
+    return ConvertContextMenuInputFieldType(params_->GetInputFieldType());
+  }
+  return CmIt::CM_IT_NONE;
+}
+
+CmSt NWebContextMenuParamsImpl::GetSourceType() {
+  if (params_ != nullptr) {
+    return ConvertContextMenuSourceType(params_->GetSourceType());
+  }
+  return CmSt::CM_ST_NONE;
+}
+
+std::string NWebContextMenuParamsImpl::GetSelectionText()
+{
+  if (params_ != nullptr) {
+    return params_->GetSelectionText().ToString();
+  }
+  return std::string();
+}
 NWebQuickMenuParamsImpl::NWebQuickMenuParamsImpl(
   int32_t x, int32_t y, int32_t width, int32_t height, int32_t flags)
   : x_(x), y_(y), width_(width), height_(height),
@@ -262,7 +332,7 @@ NWebContextMenuCallbackImpl::NWebContextMenuCallbackImpl(
 void NWebContextMenuCallbackImpl::Continue(
   int32_t commandId, MenuEventFlags flag) {
   if (callback_ != nullptr) {
-    int32_t event_flag = 
+    int32_t event_flag =
       ConvertMenuFlags(static_cast<int32_t>(flag), KMenuEventFlagsMap);
     callback_->Continue(ConvertCommandId(commandId),
                         static_cast<cef_event_flags_t>(event_flag));
@@ -281,7 +351,7 @@ NWebQuickMenuCallbackImpl::NWebQuickMenuCallbackImpl(
 void NWebQuickMenuCallbackImpl::Continue(
   int32_t commandId, MenuEventFlags flag) {
   if (callback_ != nullptr) {
-    int32_t event_flag = 
+    int32_t event_flag =
       ConvertMenuFlags(static_cast<int32_t>(flag), KMenuEventFlagsMap);
     callback_->Continue(commandId,
                         static_cast<cef_event_flags_t>(event_flag));

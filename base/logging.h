@@ -359,7 +359,8 @@ constexpr LogSeverity LOGGING_INFO = 0;
 constexpr LogSeverity LOGGING_WARNING = 1;
 constexpr LogSeverity LOGGING_ERROR = 2;
 constexpr LogSeverity LOGGING_FATAL = 3;
-constexpr LogSeverity LOGGING_NUM_SEVERITIES = 4;
+constexpr LogSeverity LOGGING_DEBUG = 4;
+constexpr LogSeverity LOGGING_NUM_SEVERITIES = 5;
 
 // LOGGING_DFATAL is LOGGING_FATAL in DCHECK-enabled builds, ERROR in normal
 // mode.
@@ -373,6 +374,7 @@ constexpr LogSeverity LOGGING_DFATAL = LOGGING_ERROR;
 // from LOG_FOO to LOGGING_FOO.
 // TODO(thestig): Convert existing users to LOGGING_FOO and remove this block.
 constexpr LogSeverity LOG_VERBOSE = LOGGING_VERBOSE;
+constexpr LogSeverity LOG_DEBUG = LOGGING_DEBUG;
 constexpr LogSeverity LOG_INFO = LOGGING_INFO;
 constexpr LogSeverity LOG_WARNING = LOGGING_WARNING;
 constexpr LogSeverity LOG_ERROR = LOGGING_ERROR;
@@ -382,6 +384,9 @@ constexpr LogSeverity LOG_DFATAL = LOGGING_DFATAL;
 // A few definitions of macros that don't generate much code. These are used
 // by LOG() and LOG_IF, etc. Since these are used all over our code, it's
 // better to have compact code for these operations.
+#define COMPACT_GOOGLE_LOG_EX_DEBUG(ClassName, ...)                  \
+  ::logging::ClassName(__FILE__, __LINE__, ::logging::LOGGING_DEBUG, \
+                       ##__VA_ARGS__)
 #define COMPACT_GOOGLE_LOG_EX_INFO(ClassName, ...)                  \
   ::logging::ClassName(__FILE__, __LINE__, ::logging::LOGGING_INFO, \
                        ##__VA_ARGS__)
@@ -401,6 +406,7 @@ constexpr LogSeverity LOG_DFATAL = LOGGING_DFATAL;
   ::logging::ClassName(__FILE__, __LINE__, ::logging::LOGGING_DCHECK, \
                        ##__VA_ARGS__)
 
+#define COMPACT_GOOGLE_LOG_DEBUG COMPACT_GOOGLE_LOG_EX_DEBUG(LogMessage)
 #define COMPACT_GOOGLE_LOG_INFO COMPACT_GOOGLE_LOG_EX_INFO(LogMessage)
 #define COMPACT_GOOGLE_LOG_WARNING COMPACT_GOOGLE_LOG_EX_WARNING(LogMessage)
 #define COMPACT_GOOGLE_LOG_ERROR COMPACT_GOOGLE_LOG_EX_ERROR(LogMessage)

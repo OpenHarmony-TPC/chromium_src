@@ -17,6 +17,10 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/geometry/size.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "ppapi/buildflags/buildflags.h"
+#endif
+
 using printing::kMicronsPerInch;
 using printing::kPointsPerInch;
 
@@ -24,6 +28,7 @@ namespace chrome_pdf {
 
 namespace {
 
+#if BUILDFLAG(IS_OHOS) && BUILDFLAG(ENABLE_PLUGINS)
 // Scales `length_points` to be in inches instead of points.
 constexpr float ConvertPointsToInches(int length_points) {
   constexpr float kInchesPerPoint = 1.0f / kPointsPerInch;
@@ -72,10 +77,12 @@ bool ShowInches() {
   // On error, assume the units are SI.
   return U_SUCCESS(error_code) && system == UMS_US;
 }
+#endif
 
 }  // namespace
 
 std::u16string FormatPageSize(const absl::optional<gfx::Size>& size_points) {
+#if BUILDFLAG(IS_OHOS) && BUILDFLAG(ENABLE_PLUGINS)
   if (!size_points.has_value())
     return l10n_util::GetStringUTF16(IDS_PDF_PROPERTIES_PAGE_SIZE_VARIABLE);
 
@@ -93,6 +100,9 @@ std::u16string FormatPageSize(const absl::optional<gfx::Size>& size_points) {
       FormatLengthInMillimeters(size_points.value().width()),
       FormatLengthInMillimeters(size_points.value().height()),
       GetOrientation(size_points.value()));
+#else
+  return u"";
+#endif
 }
 
 std::string FormatPdfVersion(PdfVersion version) {

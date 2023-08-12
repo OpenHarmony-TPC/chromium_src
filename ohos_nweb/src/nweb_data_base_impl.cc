@@ -48,16 +48,15 @@ void NWebDataBaseImpl::DeleteHttpAuthCredentials() {
 void NWebDataBaseImpl::SaveHttpAuthCredentials(const std::string& host, const std::string& realm,
   const std::string& username, const char* password) {
   if (delegate_ != nullptr) {
-    return delegate_->SaveHttpAuthCredentials(host, realm, username, password);
+    delegate_->SaveHttpAuthCredentials(host, realm, username, password);
   }
 }
 
-std::vector<std::string> NWebDataBaseImpl::GetHttpAuthCredentials(const std::string& host,
-  const std::string& realm) const {
+void NWebDataBaseImpl::GetHttpAuthCredentials(const std::string& host, const std::string& realm,
+  std::string& username, char* password, uint32_t passwordSize) const {
   if (delegate_ != nullptr) {
-    return delegate_->GetHttpAuthCredentials(host, realm);
+    delegate_->GetHttpAuthCredentials(host, realm, username, password, passwordSize);
   }
-  return {};
 }
 
 bool NWebDataBaseImpl::ExistPermissionByOrigin(const std::string& origin, int type)

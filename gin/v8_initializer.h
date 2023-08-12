@@ -43,6 +43,10 @@ class GIN_EXPORT V8Initializer {
   static void LoadV8Snapshot(
       V8SnapshotFileType snapshot_file_type = V8SnapshotFileType::kDefault);
 
+#if BUILDFLAG(IS_OHOS)
+  static int LoadV8SnapshotFromFileByHap(V8SnapshotFileType snapshot_file_type);
+#endif
+
   // Load V8 snapshot from user provided file.
   // The region argument, if non-zero, specifies the portions
   // of the files to be mapped. Since the VM can boot with or without

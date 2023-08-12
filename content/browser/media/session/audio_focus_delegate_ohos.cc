@@ -7,6 +7,7 @@
 #include "audio_renderer_adapter.h"
 #include "audio_system_manager_adapter.h"
 #include "content/browser/media/session/media_session_impl.h"
+#include "content/public/common/content_switches.h"
 #include "media/base/media_switches.h"
 #include "ohos_adapter_helper.h"
 
@@ -43,6 +44,12 @@ AudioFocusDelegateOHOS::~AudioFocusDelegateOHOS() {}
 
 AudioFocusDelegate::AudioFocusResult AudioFocusDelegateOHOS::RequestAudioFocus(
     media_session::mojom::AudioFocusType audio_focus_type) {
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  bool hasEnhanceFlag = command_line->HasSwitch(::switches::kOhosHanceSurface);
+  if (hasEnhanceFlag) {
+    LOG(ERROR) << "audio focus is not support in enhance";
+    return AudioFocusDelegate::AudioFocusResult::kSuccess;
+  }
   int32_t ret = OhosAdapterHelper::GetInstance()
                     .GetAudioSystemManager()
                     .RequestAudioFocus(kAudioInterrupt);

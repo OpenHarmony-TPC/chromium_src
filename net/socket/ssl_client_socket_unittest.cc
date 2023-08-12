@@ -3368,7 +3368,11 @@ TEST_F(SSLClientSocketTest, 3DES) {
   // 3DES is always disabled.
   int rv;
   ASSERT_TRUE(CreateAndConnectSSLClientSocket(SSLConfig(), &rv));
-  EXPECT_THAT(rv, IsError(ERR_SSL_VERSION_OR_CIPHER_MISMATCH));
+#if BUILDFLAG(IS_OHOS)
+    EXPECT_THAT(rv, IsError(ERR_SSL_OBSOLETE_VERSION_OR_CIPHER));
+#else
+    EXPECT_THAT(rv, IsError(ERR_SSL_VERSION_OR_CIPHER_MISMATCH));
+#endif
 }
 
 TEST_F(SSLClientSocketTest, SHA1) {
@@ -5491,7 +5495,16 @@ TEST_P(SSLHandshakeDetailsTest, Metrics) {
     base::HistogramTester histograms;
     int rv;
     ASSERT_TRUE(CreateAndConnectSSLClientSocket(client_config, &rv));
+#if BUILDFLAG(IS_OHOS)
+    if (version < SSL_CONNECTION_VERSION_TLS1_2) {
+      EXPECT_THAT(rv, IsError(ERR_SSL_OBSOLETE_VERSION_OR_CIPHER));
+      return;
+    } else {
+      EXPECT_THAT(rv, IsOk());
+    }
+#else 
     EXPECT_THAT(rv, IsOk());
+#endif
 
     // Sanity-check the socket matches the test parameters.
     SSLInfo info;

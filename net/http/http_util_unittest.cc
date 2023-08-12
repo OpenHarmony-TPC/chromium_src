@@ -45,9 +45,9 @@ TEST(HttpUtilTest, IsSafeHeader) {
       "via",
   };
   for (size_t i = 0; i < base::size(unsafe_headers); ++i) {
-    EXPECT_FALSE(HttpUtil::IsSafeHeader(unsafe_headers[i]))
+    EXPECT_FALSE(HttpUtil::IsSafeHeader(unsafe_headers[i], ""))
       << unsafe_headers[i];
-    EXPECT_FALSE(HttpUtil::IsSafeHeader(base::ToUpperASCII(unsafe_headers[i])))
+    EXPECT_FALSE(HttpUtil::IsSafeHeader(base::ToUpperASCII(unsafe_headers[i]), ""))
         << unsafe_headers[i];
   }
   static const char* const safe_headers[] = {
@@ -90,11 +90,44 @@ TEST(HttpUtilTest, IsSafeHeader) {
       "user-agenta",
       "user_agent",
       "viaa",
+      // Following 3 headers are safe if there is no forbidden method in values.
+      "x-http-method",
+      "x-http-method-override",
+      "x-method-override",
   };
   for (size_t i = 0; i < base::size(safe_headers); ++i) {
-    EXPECT_TRUE(HttpUtil::IsSafeHeader(safe_headers[i])) << safe_headers[i];
-    EXPECT_TRUE(HttpUtil::IsSafeHeader(base::ToUpperASCII(safe_headers[i])))
+    EXPECT_TRUE(HttpUtil::IsSafeHeader(safe_headers[i], "")) << safe_headers[i];
+    EXPECT_TRUE(HttpUtil::IsSafeHeader(base::ToUpperASCII(safe_headers[i]), ""))
         << safe_headers[i];
+  }
+
+  static const char* const disallowed_with_forbidden_methods_headers[] = {
+      "x-http-method",
+      "x-http-method-override",
+      "x-method-override",
+  };
+  static const struct {
+    const char* value;
+    bool is_safe;
+  } disallowed_values[] = {{"connect", false},
+                           {"trace", false},
+                           {"track", false},
+                           {"CONNECT", false},
+                           {"cOnnEcT", false},
+                           {"get", true},
+                           {"get,post", true},
+                           {"get,connect", false},
+                           {"get, connect", false},
+                           {"get,connect ", false},
+                           {"get,connect ,post", false},
+                           {"get,,,,connect", false},
+                           {"trace,get,PUT", false}};
+  for (const auto* header : disallowed_with_forbidden_methods_headers) {
+    for (const auto& test_case : disallowed_values) {
+      EXPECT_EQ(test_case.is_safe,
+                HttpUtil::IsSafeHeader(header, test_case.value))
+          << header << ": " << test_case.value;
+    }
   }
 }
 

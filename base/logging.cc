@@ -146,7 +146,7 @@ namespace {
 VlogInfo* g_vlog_info = nullptr;
 VlogInfo* g_vlog_info_prev = nullptr;
 
-const char* const log_severity_names[] = {"INFO", "WARNING", "ERROR", "FATAL"};
+const char* const log_severity_names[] = {"INFO", "WARNING", "ERROR", "FATAL", "DEBUG"};
 static_assert(LOGGING_NUM_SEVERITIES == base::size(log_severity_names),
               "Incorrect number of log_severity_names");
 
@@ -850,6 +850,8 @@ LogMessage::~LogMessage() {
       case LOGGING_FATAL:
         priority = LogLevel::LOG_FATAL;
         break;
+      case LOGGING_DEBUG:
+        priority = LogLevel::LOG_DEBUG;
     }
     const char kOHOSLogTag[] = "chromium";
     HiLogPrintOHOS(LOG_CORE, priority, 0xD004500, kOHOSLogTag, str_newline.c_str());

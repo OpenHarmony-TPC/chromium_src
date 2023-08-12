@@ -56,7 +56,6 @@ config("cef_nweb_config") {
 
   if (product_name == "rk3568") {
     defines += [
-      "DEFAULT_PORTRAIT",
       "RK3568",
     ]
   }
@@ -123,6 +122,8 @@ component("cef_nweb") {
     "src/cef_delegate/nweb_render_handler.h",
     "src/cef_delegate/nweb_resource_handler.cc",
     "src/cef_delegate/nweb_resource_handler.h",
+    "src/cef_delegate/nweb_select_popup_menu_callback.cc",
+    "src/cef_delegate/nweb_select_popup_menu_callback.h",
     "src/cef_delegate/nweb_touch_handle_state_impl.cc",
     "src/cef_delegate/nweb_touch_handle_state_impl.h",
     "src/cef_delegate/nweb_web_storage_delegate.cc",
@@ -133,9 +134,7 @@ component("cef_nweb") {
 
   deps = [
     "//base:base",
-    "//cef:libcef_dll_wrapper",
-    "//cef:libweb_engine",
-    "//content/public/common:static_switches",
+    "//content/public/common",
     "//ui/events/keycodes:x11",
     "//url",
   ]
@@ -225,19 +224,6 @@ component("nweb_sources") {
   public_deps = [ "//third_party/abseil-cpp:absl" ]
 
   libs = [ "surface.z" ]
-}
-
-shared_library("libnweb_adapter") {
-  configs += [ "//build/config/sanitizers:cfi_config" ]
-  deps = [ ":nweb_sources" ]
-
-  if (defined(ohos_nweb_ex) && ohos_nweb_ex) {
-    deps += [ "//ohos_nweb_ex:nweb_ex" ]
-  }
-}
-
-static_library("libohosnweb_static") {
-  deps = [ ":nweb_sources" ]
 }
 
 #################################################

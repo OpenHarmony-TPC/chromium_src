@@ -54,20 +54,16 @@ void NWebDataBaseDelegate::SaveHttpAuthCredentials(const std::string& host,
   data_base->SaveHttpAuthCredentials(host, realm,username, password);
 }
 
-std::vector<std::string> NWebDataBaseDelegate::GetHttpAuthCredentials(const std::string& host, const std::string& realm) {
+void NWebDataBaseDelegate::GetHttpAuthCredentials(const std::string& host, const std::string& realm,
+  std::string& username, char* password, uint32_t passwordSize) {
   CefRefPtr<CefDataBase> data_base = GetGlobalCefDataBase();
   if (data_base == nullptr) {
-    return {};
+    return;
   }
 
-  std::vector<CefString> method_vector;
-  data_base->GetHttpAuthCredentials(host, realm, method_vector);
-
-  std::vector<std::string> username_password;
-  for (std::string value : method_vector) {
-    username_password.push_back(value);
-  }
-  return username_password;
+  CefString usernameCef;
+  data_base->GetHttpAuthCredentials(host, realm, usernameCef, password, passwordSize);
+  username = usernameCef;
 }
 
 bool NWebDataBaseDelegate::ExistPermissionByOrigin(const std::string& origin, int type)

@@ -26,31 +26,25 @@
 
 namespace {
 cef_screen_orientation_type_t ConvertOrientationType(
-  OHOS::NWeb::OrientationType type) {
+    OHOS::NWeb::OrientationType type,
+    bool default_portrait) {
   switch (type) {
-#if defined(DEFAULT_PORTRAIT)
     case OHOS::NWeb::OrientationType::UNSPECIFIED:
-      return cef_screen_orientation_type_t::PORTRAIT_PRIMARY;
+      return default_portrait
+                 ? cef_screen_orientation_type_t::PORTRAIT_PRIMARY
+                 : cef_screen_orientation_type_t::LANDSCAPE_PRIMARY;
     case OHOS::NWeb::OrientationType::VERTICAL:
       return cef_screen_orientation_type_t::PORTRAIT_PRIMARY;
     case OHOS::NWeb::OrientationType::HORIZONTAL:
-      return cef_screen_orientation_type_t::LANDSCAPE_SECONDARY;
+      return default_portrait
+                 ? cef_screen_orientation_type_t::LANDSCAPE_SECONDARY
+                 : cef_screen_orientation_type_t::LANDSCAPE_PRIMARY;
     case OHOS::NWeb::OrientationType::REVERSE_VERTICAL:
       return cef_screen_orientation_type_t::PORTRAIT_SECONDARY;
     case OHOS::NWeb::OrientationType::REVERSE_HORIZONTAL:
-      return cef_screen_orientation_type_t::LANDSCAPE_PRIMARY;
-#else
-    case OHOS::NWeb::OrientationType::UNSPECIFIED:
-      return cef_screen_orientation_type_t::LANDSCAPE_PRIMARY;
-    case OHOS::NWeb::OrientationType::VERTICAL:
-      return cef_screen_orientation_type_t::PORTRAIT_PRIMARY;
-    case OHOS::NWeb::OrientationType::HORIZONTAL:
-      return cef_screen_orientation_type_t::LANDSCAPE_PRIMARY;
-    case OHOS::NWeb::OrientationType::REVERSE_VERTICAL:
-      return cef_screen_orientation_type_t::PORTRAIT_SECONDARY;
-    case OHOS::NWeb::OrientationType::REVERSE_HORIZONTAL:
-      return cef_screen_orientation_type_t::LANDSCAPE_SECONDARY;
-#endif
+      return default_portrait
+                 ? cef_screen_orientation_type_t::LANDSCAPE_PRIMARY
+                 : cef_screen_orientation_type_t::LANDSCAPE_SECONDARY;
     // Now ohos platform don't hava sensor orientation.
     // Will be support later.
     case OHOS::NWeb::OrientationType::SENSOR:
@@ -62,33 +56,23 @@ cef_screen_orientation_type_t ConvertOrientationType(
   }
 }
 
-uint16_t ConvertRotationAngel(OHOS::NWeb::RotationType type) {
+uint16_t ConvertRotationAngel(OHOS::NWeb::RotationType type,
+                              bool default_portrait) {
   // Notice: 90 and 270 is reverse.
   switch (type) {
-#if defined(DEFAULT_PORTRAIT)
     case OHOS::NWeb::RotationType::ROTATION_0:
-      return 0;
+      return default_portrait ? 0 : 90;
     case OHOS::NWeb::RotationType::ROTATION_90:
-      return 270;
+      return default_portrait ? 270 : 0;
     case OHOS::NWeb::RotationType::ROTATION_180:
-      return 180;
+      return default_portrait ? 180 : 270;
     case OHOS::NWeb::RotationType::ROTATION_270:
-      return 90;
-#else
-    case OHOS::NWeb::RotationType::ROTATION_0:
-      return 90;
-    case OHOS::NWeb::RotationType::ROTATION_90:
-      return 0;
-    case OHOS::NWeb::RotationType::ROTATION_180:
-      return 270;
-    case OHOS::NWeb::RotationType::ROTATION_270:
-      return 180;
-#endif
+      return default_portrait ? 90 : 180;
     default:
       return 0;
   }
 }
-}
+}  // namespace
 
 namespace OHOS::NWeb {
 // static
@@ -125,29 +109,41 @@ void NWebRenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser,
                                     CefRect& rect) {
   rect.x = 0;
   rect.y = 0;
-  rect.width = width_;
-  rect.height = height_;
-  return;
+  if (screen_info_.display_ratio <= 0) {
+    rect.width = width_;
+    rect.height = height_;
+  } else {
+    rect.width = width_ / screen_info_.display_ratio;
+    rect.height = height_ / screen_info_.display_ratio;
+  }
+
+  if (rect.width <= 0) {
+    rect.width = 1;
+  }
+  if (rect.height <= 0) {
+    rect.height = 1;
+  }
 }
 
-void NWebRenderHandler::SetScreenInfo(RotationType rotation,
-                                       OrientationType orientation,
-                                       int width,
-                                       int height,
-                                       double display_ratio) {
-  rotation_ = rotation;
-  orientation_ = orientation;
-  screen_width_ = width;
-  screen_height_ = height;
-  display_ratio_ = display_ratio;
+void NWebRenderHandler::SetScreenInfo(const NWebScreenInfo& screen_info) {
+  screen_info_ = screen_info;
 }
 
 bool NWebRenderHandler::GetScreenInfo(CefRefPtr<CefBrowser> browser,
                                       CefScreenInfo& screen_info) {
-  screen_info.orientation = ConvertOrientationType(orientation_);
-  screen_info.angle = ConvertRotationAngel(rotation_);
-  screen_info.rect.width = screen_width_;
-  screen_info.rect.height = screen_height_;
+  screen_info.orientation = ConvertOrientationType(
+      screen_info_.orientation, screen_info_.default_portrait);
+  screen_info.angle = ConvertRotationAngel(screen_info_.rotation,
+                                           screen_info_.default_portrait);
+  screen_info.rect.width = screen_info_.width;
+  screen_info.rect.height = screen_info_.height;
+  screen_info.device_scale_factor = screen_info_.display_ratio;
+
+  // TODO: currently display dont have interface to get. We use fix value
+  // instead.
+  screen_info.depth = 24;
+  screen_info.depth_per_component = 8;
+
   return true;
 }
 
@@ -186,8 +182,8 @@ void NWebRenderHandler::OnRootLayerChanged(CefRefPtr<CefBrowser> browser,
 }
 
 void NWebRenderHandler::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser,
-                                     double x,
-                                     double y) {
+                                              double x,
+                                              double y) {
   if (auto handler = handler_.lock()) {
     handler->OnScroll(x, y);
   }
@@ -215,8 +211,10 @@ void NWebRenderHandler::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
 
 void NWebRenderHandler::OnVirtualKeyboardRequested(
     CefRefPtr<CefBrowser> browser,
-    TextInputMode input_mode, bool show_keyboard) {
-  LOG(INFO) << "NWebRenderHandler::OnVirtualKeyboardRequested input_mode = " << input_mode << ", show_keyboard = " << show_keyboard;
+    TextInputMode input_mode,
+    bool show_keyboard) {
+  LOG(INFO) << "NWebRenderHandler::OnVirtualKeyboardRequested input_mode = "
+            << input_mode << ", show_keyboard = " << show_keyboard;
 
   if (inputmethod_client_) {
     if (input_mode != CEF_TEXT_INPUT_MODE_NONE) {
@@ -232,26 +230,29 @@ void NWebRenderHandler::GetTouchHandleSize(
     cef_horizontal_alignment_t orientation,
     CefSize& size) {
   // TODO: need to refactor in 3.2.8.1 use arkui refactor.
-  size.width = 20;
-  size.height = 20;
-  if (display_ratio_ <= 0.0) {
-    LOG(ERROR) << "invalid display_ratio_, display_ratio_ = " << display_ratio_;
+  size.width = 10;
+  size.height = 10;
+  if (screen_info_.display_ratio <= 0.0) {
+    LOG(ERROR) << "invalid display_ratio_, display_ratio_ = "
+               << screen_info_.display_ratio;
     return;
   }
-  if (display_ratio_ <= 1) {
+  if (screen_info_.display_ratio <= 1) {
     return;
-  } else if (display_ratio_ > 1 && display_ratio_ < 1.7) {
+  } else if (screen_info_.display_ratio > 1 &&
+             screen_info_.display_ratio < 1.7) {
     // rk
-    size.width = 30;
-    size.height = 30;
-  } else if (display_ratio_ >= 1.7 && display_ratio_ < 2.5) {
+    size.width = 30 / screen_info_.display_ratio;
+    size.height = 30 / screen_info_.display_ratio;
+  } else if (screen_info_.display_ratio >= 1.7 &&
+             screen_info_.display_ratio < 2.5) {
     // wgr
-    size.width = 40;
-    size.height = 40;
+    size.width = 40 / screen_info_.display_ratio;
+    size.height = 40 / screen_info_.display_ratio;
   } else {
-    // wgr
-    size.width = 60;
-    size.height = 60;
+    // phone
+    size.width = 60 / screen_info_.display_ratio;
+    size.height = 60 / screen_info_.display_ratio;
   }
   LOG(ERROR) << "GetTouchHandleSize " << size.width << " " << size.height;
 }
@@ -260,17 +261,35 @@ std::shared_ptr<NWebTouchHandleState> NWebRenderHandler::GetTouchHandleState(
     NWebTouchHandleState::TouchHandleType type) {
   switch (type) {
     case NWebTouchHandleState::TouchHandleType::INSERT_HANDLE:
-      return insert_handle_.enabled ?
-        std::make_shared<NWebTouchHandleStateImpl>(insert_handle_) : nullptr;
+      return insert_handle_.enabled
+                 ? std::make_shared<NWebTouchHandleStateImpl>(insert_handle_)
+                 : nullptr;
     case NWebTouchHandleState::TouchHandleType::SELECTION_BEGIN_HANDLE:
-      return start_selection_handle_.enabled ?
-        std::make_shared<NWebTouchHandleStateImpl>(start_selection_handle_) : nullptr;
+      return start_selection_handle_.enabled
+                 ? std::make_shared<NWebTouchHandleStateImpl>(
+                       start_selection_handle_)
+                 : nullptr;
     case NWebTouchHandleState::TouchHandleType::SELECTION_END_HANDLE:
-      return end_selection_handle_.enabled ?
-        std::make_shared<NWebTouchHandleStateImpl>(end_selection_handle_) : nullptr;
+      return end_selection_handle_.enabled
+                 ? std::make_shared<NWebTouchHandleStateImpl>(
+                       end_selection_handle_)
+                 : nullptr;
     default:
       return nullptr;
   }
+}
+
+CefTouchHandleState NWebRenderHandler::ConvertTouchHandleDisplayRatio(
+    const CefTouchHandleState& touch_handle) {
+  CefTouchHandleState result_touch_handle = touch_handle;
+  if (screen_info_.display_ratio <= 0) {
+    LOG(WARNING) << "virtual display ratio is invalid";
+    return result_touch_handle;
+  }
+  result_touch_handle.edge_height *= screen_info_.display_ratio;
+  result_touch_handle.origin.x *= screen_info_.display_ratio;
+  result_touch_handle.origin.y *= screen_info_.display_ratio;
+  return result_touch_handle;
 }
 
 void NWebRenderHandler::OnTouchSelectionChanged(
@@ -278,17 +297,17 @@ void NWebRenderHandler::OnTouchSelectionChanged(
     const CefTouchHandleState& start_selection_handle,
     const CefTouchHandleState& end_selection_handle,
     bool need_report) {
-  insert_handle_ = insert_handle;
-  start_selection_handle_ = start_selection_handle;
-  end_selection_handle_ = end_selection_handle;
+  insert_handle_ = ConvertTouchHandleDisplayRatio(insert_handle);
+  start_selection_handle_ = ConvertTouchHandleDisplayRatio(start_selection_handle);
+  end_selection_handle_ = ConvertTouchHandleDisplayRatio(end_selection_handle);
   if (!need_report) {
     return;
   }
   if (auto handler = handler_.lock()) {
     handler->OnTouchSelectionChanged(
-      std::make_shared<NWebTouchHandleStateImpl>(insert_handle_),
-      std::make_shared<NWebTouchHandleStateImpl>(start_selection_handle_),
-      std::make_shared<NWebTouchHandleStateImpl>(end_selection_handle_));
+        std::make_shared<NWebTouchHandleStateImpl>(insert_handle_),
+        std::make_shared<NWebTouchHandleStateImpl>(start_selection_handle_),
+        std::make_shared<NWebTouchHandleStateImpl>(end_selection_handle_));
   }
 }
 
@@ -297,7 +316,8 @@ bool NWebRenderHandler::StartDragging(CefRefPtr<CefBrowser> browser,
                                       DragOperationsMask allowed_ops,
                                       int x,
                                       int y) {
-  LOG(INFO) << "received start dragging callback, operation = " << allowed_ops << ", x = " << x << ", y = " << y;
+  LOG(INFO) << "received start dragging callback, operation = " << allowed_ops
+            << ", x = " << x << ", y = " << y;
   if (!drag_data && !drag_data->HasImage()) {
     LOG(ERROR) << "drag data invalid";
     return false;
@@ -311,7 +331,8 @@ bool NWebRenderHandler::StartDragging(CefRefPtr<CefBrowser> browser,
 
   int width;
   int height;
-  auto bitmap = image->GetAsBitmap(1, CEF_COLOR_TYPE_BGRA_8888, CEF_ALPHA_TYPE_OPAQUE, width, height);
+  auto bitmap = image->GetAsBitmap(1, CEF_COLOR_TYPE_BGRA_8888,
+                                   CEF_ALPHA_TYPE_OPAQUE, width, height);
   if (!bitmap) {
     LOG(ERROR) << "drag data bitmap invalid";
     return false;
@@ -330,7 +351,8 @@ bool NWebRenderHandler::StartDragging(CefRefPtr<CefBrowser> browser,
     return false;
   }
 
-  LOG(INFO) << "drag image width : " << width << ", height : " << height<<  ", buffer size : " << read_size;
+  LOG(INFO) << "drag image width : " << width << ", height : " << height
+            << ", buffer size : " << read_size;
   auto handler = handler_.lock();
   if (handler == nullptr) {
     LOG(ERROR) << "can't get strong ptr with handler";

@@ -19,11 +19,13 @@
 #include <cerrno>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
 #include <thread>
 
 #include "base/lazy_instance.h"
 #include "base/trace_event/common/trace_event_common.h"
+#include "ohos_adapter_helper.h"
 #include "nweb_delegate_adapter.h"
 #include "nweb_export.h"
 #include "nweb_handler.h"
@@ -47,51 +49,32 @@ bool g_browser_service_api_enabled = false;
 #endif
 }
 
-using namespace OHOS::NWeb;
-extern "C" OHOS_NWEB_EXPORT NWeb* CreateNWeb(
-    const NWebCreateInfo& create_info) {
-  static uint32_t current_nweb_id = 0;
-  uint32_t nweb_id = ++current_nweb_id;
-  TRACE_EVENT1("NWebImpl", "NWebImpl | CreateNWeb", "nweb_id", nweb_id);
-  WVLOG_I("creating nweb %{public}u, size %{public}u*%{public}u", nweb_id,
-          create_info.width, create_info.height);
-  auto nweb = new NWebImpl(nweb_id);
-  if (nweb == nullptr) {
-    WVLOG_E("fail to create nweb instance");
-    return nullptr;
-  }
-
-  if (!nweb->Init(create_info)) {
-    WVLOG_E("fail to init nweb");
-    delete nweb;
-    return nullptr;
-  }
-
-  ++g_nweb_count;
-#if defined(REPORT_SYS_EVENT)
-  // Report nweb instance count
-  if (g_nweb_count > g_nweb_max_count) {
-    g_nweb_max_count = g_nweb_count;
-  }
-  ReportMultiInstanceStats(nweb_id, g_nweb_count, g_nweb_max_count);
-#endif
-  return nweb;
-}
-
 namespace OHOS::NWeb {
 
 // For NWebEx
-typedef std::unordered_map<int32_t, NWebImpl*> NWebMap;
+typedef std::unordered_map<int32_t, std::weak_ptr<NWebImpl>> NWebMap;
 base::LazyInstance<NWebMap>::DestructorAtExit g_nweb_map =
     LAZY_INSTANCE_INITIALIZER;
 
 base::LazyInstance<std::vector<std::string>>::DestructorAtExit g_browser_args =
     LAZY_INSTANCE_INITIALIZER;
 
+void NWebImpl::AddNWebToMap(uint32_t id, std::shared_ptr<NWebImpl>& nweb) {
+  if (nweb) {
+    std::weak_ptr<NWebImpl> nweb_weak(nweb);
+    g_nweb_map.Get().emplace(id, nweb_weak);
+  }
+}
+
 NWebImpl* NWebImpl::FromID(int32_t nweb_id) {
   NWebMap* map = g_nweb_map.Pointer();
-  auto it = map->find(nweb_id);
-  return it == map->end() ? nullptr : it->second;
+  if (auto it = map->find(nweb_id); it != map->end()) {
+    auto nweb = it->second.lock();
+    if (nweb) {
+      return nweb.get();
+    }
+  }
+  return nullptr;
 }
 
 void NWebImpl::InitBrowserServiceApi(std::vector<std::string>& browser_args) {
@@ -107,9 +90,7 @@ bool NWebImpl::GetBrowserServiceApiEnabled() {
   return g_browser_service_api_enabled;
 }
 
-NWebImpl::NWebImpl(uint32_t id) : nweb_id_(id) {
-  g_nweb_map.Get().emplace(id, this);
-}
+NWebImpl::NWebImpl(uint32_t id) : nweb_id_(id) {}
 
 NWebImpl::~NWebImpl() {
   g_nweb_map.Get().erase(nweb_id_);
@@ -173,9 +154,43 @@ void NWebImpl::ProcessInitArgs(const NWebInitArgs& init_args) {
   InitWebEngineArgs(init_args);
 }
 
+bool NWebImpl::SetVirtualDeviceRatio() {
+  if (fabs(device_pixel_ratio_) < 1e-15) {
+    auto display_manager_adapter =
+        OHOS::NWeb::OhosAdapterHelper::GetInstance().CreateDisplayMgrAdapter();
+    if (display_manager_adapter == nullptr) {
+      WVLOG_E("display_manager_adapter is nullptr.");
+      return false;
+    }
+    std::shared_ptr<OHOS::NWeb::DisplayAdapter> display =
+        display_manager_adapter->GetDefaultDisplay();
+    if (display == nullptr) {
+      WVLOG_E("display is nullptr.");
+      return false;
+    }
+    device_pixel_ratio_ = display->GetVirtualPixelRatio();
+    if (device_pixel_ratio_ <= 0) {
+      WVLOG_E("invalid ratio.");
+      return false;
+    }
+    WVLOG_I("GetVirtualPixelRatio ratio: %{public}f", device_pixel_ratio_);
+  }
+  return true;
+}
+
+uint32_t NWebImpl::NormalizeVirtualDeviceRatio(uint32_t length) {
+  float ratio = static_cast<int>(length / device_pixel_ratio_)
+    * device_pixel_ratio_;
+  return std::ceil(ratio); 
+}
+
 bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
   if (output_handler_ == nullptr) {
     WVLOG_E("fail to init web engine, NWeb output handler is not ready");
+    return false;
+  }
+  if (!SetVirtualDeviceRatio()) {
+    WVLOG_E("fail to set virtual device ratio");
     return false;
   }
   if (web_engine_args_.empty()) {
@@ -189,16 +204,22 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
   for (auto it = web_engine_args_.begin(); i < argc; ++i, ++it) {
     argv[i] = it->c_str();
   }
-
-  void* window =
+  bool is_enhance_surface = create_info.init_args.is_enhance_surface;
+  void* window = nullptr;
+  if (is_enhance_surface) {
+    window = create_info.enhance_surface_info;
+  } else {
+    window =
       reinterpret_cast<void*>(output_handler_->GetNativeWindowFromSurface(
           create_info.producer_surface));
+  }
+
   if (window == nullptr) {
     WVLOG_E("fail to init web engine, get native window from surface failed");
     delete[] argv;
     return false;
   }
-  nweb_delegate_ = NWebDelegateAdapter::CreateNWebDelegate(argc, argv, window);
+  nweb_delegate_ = NWebDelegateAdapter::CreateNWebDelegate(argc, argv, is_enhance_surface, window);
   if (nweb_delegate_ == nullptr) {
     WVLOG_E("fail to create nweb delegate of web engine");
     delete[] argv;
@@ -214,6 +235,8 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
 
   uint32_t width, height;
   output_handler_->GetWindowInfo(width, height);
+  width = NormalizeVirtualDeviceRatio(width);
+  height = NormalizeVirtualDeviceRatio(height);
   nweb_delegate_->Resize(width, height);
   nweb_delegate_->RegisterRenderCb(render_update_cb);
 
@@ -231,6 +254,7 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
 void NWebImpl::InitWebEngineArgs(const NWebInitArgs& init_args) {
   web_engine_args_.clear();
 
+  WVLOG_E("===OH=== InitWebEngineArgs 60fps");
   auto args = g_browser_args.Get();
   for (const std::string& arg : args) {
     web_engine_args_.emplace_back(arg);
@@ -245,7 +269,7 @@ void NWebImpl::InitWebEngineArgs(const NWebInitArgs& init_args) {
 #ifdef RK3568
   web_engine_args_.emplace_back("--off-screen-frame-rate=70");
 #else
-  web_engine_args_.emplace_back("--off-screen-frame-rate=65");
+  web_engine_args_.emplace_back("--off-screen-frame-rate=60");
 #endif
   web_engine_args_.emplace_back("--no-unsandboxed-zygote");
   web_engine_args_.emplace_back("--no-zygote");
@@ -260,7 +284,10 @@ void NWebImpl::InitWebEngineArgs(const NWebInitArgs& init_args) {
   web_engine_args_.emplace_back("--zygote-cmd-prefix=/system/bin/web_render");
   web_engine_args_.emplace_back("--remote-debugging-port=9222");
   web_engine_args_.emplace_back("--enable-touch-drag-drop");
-
+  if (init_args.is_enhance_surface) {
+    WVLOG_I("is_enhance_surface is true");
+    web_engine_args_.emplace_back("--ohos-enhance-surface");
+  }
   for (auto arg : init_args.web_engine_args_to_delete) {
     auto it = std::find(web_engine_args_.begin(), web_engine_args_.end(), arg);
     if (it != web_engine_args_.end()) {
@@ -287,6 +314,10 @@ void NWebImpl::PutWebAppClientExtensionCallback(
       web_app_client_extension_listener);
 }
 
+void NWebImpl::RemoveWebAppClientExtensionCallback() {
+  nweb_delegate_->UnRegisterWebAppClientExtensionListener();
+}
+
 void NWebImpl::SetNWebHandler(std::shared_ptr<NWebHandler> client) {
   nweb_handle_ = client;
   nweb_delegate_->RegisterNWebHandler(client);
@@ -301,6 +332,8 @@ void NWebImpl::Resize(uint32_t width, uint32_t height) {
   if (input_handler_ == nullptr || output_handler_ == nullptr) {
     return;
   }
+  width = NormalizeVirtualDeviceRatio(width);
+  height = NormalizeVirtualDeviceRatio(height);
   if (width > kSurfaceMaxWidth || height > kSurfaceMaxHeight) {
     return;
   }
@@ -560,7 +593,7 @@ void NWebImpl::ClosePort(std::string& portHandle) {
   nweb_delegate_->ClosePort(portHandle);
 }
 
-void NWebImpl::PostPortMessage(std::string& portHandle, std::string& data) {
+void NWebImpl::PostPortMessage(std::string& portHandle, std::shared_ptr<NWebMessage> data) {
   if (nweb_delegate_ == nullptr) {
     WVLOG_E("JSAPI nweb_delegate_ its null");
     return;
@@ -569,7 +602,7 @@ void NWebImpl::PostPortMessage(std::string& portHandle, std::string& data) {
 }
 
 void NWebImpl::SetPortMessageCallback(std::string& portHandle,
-        std::shared_ptr<NWebValueCallback<std::string>> callback) {
+        std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback) {
   if (nweb_delegate_ == nullptr) {
     WVLOG_E("JSAPI nweb_delegate_ its null");
     return;
@@ -818,9 +851,99 @@ std::shared_ptr<NWebHistoryList> NWebImpl::GetHistoryList() {
 
   return nweb_delegate_->GetHistoryList();
 }
+
+WebState NWebImpl::SerializeWebState() {
+  if (nweb_delegate_ == nullptr) {
+    return nullptr;
+  }
+  return nweb_delegate_->SerializeWebState();
+}
+
+bool NWebImpl::RestoreWebState(WebState state) {
+  if (nweb_delegate_ == nullptr) {
+    return false;
+  }
+  return nweb_delegate_->RestoreWebState(state);
+}
+
+void NWebImpl::PutReleaseSurfaceCallback(
+    std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) {
+  nweb_delegate_->RegisterReleaseSurfaceListener(releaseSurfaceListener);
+}
+
+void NWebImpl::PageUp(bool top) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  return nweb_delegate_->PageUp(top);
+}
+
+void NWebImpl::PageDown(bool bottom) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  return nweb_delegate_->PageDown(bottom);
+}
+
+void NWebImpl::ScrollTo(float x, float y) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  return nweb_delegate_->ScrollTo(x, y);
+}
+
+void NWebImpl::ScrollBy(float delta_x, float delta_y) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  return nweb_delegate_->ScrollBy(delta_x, delta_y);
+}
+
+void NWebImpl::SlideScroll(float vx, float vy) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  return nweb_delegate_->SlideScroll(vx, vy);
+}
+
 }  // namespace OHOS::NWeb
-extern "C" OHOS_NWEB_EXPORT NWeb* GetNWeb(int32_t nweb_id) {
+
+using namespace OHOS::NWeb;
+extern "C" OHOS_NWEB_EXPORT void CreateNWeb(const NWebCreateInfo& create_info,
+                                            std::shared_ptr<NWebImpl>& nweb) {
+  static uint32_t current_nweb_id = 0;
+  uint32_t nweb_id = ++current_nweb_id;
+  TRACE_EVENT1("NWebImpl", "NWebImpl | CreateNWeb", "nweb_id", nweb_id);
+  WVLOG_I("creating nweb %{public}u, size %{public}u*%{public}u", nweb_id,
+          create_info.width, create_info.height);
+  WVLOG_I("creating nweb use enhance surface %{public}d",
+          create_info.init_args.is_enhance_surface);
+  nweb = std::make_shared<NWebImpl>(nweb_id);
+  if (nweb == nullptr) {
+    WVLOG_E("fail to create nweb instance");
+    return;
+  }
+
+  if (!nweb->Init(create_info)) {
+    WVLOG_E("fail to init nweb");
+    return;
+  }
+
+  nweb->AddNWebToMap(nweb_id, nweb);
+  ++g_nweb_count;
+#if defined(REPORT_SYS_EVENT)
+  // Report nweb instance count
+  if (g_nweb_count > g_nweb_max_count) {
+    g_nweb_max_count = g_nweb_count;
+  }
+  ReportMultiInstanceStats(nweb_id, g_nweb_count, g_nweb_max_count);
+#endif
+}
+
+extern "C" OHOS_NWEB_EXPORT void GetNWeb(int32_t nweb_id,
+                                         std::weak_ptr<NWebImpl>& nweb) {
   NWebMap* map = OHOS::NWeb::g_nweb_map.Pointer();
-  auto it = map->find(nweb_id);
-  return it == map->end() ? nullptr : it->second;
+  if (auto it = map->find(nweb_id); it != map->end()) {
+    nweb = it->second;
+  }
 }

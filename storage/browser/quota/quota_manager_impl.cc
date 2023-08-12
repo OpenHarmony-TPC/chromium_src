@@ -1295,7 +1295,6 @@ void QuotaManagerImpl::GetStorageKeysForType(blink::mojom::StorageType type,
                                              GetStorageKeysCallback callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   EnsureDatabaseOpened();
-
   if (db_disabled_) {
     std::move(callback).Run(std::set<StorageKey>());
     return;

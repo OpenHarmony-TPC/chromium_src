@@ -105,11 +105,16 @@ void RenderFrameMetadataProviderImpl::OnRenderFrameMetadataChanged(
   for (Observer& observer : observers_)
     observer.OnRenderFrameMetadataChangedBeforeActivation(metadata);
 
+// ohos: fix white screen when web instance over 5.
+#if !BUILDFLAG(IS_OHOS)
   if (metadata.local_surface_id != last_local_surface_id_) {
+#endif
     last_local_surface_id_ = metadata.local_surface_id;
     for (Observer& observer : observers_)
       observer.OnLocalSurfaceIdChanged(metadata);
+#if !BUILDFLAG(IS_OHOS)
   }
+#endif
 
   if (!frame_token)
     return;

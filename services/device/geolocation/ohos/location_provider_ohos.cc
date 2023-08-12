@@ -14,7 +14,7 @@
 #include "base/memory/singleton.h"
 
 namespace device {
-
+class GeolocationManager;
 // LocationProviderOhos
 LocationProviderOhos::LocationProviderOhos() {
   locator_callback_ = new LocationProviderCallback();
@@ -102,10 +102,15 @@ void LocationProviderOhos::RequestLocationUpdate(bool high_accuracy) {
     return;
   }
 
-  locator_->EnableAbility(true);
   std::unique_ptr<OHOS::Location::RequestConfig> requestConfig =
       std::make_unique<OHOS::Location::RequestConfig>();
   SetRequestConfig(requestConfig, high_accuracy);
+  if (locator_->GetSwitchState() != 1) {
+    LOG(ERROR) << "geolocation setting is not turned on";
+    locator_callback_->OnErrorReport(
+        LocationProviderCallback::LOCATION_GET_FAILED);
+    return;
+  }
   OHOS::sptr<OHOS::Location::ILocatorCallback> locator_call_back =
       locator_callback_;
   int ret = locator_->StartLocating(requestConfig, locator_call_back, "location.ILocator",
@@ -190,7 +195,9 @@ void LocationProviderCallback::OnErrorReport(const int errorCode) {
 }
 
 // static
-std::unique_ptr<LocationProvider> NewSystemLocationProvider() {
+std::unique_ptr<LocationProvider> NewSystemLocationProvider(
+    scoped_refptr<base::SingleThreadTaskRunner> main_task_runner,
+    GeolocationManager* geolocation_manager) {
   return base::WrapUnique(new LocationProviderOhos);
 }
 

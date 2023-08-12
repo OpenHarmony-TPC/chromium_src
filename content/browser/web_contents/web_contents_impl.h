@@ -379,6 +379,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   void PostWebMessage(std::string& message,
                       std::vector<blink::WebMessagePort>& ports,
                       std::string& targetUri) override;
+  void SetTouchInsertHandleMenuShow(bool show) override {
+    touch_insert_handle_menu_show_ = show;
+  }
+  bool GetTouchInsertHandleMenuShow() override {
+    return touch_insert_handle_menu_show_;
+  }
 #endif
   void UpdateTitleForEntry(NavigationEntry* entry,
                            const std::u16string& title) override;
@@ -604,6 +610,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
       mojo::PendingAssociatedRemote<blink::mojom::ContextMenuClient>
           context_menu_client,
       const ContextMenuParams& params) override;
+#if BUILDFLAG(IS_OHOS)
+#endif
   void RunJavaScriptDialog(RenderFrameHostImpl* render_frame_host,
                            const std::u16string& message,
                            const std::u16string& default_prompt,
@@ -1898,6 +1906,10 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
 
 #if BUILDFLAG(IS_ANDROID)
   std::unique_ptr<WebContentsAndroid> web_contents_android_;
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  bool touch_insert_handle_menu_show_ = false;
 #endif
 
   // Helper classes ------------------------------------------------------------

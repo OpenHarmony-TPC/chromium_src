@@ -322,7 +322,11 @@ class UnboundWidgetInputHandler : public blink::mojom::WidgetInputHandler {
     DLOG(WARNING) << "Input request on unbound interface";
   }
 #if BUILDFLAG(IS_OHOS)
-  void StartFling() override {
+  void TryStartFling() override {
+    DLOG(WARNING) << "Input request on unbound interface";
+  }
+
+  void TryFinishFling() override {
     DLOG(WARNING) << "Input request on unbound interface";
   }
 #endif

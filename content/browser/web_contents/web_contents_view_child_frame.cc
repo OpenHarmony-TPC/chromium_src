@@ -110,6 +110,8 @@ bool WebContentsViewChildFrame::CloseTabAfterEventTrackingIfNeeded() {
 
 void WebContentsViewChildFrame::OnCapturerCountChanged() {}
 
+void WebContentsViewChildFrame::FullscreenStateChanged(bool is_fullscreen) {}
+
 void WebContentsViewChildFrame::RestoreFocus() {
   NOTREACHED();
 }

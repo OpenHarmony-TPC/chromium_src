@@ -266,5 +266,9 @@ const base::Feature kSwitchWebSocketThroughputWindow{
 const base::FeatureParam<int> kRollingAverageWindow{
     &kSwitchWebSocketThroughputWindow, "RollingAverageWindow", 100};
 
+const base::Feature kBlockNewForbiddenHeaders{
+             "BlockNewForbiddenHeaders",
+             base::FEATURE_ENABLED_BY_DEFAULT};
+
 }  // namespace features
 }  // namespace net

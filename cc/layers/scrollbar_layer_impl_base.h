@@ -12,6 +12,10 @@
 #include "cc/layers/layer.h"
 #include "cc/layers/layer_impl.h"
 #include "cc/trees/layer_tree_settings.h"
+#if BUILDFLAG(IS_OHOS)
+#include "display_manager_adapter.h"
+#include "ohos_adapter_helper.h"
+#endif
 
 namespace cc {
 
@@ -114,6 +118,13 @@ class CC_EXPORT ScrollbarLayerImplBase : public LayerImpl {
   float scroll_layer_length_;
   ScrollbarOrientation orientation_;
   bool is_left_side_vertical_scrollbar_;
+
+#if BUILDFLAG(IS_OHOS)
+  std::unique_ptr<OHOS::NWeb::DisplayManagerAdapter> display_manager_adapter_ =
+      nullptr;
+  float initial_layout_size_ratio_ = 2.0f;
+  void SetInitalLayoutRatio();
+#endif
 
   // Difference between the clip layer's height and the visible viewport
   // height (which may differ in the presence of top-controls hiding).

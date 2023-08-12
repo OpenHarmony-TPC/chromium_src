@@ -393,6 +393,9 @@ NET_EXPORT extern const base::FeatureParam<int> kSmallReadBufferSize;
 NET_EXPORT extern const base::Feature kSwitchWebSocketThroughputWindow;
 NET_EXPORT extern const base::FeatureParam<int> kRollingAverageWindow;
 
+// Whether to block newly added forbidden headers (https://crbug.com/1362331).
+NET_EXPORT extern const base::Feature kBlockNewForbiddenHeaders;
+
 }  // namespace features
 }  // namespace net
 

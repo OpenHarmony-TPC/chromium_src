@@ -79,6 +79,10 @@ class OnTextChangedListenerImpl : public OnTextChangedListener {
     handler_->MoveCursor(direction);
   }
 
+  void HandleSetSelection(int32_t start, int32_t end) override {};
+  void HandleExtendAction(int32_t action) override {};
+  void HandleSelect(int32_t keyCode, int32_t cursorMoveSkip) override {};
+
  private:
   NWebInputMethodHandler* handler_;
 };
@@ -113,8 +117,14 @@ void NWebInputMethodHandler::Attach(CefRefPtr<CefBrowser> browser,
   if (inputmethod_listener_ == nullptr) {
     inputmethod_listener_ = new OnTextChangedListenerImpl(this);
   }
-  InputMethodController::GetInstance()->Attach(inputmethod_listener_,
-                                               show_keyboard);
+
+  if (show_keyboard && isAttached_) {
+    LOG(INFO) << "Attach ShowCurrentInput" ;
+    InputMethodController::GetInstance()->ShowCurrentInput();
+  } else {
+    InputMethodController::GetInstance()->Attach(inputmethod_listener_, show_keyboard);
+    isAttached_ = true;
+  }
 }
 
 void NWebInputMethodHandler::ShowTextInput() {
@@ -122,9 +132,13 @@ void NWebInputMethodHandler::ShowTextInput() {
 }
 
 void NWebInputMethodHandler::HideTextInput() {
-  LOG(INFO) << "NWebInputMethodHandler::HideTextInput " << ime_shown_;
+  if (!isAttached_) {
+    LOG(INFO) << "keyboard is not attach";
+    return;
+  }
   InputMethodController::GetInstance()->HideTextInput();
   InputMethodController::GetInstance()->Close();
+  isAttached_ = false;
 }
 
 void NWebInputMethodHandler::OnTextSelectionChanged(
@@ -141,10 +155,6 @@ void NWebInputMethodHandler::OnTextSelectionChanged(
   selected_to_ = selected_range.to;
   ime_text_composing_ = false;
   composing_text_.clear();
-
-  std::lock_guard<std::mutex> lock(textSelectMutex_);
-  isTextSelectReady_ = true;
-  textSelectCv_.notify_all();
 }
 
 void NWebInputMethodHandler::SetIMEStatus(bool status) {
@@ -162,14 +172,6 @@ void NWebInputMethodHandler::InsertText(const std::u16string& text) {
   }
 
   if (browser_ != nullptr && browser_->GetHost() != nullptr) {
-    std::unique_lock<std::mutex> lock(textSelectMutex_);
-    bool isNormal = textSelectCv_.wait_for(
-        lock, std::chrono::seconds(1), [this] { return isTextSelectReady_; });
-    if (!isNormal) {
-      LOG(ERROR) << "InsertText wait_for timeout";
-    }
-    isTextSelectReady_ = false;
-
     CefRefPtr<CefTask> insert_task = new InputMethodTask(base::BindOnce(
         &NWebInputMethodHandler::InsertTextHandlerOnUI, this, std::move(text)));
     browser_->GetHost()->PostTaskToUIThread(insert_task);
@@ -186,16 +188,6 @@ void NWebInputMethodHandler::DeleteBackward(int32_t length) {
 
 void NWebInputMethodHandler::DeleteForward(int32_t length) {
   if (browser_ != nullptr && browser_->GetHost() != nullptr) {
-    if (selected_to_ != 0) {
-      std::unique_lock<std::mutex> lock(textSelectMutex_);
-      bool isNormal = textSelectCv_.wait_for(
-          lock, std::chrono::seconds(1), [this] { return isTextSelectReady_; });
-      if (!isNormal) {
-        LOG(ERROR) << "DeleteForward wait_for timeout";
-      }
-      isTextSelectReady_ = false;
-    }
-
     CefRefPtr<CefTask> delete_task = new InputMethodTask(base::BindOnce(
         &NWebInputMethodHandler::DeleteForwardHandlerOnUI, this, length));
     browser_->GetHost()->PostTaskToUIThread(delete_task);
@@ -217,26 +209,29 @@ void NWebInputMethodHandler::InsertTextHandlerOnUI(const std::u16string& text) {
     return;
   }
 
+  CefKeyEvent keyEvent;
+  keyEvent.windows_key_code = ui::VKEY_PROCESSKEY;
+  keyEvent.modifiers = 0;
+  keyEvent.is_system_key = false;
+  keyEvent.type = KEYEVENT_RAWKEYDOWN;
+  browser_->GetHost()->SendKeyEvent(keyEvent);
+
   if (!ime_text_composing_) {
     ime_text_composing_ = true;
     composing_text_.clear();
   }
   composing_text_.append(text);
+  browser_->GetHost()->ImeCommitText(composing_text_,
+    CefRange(UINT32_MAX, UINT32_MAX), 0);
 
-  std::vector<CefCompositionUnderline> underlines;
-  CefRange new_range(0, static_cast<int>(composing_text_.length()));
-  cef_composition_underline_t line = {new_range, 0xFF000000, 0, false};
-  underlines.push_back(line);
-  CefRange replacement_range(selected_from_, selected_to_);
-  CefRange selection_range(0, static_cast<int>(composing_text_.length()));
-  browser_->GetHost()->ImeSetComposition(CefString(composing_text_), underlines,
-                                         replacement_range, selection_range);
   // no selection
-  browser_->GetHost()->ImeFinishComposingText(false);
   ime_text_composing_ = false;
   selected_from_ += static_cast<int>(composing_text_.length());
   selected_to_ += static_cast<int>(composing_text_.length());
   composing_text_.clear();
+
+  keyEvent.type = KEYEVENT_KEYUP;
+  browser_->GetHost()->SendKeyEvent(keyEvent);
 }
 
 void NWebInputMethodHandler::DeleteBackwardHandlerOnUI(int32_t length) {

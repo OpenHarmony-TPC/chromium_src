@@ -248,6 +248,13 @@ class COMPONENT_EXPORT(URL) GURL {
     return SchemeIs(url::kFileSystemScheme);
   }
 
+#if BUILDFLAG(IS_OHOS)
+  // Resource URLs for ohos system
+  bool SchemeIsOhosResource() const {
+    return SchemeIs(url::kResourcesScheme);
+  }
+#endif
+
   // Returns true if the scheme indicates a network connection that uses TLS or
   // some other cryptographic protocol (e.g. QUIC) for security.
   //

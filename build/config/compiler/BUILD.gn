@@ -238,7 +238,7 @@ config("default_include_dirs") {
 # the executable they are loaded into, so they are unresolved at link-time.
 config("no_unresolved_symbols") {
   if (!using_sanitizer &&
-      (is_linux || is_chromeos || is_android || is_fuchsia)) {
+      (is_linux || is_chromeos || is_android || is_fuchsia || is_ohos)) {
     ldflags = [
       "-Wl,-z,defs",
       "-Wl,--as-needed",
@@ -692,6 +692,10 @@ config("compiler") {
       # TODO(thakis): Check if '=0' (that is, number of cores, instead
       # of "all" which means number of hardware threads) is faster.
       ldflags += [ "-Wl,--thinlto-jobs=all" ]
+      if (is_ohos && !use_musl) {
+        ldflags -= [ "-Wl,--thinlto-jobs=all" ]
+        ldflags += [ "-Wl,--thinlto-jobs=8" ]
+      }
       if (is_mac) {
         ldflags +=
             [ "-Wl,-cache_path_lto," +
@@ -720,7 +724,7 @@ config("compiler") {
     }
 
     # TODO(https://crbug.com/1211155): investigate why this isn't effective on arm32.
-    if ((!is_android && !is_ohos) || current_cpu == "arm64") {
+    if (!is_android || current_cpu == "arm64") {
       cflags += [ "-fwhole-program-vtables" ]
       if (!is_win) {
         ldflags += [ "-fwhole-program-vtables" ]

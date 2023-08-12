@@ -10,8 +10,15 @@
 #include <mutex>
 #include "ui/gl/gl_export.h"
 #include "ui/gl/gl_surface_egl.h"
+#include "ui/gl/gl_bindings.h"
 
 namespace gl {
+typedef struct WindowsSurfaceInfoTag {
+  void* window;
+  EGLDisplay display;
+  EGLContext context;
+  EGLSurface surface;
+} WindowsSurfaceInfo;
 
 class GL_EXPORT NativeViewGLSurfaceEGLOhos : public NativeViewGLSurfaceEGL {
  public:

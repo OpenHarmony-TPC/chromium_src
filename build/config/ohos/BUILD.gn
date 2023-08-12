@@ -259,7 +259,11 @@ config("runtime_library") {
 }
 
 config("lld_pack_relocations") {
-  ldflags = [ "-Wl,--pack-dyn-relocs=android" ]
+  if (use_musl) {
+    ldflags = [ "-Wl,--pack-dyn-relocs=relr" ]
+  } else {
+    ldflags = [ "-Wl,--pack-dyn-relocs=android" ]
+  }
 }
 
 # Used for instrumented build to generate the orderfile.

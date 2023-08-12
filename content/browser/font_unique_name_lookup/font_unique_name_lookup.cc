@@ -34,8 +34,14 @@ namespace {
 // counting up after the dash "-1", "-2", etc.
 const char kFingerprintSuffixForceUpdateCache[] = "-1";
 const char kProtobufFilename[] = "font_unique_name_table.pb";
+#if BUILDFLAG(IS_OHOS)
+// This may be add continue.
+static const char* const kOhosFontPaths[] = {
+    "/system/fonts"};
+#else
 static const char* const kAndroidFontPaths[] = {
     "/system/fonts", "/vendor/fonts", "/product/fonts"};
+#endif
 
 bool IsRelevantNameRecord(const FT_SfntName& sfnt_name) {
   if (sfnt_name.name_id != TT_NAME_ID_FULL_NAME &&
@@ -316,18 +322,27 @@ base::FilePath FontUniqueNameLookup::TableCacheFilePath() {
 }
 
 std::string FontUniqueNameLookup::GetAndroidBuildFingerprint() const {
+#if BUILDFLAG(IS_OHOS)
+  // Here temporary return kFingerprintSuffixForceUpdateCache.
+  return std::string(kFingerprintSuffixForceUpdateCache);
+#else
   return android_build_fingerprint_for_testing_.size()
              ? android_build_fingerprint_for_testing_
              : std::string(base::android::BuildInfo::GetInstance()
                                ->android_build_fp()) +
                    std::string(kFingerprintSuffixForceUpdateCache);
+#endif
 }
 
 std::vector<std::string> FontUniqueNameLookup::GetFontFilePaths() const {
   if (font_file_paths_for_testing_.size())
     return font_file_paths_for_testing_;
   std::vector<std::string> font_files;
+#if BUILDFLAG(IS_OHOS)
+  for (const char* font_dir_path : kOhosFontPaths) {
+#else
   for (const char* font_dir_path : kAndroidFontPaths) {
+#endif
     base::FileEnumerator files_enumerator(
         base::MakeAbsoluteFilePath(base::FilePath(font_dir_path)), true,
         base::FileEnumerator::FILES);

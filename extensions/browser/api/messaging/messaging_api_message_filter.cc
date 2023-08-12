@@ -209,6 +209,18 @@ void MessagingAPIMessageFilter::Shutdown() {
   shutdown_notifier_subscription_ = {};
 }
 
+content::RenderProcessHost* MessagingAPIMessageFilter::GetRenderProcessHost() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (!browser_context_)
+    return nullptr;
+
+  // The IPC might race with RenderProcessHost destruction.  This may only
+  // happen in scenarios that are already inherently racey, so returning nullptr
+  // (and dropping the IPC) is okay and won't lead to any additional risk of
+  // data loss.
+  return content::RenderProcessHost::FromID(render_process_id_);
+}
+
 void MessagingAPIMessageFilter::OverrideThreadForMessage(
     const IPC::Message& message,
     BrowserThread::ID* thread) {
@@ -299,8 +311,17 @@ void MessagingAPIMessageFilter::OnOpenChannelToTab(
     const std::string& channel_name,
     const PortId& port_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  if (!browser_context_)
+  auto* process = GetRenderProcessHost();
+  if (!process)
     return;
+  TRACE_EVENT("extensions", "MessageFilter::OnOpenChannelToTab",
+              ChromeTrackEvent::kRenderProcessHost, *process);
+
+  if (!CanRendererHostExtensionOrigin(render_process_id_, extension_id)) {
+    bad_message::ReceivedBadMessage(
+        process, bad_message::EMF_INVALID_EXTENSION_ID_FOR_TAB_MSG);
+    return;
+  }
 
   ChannelEndpoint source_endpoint(browser_context_, render_process_id_,
                                   source_context);

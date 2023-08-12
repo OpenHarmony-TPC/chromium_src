@@ -1350,6 +1350,13 @@ NavigationURLLoaderImpl::NavigationURLLoaderImpl(
                             browser_context_->GetPath(),
                             browser_context_->GetSharedCorsOriginAccessList(),
                             file_factory_priority));
+#if BUILDFLAG(IS_OHOS)
+  non_network_url_loader_factories_.emplace(
+      url::kResourcesScheme, FileURLLoaderFactory::Create(
+                            browser_context_->GetPath(),
+                            browser_context_->GetSharedCorsOriginAccessList(),
+                            file_factory_priority));
+#endif
 
 #if BUILDFLAG(IS_ANDROID)
   non_network_url_loader_factories_.emplace(url::kContentScheme,
@@ -1550,6 +1557,7 @@ void NavigationURLLoaderImpl::BindNonNetworkURLLoaderFactoryReceiver(
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver) {
   auto it = non_network_url_loader_factories_.find(url.scheme());
   if (it != non_network_url_loader_factories_.end()) {
+    LOG(INFO) << "BindNonNetworkURLLoaderFactoryReceiver scheme: " << url.scheme();
     mojo::Remote<network::mojom::URLLoaderFactory> remote(
         std::move(it->second));
     remote->Clone(std::move(factory_receiver));
@@ -1586,7 +1594,11 @@ void NavigationURLLoaderImpl::
   // non-http factory that allows DevTools intereception.  For comparison all
   // non-WebUI cases in RFHI::CommitNavigation allow DevTools
   // interception.  Let's try to be more consistent / less ad-hoc.
+#if BUILDFLAG(IS_OHOS)
+  if (url.SchemeIs(url::kFileScheme) || url.SchemeIs(url::kResourcesScheme)) {
+#else
   if (url.SchemeIs(url::kFileScheme)) {
+#endif
     if (frame_tree_node) {  // May be nullptr in some unit tests.
       devtools_instrumentation::WillCreateURLLoaderFactory(
           frame, /*is_navigation=*/true, /*is_download=*/false,

@@ -24,7 +24,8 @@ namespace OHOS::NWeb {
 class NWebContextMenuParamsImpl : public NWebContextMenuParams {
  public:
   explicit NWebContextMenuParamsImpl(
-      CefRefPtr<CefContextMenuParams> params);
+    CefRefPtr<CefContextMenuParams> params,
+    float virutal_device_ratio);
   int32_t GetXCoord() override;
   int32_t GetYCoord() override;
   int32_t GetContextMenuTypeFlags() override;
@@ -37,9 +38,12 @@ class NWebContextMenuParamsImpl : public NWebContextMenuParams {
   ContextMenuMediaType GetMediaType() override;
   bool IsEditable() override;
   int32_t GetEditStateFlags() override;
-
+  ContextMenuInputFieldType GetInputFieldType() override;
+  ContextMenuSourceType GetSourceType() override;
+  std::string GetSelectionText() override;
  private:
   CefRefPtr<CefContextMenuParams> params_;
+  float virutal_device_ratio_ = 1.0;
 };
 
 class NWebQuickMenuParamsImpl : public NWebQuickMenuParams {

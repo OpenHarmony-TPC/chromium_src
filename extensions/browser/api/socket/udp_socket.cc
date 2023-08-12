@@ -9,6 +9,7 @@
 
 #include "base/bind.h"
 #include "base/containers/contains.h"
+#include "base/containers/cxx20_erase.h"
 #include "base/lazy_instance.h"
 #include "extensions/browser/api/api_resource.h"
 #include "net/base/ip_address.h"
@@ -306,9 +307,7 @@ void UDPSocket::OnLeaveGroupCompleted(net::CompletionOnceCallback callback,
                                       const std::string& normalized_address,
                                       int result) {
   if (result == net::OK) {
-    auto find_result = std::find(multicast_groups_.begin(),
-                                 multicast_groups_.end(), normalized_address);
-    multicast_groups_.erase(find_result);
+    base::Erase(multicast_groups_, normalized_address);
   }
 
   std::move(callback).Run(result);

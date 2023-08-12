@@ -35,8 +35,8 @@ class NWebDataBaseImpl : public NWebDataBase {
   void SaveHttpAuthCredentials(const std::string& host, const std::string& realm,
     const std::string& username, const char* password) override;
 
-  std::vector<std::string> GetHttpAuthCredentials(const std::string& host,
-    const std::string& realm) const override;
+  void GetHttpAuthCredentials(const std::string& host, const std::string& realm,
+    std::string& username, char* password, uint32_t passwordSize) const override;
 
   bool ExistPermissionByOrigin(const std::string& origin, int type) override;
 

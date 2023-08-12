@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "base/cxx17_backports.h"
+#include "base/logging.h"
 #include "cc/trees/effect_node.h"
 #include "cc/trees/layer_tree_impl.h"
 #include "cc/trees/scroll_node.h"

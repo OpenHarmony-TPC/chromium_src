@@ -64,10 +64,9 @@ const base::FilePath::CharType kTemporaryDirectoryPattern[] =
     FILE_PATH_LITERAL("DeleteMe*");
 
 #if BUILDFLAG(IS_OHOS)
-const std::u16string baseDatabaseDir =
+static const std::u16string kBaseDatabaseDir =
     base::UTF8ToUTF16("/data/storage/el2/base/");
-const std::u16string divisionStr = base::UTF8ToUTF16("/");
-const std::u16string suffixStr = base::UTF8ToUTF16(".db");
+static const std::u16string kSuffixStr = base::UTF8ToUTF16(".db");
 #endif
 
 OriginInfo::OriginInfo() : total_size_(0) {}
@@ -340,20 +339,35 @@ base::FilePath DatabaseTracker::GetOriginDirectory(
       incognito_origin_directories_[origin_identifier] = origin_directory;
     }
   }
-
+#if BUILDFLAG(IS_OHOS)
+  return base::FilePath::FromUTF16Unsafe(kBaseDatabaseDir + origin_directory);
+#else
   return db_dir_.Append(base::FilePath::FromUTF16Unsafe(origin_directory));
+#endif
 }
 
+#if BUILDFLAG(IS_OHOS)
+base::FilePath DatabaseTracker::GetFullDBFilePath(
+    const std::string& origin_identifier,
+    const std::u16string& database_name,
+    bool suffix) {
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
+  DCHECK(!origin_identifier.empty());
+  if (!LazyInit())
+    return base::FilePath();
+
+  int64_t id =
+      databases_table_->GetDatabaseID(origin_identifier, database_name);
+  if (id < 0)
+    return base::FilePath();
+
+  return GetOriginDirectory(origin_identifier)
+      .AppendASCII((suffix? base::UTF16ToASCII(database_name + kSuffixStr): base::UTF16ToASCII(database_name)));
+}
+#else
 base::FilePath DatabaseTracker::GetFullDBFilePath(
     const std::string& origin_identifier,
     const std::u16string& database_name) {
-#if BUILDFLAG(IS_OHOS)
-  DCHECK(!origin_identifier.empty());
-  std::u16string origin_directory = base::UTF8ToUTF16(origin_identifier);
-  std::u16string filename = baseDatabaseDir + origin_directory + divisionStr +
-                            database_name + suffixStr;
-  return base::FilePath::FromUTF16Unsafe(filename);
-#else
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DCHECK(!origin_identifier.empty());
   if (!LazyInit())
@@ -366,8 +380,8 @@ base::FilePath DatabaseTracker::GetFullDBFilePath(
 
   return GetOriginDirectory(origin_identifier)
       .AppendASCII(base::NumberToString(id));
-#endif
 }
+#endif
 
 bool DatabaseTracker::GetOriginInfo(const std::string& origin_identifier,
                                     OriginInfo* info) {
@@ -655,7 +669,11 @@ DatabaseTracker::CachedOriginInfo* DatabaseTracker::MaybeGetCachedOriginInfo(
       origin_info.SetDatabaseSize(db.database_name, db_file_size);
 
       base::FilePath path =
+      #if BUILDFLAG(IS_OHOS)
+          GetFullDBFilePath(origin_identifier, db.database_name, true);
+      #else
           GetFullDBFilePath(origin_identifier, db.database_name);
+      #endif
       base::File::Info file_info;
       // TODO(jsbell): Avoid duplicate base::GetFileInfo calls between this and
       // the GetDBFileSize() call above.
@@ -672,7 +690,11 @@ int64_t DatabaseTracker::GetDBFileSize(const std::string& origin_identifier,
                                        const std::u16string& database_name) {
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
   base::FilePath db_file_name =
+  #if BUILDFLAG(IS_OHOS)
+      GetFullDBFilePath(origin_identifier, database_name, true);
+  #else
       GetFullDBFilePath(origin_identifier, database_name);
+  #endif
   int64_t db_file_size = 0;
   if (!base::GetFileSize(db_file_name, &db_file_size))
     db_file_size = 0;
@@ -797,7 +819,11 @@ void DatabaseTracker::DeleteDataModifiedSince(
       rv = net::ERR_FAILED;
     }
     for (const DatabaseDetails& db : details) {
+    #if BUILDFLAG(IS_OHOS)
+      base::FilePath db_file = GetFullDBFilePath(origin, db.database_name, true);
+    #else
       base::FilePath db_file = GetFullDBFilePath(origin, db.database_name);
+    #endif
       base::File::Info file_info;
       base::GetFileInfo(db_file, &file_info);
       if (file_info.last_modified < cutoff)

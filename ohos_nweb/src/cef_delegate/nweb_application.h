@@ -20,6 +20,7 @@
 #include "cef/include/cef_app.h"
 #include "nweb_handler_delegate.h"
 #include "nweb_preference_delegate.h"
+#include "ohos_adapter_helper.h"
 
 namespace OHOS::NWeb {
 namespace switches {
@@ -64,11 +65,12 @@ class NWebApplication : public CefApp,
   void OnContextInitializedInternal();
   std::vector<std::string> CustomSchemeCmdLineSplit(std::string str, const char split);
 
+  void RunWebInitedCallback(WebRunInitedCallback* callback);
+
   std::shared_ptr<NWebPreferenceDelegate> preference_delegate_ = nullptr;
   std::string url_;
   CefRefPtr<NWebHandlerDelegate> handler_delegate_{nullptr};
   void* window_ = nullptr;
-
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(NWebApplication);
 };  // NWebApplication

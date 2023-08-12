@@ -138,9 +138,14 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) DatabaseTracker
 
   // Thread-safe getter.
   const base::FilePath& database_directory() const { return db_dir_; }
-
+#if BUILDFLAG(IS_OHOS)
+  base::FilePath GetFullDBFilePath(const std::string& origin_identifier,
+                                   const std::u16string& database_name,
+                                   bool suffix = false);
+#else
   base::FilePath GetFullDBFilePath(const std::string& origin_identifier,
                                    const std::u16string& database_name);
+#endif
 
   // virtual for unit-testing only
   virtual bool GetOriginInfo(const std::string& origin_id, OriginInfo* info);

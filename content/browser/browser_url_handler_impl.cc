@@ -33,7 +33,12 @@ static bool HandleViewSource(GURL* url, BrowserContext* browser_context) {
         url::kHttpsScheme,
         kChromeUIScheme,
         url::kFileScheme,
+      #if BUILDFLAG(IS_OHOS)
+        url::kFileSystemScheme,
+        url::kResourcesScheme
+      #else
         url::kFileSystemScheme
+      #endif
     };
 
     // Merge all the schemes for which view-source is allowed by default, with

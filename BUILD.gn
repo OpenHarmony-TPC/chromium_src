@@ -104,13 +104,12 @@ group("gn_all") {
     "//url:url_unittests",
   ]
 
-  deps += [ "//ohos_nweb:libnweb_adapter" ]
-
   #ifdef OHOS_NWEB_EX
   if (defined(ohos_nweb_ex) && ohos_nweb_ex) {
     deps += [
       "//ohos_browser_shell",
       "//ohos_nweb_ex/browser_service",
+      "//ohos_nweb_ex/test:ohos_nweb_ex_unittests",
       "//ohos_nweb_hap",
     ]
   }  # endif // OHOS_NWEB_EX

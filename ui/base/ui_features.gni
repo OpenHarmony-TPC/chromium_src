@@ -32,4 +32,4 @@ declare_args() {
 has_platform_accessibility_support =
     has_native_accessibility || is_android || is_fuchsia
 
-enable_hidpi = !is_android
+enable_hidpi = !is_android && !is_ohos

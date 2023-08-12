@@ -522,6 +522,16 @@ WorkerScriptFetcher::CreateFactoryBundle(
                               file_factory_priority));
   }
 
+#if BUILDFLAG(IS_OHOS)
+  base::TaskPriority resources_factory_priority = base::TaskPriority::USER_VISIBLE;
+  non_network_factories.emplace(
+      url::kResourcesScheme, FileURLLoaderFactory::Create(
+                            storage_partition->browser_context()->GetPath(),
+                            storage_partition->browser_context()
+                                ->GetSharedCorsOriginAccessList(),
+                            resources_factory_priority));
+#endif
+
   switch (loader_type) {
     case LoaderType::kMainResource:
       GetContentClient()

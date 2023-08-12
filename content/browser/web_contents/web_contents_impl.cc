@@ -3475,6 +3475,8 @@ void WebContentsImpl::FullscreenStateChanged(
                         "render_frame_host", rfh, "is_fullscreen",
                         is_fullscreen);
 
+  GetView()->FullscreenStateChanged(is_fullscreen);
+
   if (is_fullscreen) {
     if (options.is_null()) {
       ReceivedBadMessage(rfh->GetProcess(),
@@ -6736,6 +6738,7 @@ void WebContentsImpl::ShowContextMenu(
                         "render_frame_host", render_frame_host);
   // If a renderer fires off a second command to show a context menu before the
   // first context menu is closed, just ignore it. https://crbug.com/707534
+  touch_insert_handle_menu_show_ = true;
   if (showing_context_menu_)
     return;
 

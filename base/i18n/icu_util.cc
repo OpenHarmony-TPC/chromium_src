@@ -57,6 +57,12 @@
 #include "third_party/icu/source/i18n/unicode/timezone.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/command_line.h"
+#include "content/public/common/content_switches.h"
+#include "ohos_adapter_helper.h"
+#endif
+
 namespace base {
 namespace i18n {
 
@@ -265,6 +271,34 @@ int LoadIcuData(PlatformFile data_fd,
   return 0;
 }
 
+#if BUILDFLAG(IS_OHOS)
+const char kIcuDataFileNameHap[] = "resources/rawfile/icudtl.dat";
+int LoadIcuDataByHap(PlatformFile data_fd,
+                     const MemoryMappedFile::Region& data_region,
+                     std::unique_ptr<MemoryMappedFile>* out_mapped_data_file,
+                     UErrorCode* out_error_code) {
+  size_t length = 0;
+  std::unique_ptr<uint8_t[]> data;
+  auto resourceInstance = OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter();
+  if (!resourceInstance->GetRawFileData(kIcuDataFileNameHap, length, data, true)) {
+    LOG(ERROR) << "Couldn't mmap icu data file by hap: " << kIcuDataFileNameHap;
+    return 1;
+  }
+
+  *out_mapped_data_file = std::make_unique<MemoryMappedFile>();
+  (*out_error_code) = U_ZERO_ERROR;
+  InitializeExternalTimeZoneData();
+  (*out_mapped_data_file)->SetDataAndLength(data, length);
+  LOG(INFO) << "icu data file length: " << length;
+  udata_setCommonData(const_cast<uint8_t*>((*out_mapped_data_file)->data()), out_error_code);
+  if (U_FAILURE(*out_error_code)) {
+    LOG(ERROR) << "Failed to initialize ICU with data file: " << u_errorName(*out_error_code);
+    return 3;
+  }
+  return 0;
+}
+#endif
+
 bool InitializeICUWithFileDescriptorInternal(
     PlatformFile data_fd,
     const MemoryMappedFile::Region& data_region) {
@@ -276,7 +310,15 @@ bool InitializeICUWithFileDescriptorInternal(
 
   std::unique_ptr<MemoryMappedFile> mapped_file;
   UErrorCode err;
+#if BUILDFLAG(IS_OHOS)
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kOhosHapPath)) {
+    g_debug_icu_load = LoadIcuDataByHap(data_fd, data_region, &mapped_file, &err);
+  } else {
+    g_debug_icu_load = LoadIcuData(data_fd, data_region, &mapped_file, &err);
+  }
+#else
   g_debug_icu_load = LoadIcuData(data_fd, data_region, &mapped_file, &err);
+#endif
   if (g_debug_icu_load == 1 || g_debug_icu_load == 2) {
     return false;
   }
@@ -298,7 +340,7 @@ bool InitializeICUFromDataFile() {
   // cause any problems.
   LazyOpenIcuDataFile();
   bool result =
-      InitializeICUWithFileDescriptorInternal(g_icudtl_pf, g_icudtl_region);
+    InitializeICUWithFileDescriptorInternal(g_icudtl_pf, g_icudtl_region);
 
 #if BUILDFLAG(IS_WIN)
   int debug_icu_load = g_debug_icu_load;

@@ -58,10 +58,7 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
   int selected_to_;
   OHOS::sptr<OHOS::MiscServices::OnTextChangedListener> inputmethod_listener_ =
       nullptr;
-
-  bool isTextSelectReady_ = true;
-  std::mutex textSelectMutex_;
-  std::condition_variable textSelectCv_;
+  bool isAttached_ = false;
 
   IMPLEMENT_REFCOUNTING(NWebInputMethodHandler);
 };

@@ -48,7 +48,8 @@ bool operator==(const PolicyContainerPolicies& lhs,
                     rhs.content_security_policies.begin(),
                     rhs.content_security_policies.end()) &&
          lhs.cross_origin_opener_policy == rhs.cross_origin_opener_policy &&
-         lhs.cross_origin_embedder_policy == rhs.cross_origin_embedder_policy;
+         lhs.cross_origin_embedder_policy == rhs.cross_origin_embedder_policy &&
+         lhs.can_navigate_top_without_user_gesture == rhs.can_navigate_top_without_user_gesture;
 }
 
 bool operator!=(const PolicyContainerPolicies& lhs,
@@ -99,6 +100,9 @@ std::ostream& operator<<(std::ostream& out,
              .value_or("<null>")
       << " }";
 
+  out << ", can_navigate_top_without_user_gesture: "
+      << policies.can_navigate_top_without_user_gesture;
+
   return out << " }";
 }
 
@@ -111,13 +115,16 @@ PolicyContainerPolicies::PolicyContainerPolicies(
     std::vector<network::mojom::ContentSecurityPolicyPtr>
         content_security_policies,
     const network::CrossOriginOpenerPolicy& cross_origin_opener_policy,
-    const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy)
+    const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy,
+    bool can_navigate_top_without_user_gesture)
     : referrer_policy(referrer_policy),
       ip_address_space(ip_address_space),
       is_web_secure_context(is_web_secure_context),
       content_security_policies(std::move(content_security_policies)),
       cross_origin_opener_policy(cross_origin_opener_policy),
-      cross_origin_embedder_policy(cross_origin_embedder_policy) {}
+      cross_origin_embedder_policy(cross_origin_embedder_policy),
+      can_navigate_top_without_user_gesture(
+          can_navigate_top_without_user_gesture) {}
 
 PolicyContainerPolicies::~PolicyContainerPolicies() = default;
 
@@ -126,7 +133,7 @@ std::unique_ptr<PolicyContainerPolicies> PolicyContainerPolicies::Clone()
   return std::make_unique<PolicyContainerPolicies>(
       referrer_policy, ip_address_space, is_web_secure_context,
       mojo::Clone(content_security_policies), cross_origin_opener_policy,
-      cross_origin_embedder_policy);
+      cross_origin_embedder_policy, can_navigate_top_without_user_gesture);
 }
 
 void PolicyContainerPolicies::AddContentSecurityPolicies(
@@ -206,7 +213,7 @@ PolicyContainerHost::CreatePolicyContainerForBlink() {
   return blink::mojom::PolicyContainer::New(
       blink::mojom::PolicyContainerPolicies::New(
           policies_->referrer_policy, policies_->ip_address_space,
-          mojo::Clone(policies_->content_security_policies)),
+          mojo::Clone(policies_->content_security_policies), policies_->can_navigate_top_without_user_gesture),
       std::move(remote));
 }
 

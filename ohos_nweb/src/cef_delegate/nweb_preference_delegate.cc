@@ -32,6 +32,10 @@
 #include "ohos_nweb/src/cef_delegate/nweb_application.h"
 
 namespace OHOS::NWeb {
+
+constexpr int fontMinSize = 1;
+constexpr int fontMaxSize = 72;
+
 int ConvertCacheMode(NWebPreference::CacheModeFlag flag) {
   switch (flag) {
     case NWebPreference::CacheModeFlag::USE_CACHE_ELSE_NETWORK:
@@ -109,7 +113,7 @@ void NWebPreferenceDelegate::ComputeBrowserSettings(
   browser_settings.minimum_font_size = FontSizeLowerLimit();
   browser_settings.minimum_logical_font_size = LogicalFontSizeLowerLimit();
   browser_settings.initialize_at_minimum_page_scale =
-      !IsLoadWithOverviewMode() ? STATE_ENABLED : STATE_DISABLED;
+      IsLoadWithOverviewMode() ? STATE_ENABLED : STATE_DISABLED;
 
   str = CefString(DefaultTextEncodingFormat());
   cef_string_set(str.c_str(), str.length(),
@@ -132,7 +136,9 @@ void NWebPreferenceDelegate::ComputeBrowserSettings(
   //browser_settings.file_access_from_file_urls =
   //    EnableRawFileAccessFromFileURLs() ? STATE_ENABLED : STATE_DISABLED;
   browser_settings.force_dark_mode_enabled =
-      DarkModeEnabled() ? STATE_ENABLED : STATE_DISABLED;
+      ForceDarkModeEnabled() ? STATE_ENABLED : STATE_DISABLED;
+  browser_settings.dark_prefer_color_scheme_enabled = 
+      DarkSchemeEnabled() ? STATE_ENABLED : STATE_DISABLED;
   browser_settings.javascript_can_open_windows_automatically =
       IsCreateWindowsByJavaScriptAllowed();
   browser_settings.text_size_percent = ZoomingForTextFactor();
@@ -147,6 +153,10 @@ void NWebPreferenceDelegate::ComputeBrowserSettings(
   browser_settings.supports_multi_touch_zoom = ZoomingfunctionEnabled();
   browser_settings.user_gesture_required = GetMediaPlayGestureAccess();
   browser_settings.pinch_smooth_mode = GetPinchSmoothMode();
+  browser_settings.hide_horizontal_scrollbars =
+      !IsHorizontalScrollBarAccess() ? STATE_ENABLED : STATE_DISABLED;
+  browser_settings.hide_vertical_scrollbars =
+      !IsVerticalScrollBarAccess() ? STATE_ENABLED : STATE_DISABLED;
   CefRefPtr<CefCommandLine> command_line =
       CefCommandLine::GetGlobalCommandLine();
   if (command_line->HasSwitch(::switches::kForBrowser)) {
@@ -169,6 +179,16 @@ void NWebPreferenceDelegate::PutMultiWindowAccess(bool flag) {
   multiWindow_access_ = flag;
 }
 
+void NWebPreferenceDelegate::PutHorizontalScrollBarAccess(bool flag) {
+  horizontal_scrollBar_access_ = flag;
+  WebPreferencesChanged();
+}
+
+void NWebPreferenceDelegate::PutVerticalScrollBarAccess(bool flag) {
+  vertical_scrollBar_access_ = flag;
+  WebPreferencesChanged();
+}
+
 void NWebPreferenceDelegate::PutEnableContentAccess(bool flag) {
   content_access_ = flag;
   SetBrowserSettingsToNetHelpers();
@@ -176,7 +196,12 @@ void NWebPreferenceDelegate::PutEnableContentAccess(bool flag) {
 
 void NWebPreferenceDelegate::PutEnableRawFileAccess(bool flag) {
   raw_file_access_ = flag;
-  SetBrowserSettingsToNetHelpers();
+  if (!browser_.get()) {
+    LOG(ERROR) << "browser is null";
+    return;
+  }
+
+  browser_->GetHost()->SetFileAccess(flag);
 }
 
 void NWebPreferenceDelegate::PutEnableRawFileAccessFromFileURLs(bool flag) {
@@ -204,11 +229,11 @@ void NWebPreferenceDelegate::PutDatabaseAllowed(bool flag) {
 }
 
 void NWebPreferenceDelegate::PutDefaultFixedFontSize(int size) {
-  default_fixed_font_size_ = size;
+  default_fixed_font_size_ = std::clamp(size, fontMinSize, fontMaxSize);
   WebPreferencesChanged();
 }
 void NWebPreferenceDelegate::PutDefaultFontSize(int size) {
-  default_font_size_ = size;
+  default_font_size_ = std::clamp(size, fontMinSize, fontMaxSize);
   WebPreferencesChanged();
 }
 
@@ -233,8 +258,13 @@ void NWebPreferenceDelegate::PutFixedFontFamilyName(std::string font) {
   WebPreferencesChanged();
 }
 
-void NWebPreferenceDelegate::PutDarkModeEnabled(int forceDark) {
-  dark_mode_enabled_ = forceDark;
+void NWebPreferenceDelegate::PutForceDarkModeEnabled(int forceDark) {
+  force_dark_mode_enabled_ = forceDark;
+  WebPreferencesChanged();
+}
+
+void NWebPreferenceDelegate::PutDarkSchemeEnabled(int darkScheme) {
+  dark_prefer_color_scheme_enabled_ = darkScheme;
   WebPreferencesChanged();
 }
 
@@ -254,12 +284,12 @@ void NWebPreferenceDelegate::PutImageLoadingAllowed(bool flag) {
 }
 
 void NWebPreferenceDelegate::PutFontSizeLowerLimit(int size) {
-  font_size_lower_limit_ = size;
+  font_size_lower_limit_ = std::clamp(size, fontMinSize, fontMaxSize);
   WebPreferencesChanged();
 }
 
 void NWebPreferenceDelegate::PutLogicalFontSizeLowerLimit(int size) {
-  logical_font_size_lower_limit_ = size;
+  logical_font_size_lower_limit_ = std::clamp(size, fontMinSize, fontMaxSize);
   WebPreferencesChanged();
 }
 
@@ -328,12 +358,22 @@ void NWebPreferenceDelegate::PutBlockNetwork(bool flag) {
                   "INTERNET permission";
   }
   is_network_blocked_ = flag;
-  SetBrowserSettingsToNetHelpers();
+  if (!browser_.get()) {
+    LOG(ERROR) << "browser is null";
+    return;
+  }
+
+  browser_->GetHost()->SetBlockNetwork(flag);
 }
 
 void NWebPreferenceDelegate::PutCacheMode(CacheModeFlag flag) {
   cache_mode_flag_ = flag;
-  SetBrowserSettingsToNetHelpers();
+  if (!browser_.get()) {
+    LOG(ERROR) << "browser is null";
+    return;
+  }
+
+  browser_->GetHost()->SetCacheMode(ConvertCacheMode(flag));
 }
 
 void NWebPreferenceDelegate::PutWebDebuggingAccess(bool flag) {
@@ -416,8 +456,12 @@ std::string NWebPreferenceDelegate::FixedFontFamilyName() {
   return fixed_font_family_name_;
 }
 
-int NWebPreferenceDelegate::DarkModeEnabled() {
-  return dark_mode_enabled_;
+int NWebPreferenceDelegate::ForceDarkModeEnabled() {
+  return force_dark_mode_enabled_;
+}
+
+int NWebPreferenceDelegate::DarkSchemeEnabled() {
+  return dark_prefer_color_scheme_enabled_;
 }
 
 bool NWebPreferenceDelegate::IsCreateWindowsByJavaScriptAllowed() {
@@ -529,5 +573,13 @@ bool NWebPreferenceDelegate::GetPinchSmoothMode() {
 
 bool NWebPreferenceDelegate::IsMultiWindowAccess() {
   return multiWindow_access_;
+}
+
+bool NWebPreferenceDelegate::IsHorizontalScrollBarAccess() {
+  return horizontal_scrollBar_access_;
+}
+
+bool NWebPreferenceDelegate::IsVerticalScrollBarAccess() {
+  return vertical_scrollBar_access_;
 }
 }  // namespace OHOS::NWeb

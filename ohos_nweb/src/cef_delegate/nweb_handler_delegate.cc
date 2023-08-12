@@ -43,6 +43,7 @@
 #include "nweb_key_event.h"
 #include "nweb_preference_delegate.h"
 #include "nweb_resource_handler.h"
+#include "nweb_select_popup_menu_callback.h"
 #include "nweb_url_resource_error_impl.h"
 #include "nweb_url_resource_request_impl.h"
 #include "nweb_url_resource_response.h"
@@ -181,10 +182,6 @@ char* CopyCefStringToChar(const CefString& str) {
   return result;
 }
 
-void ReleaseNwebReceivedIconUrlInfo(NWebReceivedIconInfo* iconInfo) {
-  if (iconInfo->image_url)
-    delete[] iconInfo->image_url;
-}
 }  // namespace
 
 // static
@@ -193,10 +190,11 @@ CefRefPtr<NWebHandlerDelegate> NWebHandlerDelegate::Create(
     CefRefPtr<NWebRenderHandler> render_handler,
     std::shared_ptr<NWebEventHandler> event_handler,
     std::shared_ptr<NWebFindDelegate> find_delegate,
+    bool is_enhance_surface,
     void* window) {
   CefRefPtr<NWebHandlerDelegate> handler_delegate =
       new NWebHandlerDelegate(preference_delegate, render_handler,
-                              event_handler, find_delegate, window);
+                              event_handler, find_delegate, is_enhance_surface, window);
   if (handler_delegate == nullptr) {
     LOG(ERROR) << "fail to create NWebHandlerDelegate instance";
     return nullptr;
@@ -210,17 +208,21 @@ NWebHandlerDelegate::NWebHandlerDelegate(
     CefRefPtr<NWebRenderHandler> render_handler,
     std::shared_ptr<NWebEventHandler> event_handler,
     std::shared_ptr<NWebFindDelegate> find_delegate,
+    bool is_enhance_surface,
     void* window)
     : preference_delegate_(preference_delegate),
       render_handler_(render_handler),
       event_handler_(event_handler),
       find_delegate_(find_delegate),
-      window_(reinterpret_cast<NativeWindow*>(window)) {
+      is_enhance_surface_(is_enhance_surface){
 #if defined(REPORT_SYS_EVENT)
   access_sum_count_ = 0;
   access_success_count_ = 0;
   access_fail_count_ = 0;
 #endif
+  if (!is_enhance_surface_) {
+    window_ = reinterpret_cast<NativeWindow*>(window);
+  }
 }
 
 void NWebHandlerDelegate::OnDestroy() {
@@ -238,10 +240,19 @@ void NWebHandlerDelegate::RegisterDownLoadListener(
   download_listener_ = download_listener;
 }
 
+void NWebHandlerDelegate::RegisterReleaseSurfaceListener(
+  std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) {
+  releaseSurfaceListener_ = releaseSurfaceListener;
+}
+
 void NWebHandlerDelegate::RegisterWebAppClientExtensionListener(
     std::shared_ptr<NWebAppClientExtensionCallback>
         web_app_client_extension_listener) {
   web_app_client_extension_listener_ = web_app_client_extension_listener;
+}
+
+void NWebHandlerDelegate::UnRegisterWebAppClientExtensionListener() {
+  web_app_client_extension_listener_ = nullptr;
 }
 
 void NWebHandlerDelegate::RegisterNWebHandler(
@@ -414,11 +425,18 @@ bool NWebHandlerDelegate::DoClose(CefRefPtr<CefBrowser> browser) {
 void NWebHandlerDelegate::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   LOG(INFO) << "NWebHandlerDelegate::OnBeforeClose";
   CEF_REQUIRE_UI_THREAD();
-
   // Destruct window here to ensure that the GPU thread has stopped
   // and will not use window again.
-  DestoryNativeWindow(window_);
-  window_ = nullptr;
+  if (is_enhance_surface_) {
+    if (releaseSurfaceListener_ != nullptr) {
+      LOG(INFO) << "NWebHandlerDelegate:: ReleaseSurface";
+      releaseSurfaceListener_->ReleaseSurface();
+    }
+  } else {
+    DestoryNativeWindow(window_);
+    window_ = nullptr;
+  }
+
 
   // Remove from the list of existing browsers.
   BrowserList::iterator bit = browser_list_.begin();
@@ -443,7 +461,7 @@ bool NWebHandlerDelegate::OnPreBeforePopup(CefRefPtr<CefBrowser> browser,
   if (nweb_handler_ == nullptr) {
     return true;
   }
- 
+
   switch (target_disposition) {
     case WOD_NEW_WINDOW:
     case WOD_NEW_POPUP: {
@@ -1040,7 +1058,7 @@ void NWebHandlerDelegate::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser,
     on_load_start_notified_ = true;
     web_app_client_extension_listener_->OnLoadStarted(
         browser != nullptr ? browser->ShouldShowLoadingUI() : false,
-        web_app_client_extension_listener_->NWebID);
+        web_app_client_extension_listener_->nweb_id);
   }
   if (new_progress == MAX_LOADING_PROGRESS) {
     on_load_start_notified_ = false;
@@ -1113,13 +1131,15 @@ void NWebHandlerDelegate::OnReceivedIconUrl(const CefString& image_url,
     return;
   }
 
-  NWebReceivedIconInfo iconInfo{
-      CopyCefStringToChar(image_url), width, height,
-      TransformColorTypeToInt(TransformColorType(color_type)),
-      TransformAlphaTypeToInt(TransformAlphaType(alpha_type))};
+  char* c_image_url = CopyCefStringToChar(image_url);
   web_app_client_extension_listener_->OnReceivedFaviconUrl(
-      iconInfo, web_app_client_extension_listener_->NWebID);
-  ReleaseNwebReceivedIconUrlInfo(&iconInfo);
+      c_image_url, width, height,
+      TransformColorTypeToInt(TransformColorType(color_type)),
+      TransformAlphaTypeToInt(TransformAlphaType(alpha_type)),
+      web_app_client_extension_listener_->nweb_id);
+  if (c_image_url) {
+    delete[] c_image_url;
+  }
 }
 
 void NWebHandlerDelegate::OnReceivedTouchIconUrl(CefRefPtr<CefBrowser> browser,
@@ -1149,11 +1169,48 @@ bool NWebHandlerDelegate::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
 void NWebHandlerDelegate::OnScaleChanged(CefRefPtr<CefBrowser> browser,
                                          float old_page_scale_factor,
                                          float new_page_scale_factor) {
+  if (!render_handler_) {
+    LOG(ERROR) << "render handler is nullptr";
+    return;
+  }
   if (nweb_handler_ != nullptr) {
     LOG(INFO) << "OnScaleChanged new scale: " << new_page_scale_factor
               << " old scale: " << old_page_scale_factor;
     nweb_handler_->OnScaleChanged(old_page_scale_factor, new_page_scale_factor);
   }
+  scale_ = new_page_scale_factor;
+}
+
+bool NWebHandlerDelegate::OnCursorChange(CefRefPtr<CefBrowser> browser,
+                                         CefCursorHandle cursor,
+                                         cef_cursor_type_t type,
+                                         const CefCursorInfo& custom_cursor_info) {
+  LOG(DEBUG) << "OnCursorChange type: " << type;
+  if (nweb_handler_ == nullptr) {
+    LOG(ERROR) << "OnCursorChange nweb handler is nullptr";
+    return false;
+  }
+  if (type < 0 || type >= static_cast<int32_t>(CursorType::CT_MAX_VALUE)) {
+    LOG(ERROR) << "OnCursorChange type exception";
+    return false;
+  }
+  NWebCursorInfo info = {0};
+  if (type == CT_CUSTOM && custom_cursor_info.size.width > 0 && custom_cursor_info.size.height > 0) {
+    info.width = custom_cursor_info.size.width;
+    info.height = custom_cursor_info.size.height;
+    info.x = custom_cursor_info.hotspot.x;
+    info.y = custom_cursor_info.hotspot.y;
+    info.scale = custom_cursor_info.image_scale_factor;
+    uint64_t len = info.width * info.height * 4;
+    info.buff = std::make_unique<uint8_t[]>(len);
+    if (!info.buff) {
+        LOG(ERROR) << "OnCursorChange make_unique failed";
+        return false;
+    }
+    memcpy((char *)info.buff.get(), custom_cursor_info.buffer, len);
+  }
+  CursorType cursorType(static_cast<CursorType>(type));
+  return nweb_handler_->OnCursorChange(cursorType, info);
 }
 /* CefDisplayHandler method end */
 
@@ -1161,6 +1218,7 @@ void NWebHandlerDelegate::OnScaleChanged(CefRefPtr<CefBrowser> browser,
 bool NWebHandlerDelegate::OnSetFocus(CefRefPtr<CefBrowser> browser,
                                      FocusSource source) {
   if (nweb_handler_ != nullptr) {
+    focusState_ = true;
     nweb_handler_->OnFocus();
   }
   return false;
@@ -1295,6 +1353,54 @@ bool NWebHandlerDelegate::OnFileDialog(
       std::make_shared<FileSelectorCallbackImpl>(callback);
   return nweb_handler_->OnFileSelectorShow(file_path_callback, param);
 }
+
+void NWebHandlerDelegate::OnSelectPopupMenu(
+    CefRefPtr<CefBrowser> browser,
+    const CefRect& bounds,
+    int item_height,
+    double item_font_size,
+    int selected_item,
+    const std::vector<CefSelectPopupItem>& menu_items,
+    bool right_aligned,
+    bool allow_multiple_selection,
+    CefRefPtr<CefSelectPopupCallback> callback) {
+  if (!nweb_handler_ || !render_handler_) {
+    return;
+  }
+  float ratio = render_handler_->GetVirtualPixelRatio();
+  std::shared_ptr<NWebSelectPopupMenuParam> param =
+      std::make_shared<NWebSelectPopupMenuParam>();
+  if (!param) {
+    return;
+  }
+  param->bounds = { bounds.x * ratio, bounds.y * ratio, bounds.width * ratio,
+                    bounds.height * ratio};
+  param->itemHeight = item_height;
+  param->itemFontSize = item_font_size;
+  param->selectedItem = selected_item;
+  param->rightAligned = right_aligned;
+  param->allowMultipleSelection = allow_multiple_selection;
+  std::vector<SelectPopupMenuItem> menu_list;
+  for (auto& menu_item : menu_items) {
+    std::string label = CefString(&menu_item.label);
+    SelectPopupMenuItem item = {
+      CefString(&menu_item.label).ToString(),
+      CefString(&menu_item.tool_tip).ToString(),
+      static_cast<SelectPopupMenuItemType>(menu_item.type),
+      menu_item.action,
+      static_cast<TextDirection>(menu_item.text_direction),
+      menu_item.enabled,
+      menu_item.has_text_direction_override,
+      menu_item.checked,
+    };
+    menu_list.push_back(std::move(item));
+  }
+  param->menuItems = std::move(menu_list);
+
+  std::shared_ptr<NWebSelectPopupMenuCallback> popup_callback =
+      std::make_shared<NWebSelectPopupMenuCallbackImpl>(callback);
+  nweb_handler_->OnSelectPopupMenu(param, popup_callback);
+}
 /* CefDialogHandler method end */
 
 /* CefContextMenuHandler method begin */
@@ -1374,13 +1480,15 @@ bool NWebHandlerDelegate::RunContextMenu(
     CefRefPtr<CefContextMenuParams> params,
     CefRefPtr<CefMenuModel> model,
     CefRefPtr<CefRunContextMenuCallback> callback) {
-  if (nweb_handler_ == nullptr) {
+  if (!nweb_handler_ || !render_handler_) {
     return false;
   }
   std::shared_ptr<NWebContextMenuParams> nweb_param =
-      std::make_shared<NWebContextMenuParamsImpl>(params);
+      std::make_shared<NWebContextMenuParamsImpl>(params,
+          render_handler_->GetVirtualPixelRatio());
   std::shared_ptr<NWebContextMenuCallback> nweb_callback =
     std::make_shared<NWebContextMenuCallbackImpl>(callback);
+
   image_cache_src_url_ = params->GetSourceUrl();
   if (nweb_handler_->RunContextMenu(nweb_param, nweb_callback)) {
     return true;
@@ -1638,4 +1746,12 @@ void NWebHandlerDelegate::SetNWebId(uint32_t nwebId) {
   nweb_id_ = nwebId;
 }
 #endif
+
+bool NWebHandlerDelegate::GetFocusState() {
+  return focusState_;
+}
+
+void NWebHandlerDelegate::SetFocusState(bool focusState) {
+  focusState_ = focusState;
+}
 }  // namespace OHOS::NWeb

@@ -26,6 +26,7 @@
 #include "nweb_find_callback.h"
 #include "nweb_handler.h"
 #include "nweb_preference.h"
+#include "nweb_web_message.h"
 
 namespace OHOS::NWeb {
 enum class DelegateDragAction {
@@ -44,6 +45,8 @@ struct DelegateDragEvent {
   DelegateDragAction action;
 };
 
+using WebState = std::shared_ptr<std::vector<uint8_t>>;
+
 class NWebDelegateInterface
   : public std::enable_shared_from_this<NWebDelegateInterface>{
  public:
@@ -53,12 +56,15 @@ class NWebDelegateInterface
   virtual void OnDestroy(bool is_close_all) = 0;
   virtual void RegisterDownLoadListener(
       std::shared_ptr<NWebDownloadCallback> downloadListener) = 0;
+  virtual void RegisterReleaseSurfaceListener(
+      std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) = 0;
   virtual void RegisterNWebHandler(std::shared_ptr<NWebHandler> handler) = 0;
   virtual void RegisterRenderCb(
       std::function<void(const char*)> render_update_cb) = 0;
   virtual void RegisterWebAppClientExtensionListener(
       std::shared_ptr<NWebAppClientExtensionCallback>
           web_app_client_extension_listener) = 0;
+  virtual void UnRegisterWebAppClientExtensionListener() = 0;
   virtual void SetInputMethodClient(
       CefRefPtr<NWebInputMethodClient> client) = 0;
 
@@ -103,9 +109,9 @@ class NWebDelegateInterface
   virtual void CreateWebMessagePorts(std::vector<std::string>& ports) = 0;
   virtual void PostWebMessage(std::string& message, std::vector<std::string>& ports, std::string& targetUri) = 0;
   virtual void ClosePort(std::string& portHandle) = 0;
-  virtual void PostPortMessage(std::string& portHandle, std::string& data) = 0;
+  virtual void PostPortMessage(std::string& portHandle, std::shared_ptr<NWebMessage> data) = 0;
   virtual void SetPortMessageCallback(std::string& portHandle,
-      std::shared_ptr<NWebValueCallback<std::string>> callback) = 0;
+      std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback) = 0;
   virtual HitTestResult GetHitTestResult() const = 0;
   virtual int PageLoadProgress() = 0;
   virtual float Scale() = 0;
@@ -161,6 +167,13 @@ class NWebDelegateInterface
   virtual void GetImages(std::shared_ptr<NWebValueCallback<bool>> callback) = 0;
   virtual void RemoveCache(bool include_disk_files) = 0;
   virtual std::shared_ptr<NWebHistoryList> GetHistoryList() = 0;
+  virtual WebState SerializeWebState() = 0;
+  virtual bool RestoreWebState(WebState state) = 0;
+  virtual void PageUp(bool top) = 0;
+  virtual void PageDown(bool bottom) = 0;
+  virtual void ScrollTo(float x, float y) = 0;
+  virtual void ScrollBy(float delta_x, float delta_y) = 0;
+  virtual void SlideScroll(float vx, float vy) = 0;
 };
 }  // namespace OHOS::NWeb
 

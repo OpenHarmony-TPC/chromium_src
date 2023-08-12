@@ -267,6 +267,9 @@ bool ShellContentBrowserClient::IsHandledURL(const GURL& url) {
       url::kWssScheme,  url::kBlobScheme,         url::kFileSystemScheme,
       kChromeUIScheme,  kChromeUIUntrustedScheme, kChromeDevToolsScheme,
       url::kDataScheme, url::kFileScheme,
+    #if BUILDFLAG(IS_OHOS)
+      url::kResourcesScheme,
+    #endif
   };
   for (const char* supported_protocol : kProtocolList) {
     if (url.scheme_piece() == supported_protocol)

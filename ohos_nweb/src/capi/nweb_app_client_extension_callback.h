@@ -18,20 +18,16 @@
 
 #include <stddef.h>
 
-#include "nweb_capi_export.h"
-
-struct NWEB_CAPI_EXPORT NWebReceivedIconInfo {
-  const char* image_url;
-  size_t width;
-  size_t height;
-  int color_type{0};
-  int alpha_type{0};
-};
-
-struct NWEB_CAPI_EXPORT NWebAppClientExtensionCallback {
-  int NWebID{0};
-  void (*OnReceivedFaviconUrl)(const NWebReceivedIconInfo&, int);
-  void (*OnLoadStarted)(bool toDifferentDocument, int);
+struct NWebAppClientExtensionCallback {
+  size_t struct_size = sizeof(NWebAppClientExtensionCallback);
+  int nweb_id{0};
+  void (*OnReceivedFaviconUrl)(const char* image_url,
+                               size_t width,
+                               size_t height,
+                               int color_type,
+                               int alpha_type,
+                               int nweb_id);
+  void (*OnLoadStarted)(bool toDifferentDocument, int nweb_id);
 };
 
 #endif  // OHOS_NWEB_SRC_NWEB_APP_CLIENT_EXTENSION_CALLBACK_H_

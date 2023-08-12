@@ -75,12 +75,30 @@ class CONTENT_EXPORT WebContentsViewAura
       RenderWidgetHostViewCreateFunction create_render_widget_host_view);
 
  private:
+  // Just the metadata from DropTargetEvent that's safe and cheap to copy to
+  // help locate drop events in the callback.
+  struct DropMetadata {
+    explicit DropMetadata(const ui::DropTargetEvent& event);
+
+    // Location local to WebContentsViewAura.
+    gfx::PointF localized_location;
+
+    // Root location of the drop target event.
+    gfx::PointF root_location;
+
+    // The supported DnD operation of the source. A bitmask of
+    // ui::mojom::DragOperations.
+    int source_operations;
+    // Flags from ui::Event. Usually represents modifier keys used at drop time.
+    int flags;
+  };
+
   // A structure used to keep drop context for asynchronously finishing a
   // drop operation.  This is required because some drop event data gets
   // cleared out once PerformDropCallback() returns.
   struct CONTENT_EXPORT OnPerformDropContext {
     OnPerformDropContext(RenderWidgetHostImpl* target_rwh,
-                         const ui::DropTargetEvent& event,
+                         DropMetadata drop_metadata,
                          std::unique_ptr<ui::OSExchangeData> data,
                          base::ScopedClosureRunner end_drag_runner,
                          absl::optional<gfx::PointF> transformed_pt,
@@ -89,7 +107,7 @@ class CONTENT_EXPORT WebContentsViewAura
     ~OnPerformDropContext();
 
     base::WeakPtr<RenderWidgetHostImpl> target_rwh;
-    ui::DropTargetEvent event;
+    DropMetadata drop_metadata;
     std::unique_ptr<ui::OSExchangeData> data;
     base::ScopedClosureRunner end_drag_runner;
     absl::optional<gfx::PointF> transformed_pt;
@@ -180,6 +198,7 @@ class CONTENT_EXPORT WebContentsViewAura
                              RenderViewHost* new_host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
   void OnCapturerCountChanged() override;
+  void FullscreenStateChanged(bool is_fullscreen) override;
 
   // Overridden from RenderViewHostDelegateView:
   void ShowContextMenu(RenderFrameHost& render_frame_host,
@@ -245,15 +264,15 @@ class CONTENT_EXPORT WebContentsViewAura
   aura::client::DragDropDelegate::DropCallback GetDropCallback(
       const ui::DropTargetEvent& event) override;
 
-  void DragEnteredCallback(ui::DropTargetEvent event,
+  void DragEnteredCallback(DropMetadata flags,
                            std::unique_ptr<DropData> drop_data,
                            base::WeakPtr<RenderWidgetHostViewBase> target,
                            absl::optional<gfx::PointF> transformed_pt);
-  void DragUpdatedCallback(ui::DropTargetEvent event,
+  void DragUpdatedCallback(DropMetadata drop_metadata,
                            std::unique_ptr<DropData> drop_data,
                            base::WeakPtr<RenderWidgetHostViewBase> target,
                            absl::optional<gfx::PointF> transformed_pt);
-  void PerformDropCallback(ui::DropTargetEvent event,
+  void PerformDropCallback(DropMetadata drop_metadata,
                            std::unique_ptr<ui::OSExchangeData> data,
                            base::WeakPtr<RenderWidgetHostViewBase> target,
                            absl::optional<gfx::PointF> transformed_pt);
@@ -277,7 +296,7 @@ class CONTENT_EXPORT WebContentsViewAura
   // Performs drop if it's run. Otherwise, it exits the drag. Returned by
   // GetDropCallback.
   void PerformDropOrExitDrag(base::ScopedClosureRunner exit_drag,
-                             const ui::DropTargetEvent& event,
+                             DropMetadata drop_metadata,
                              std::unique_ptr<ui::OSExchangeData> data,
                              ui::mojom::DragOperation& output_drag_op);
 

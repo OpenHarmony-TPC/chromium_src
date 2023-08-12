@@ -999,9 +999,11 @@ const char kEnableSpeechDispatcher[] = "enable-speech-dispatcher";
 #endif
 
 #if BUILDFLAG(IS_OHOS)
+const char kOhosHapPath[] = "user-hap-path";
 const char kEnableMultiRendererProcess[] = "enable-multi-renderer-process";
 const char kForBrowser[] = "for-browser";
 const char kOhosCustomScheme[] = "ohos-custom-scheme";
+const char kOhosHanceSurface[] = "ohos-enhance-surface";
 #endif
 
 #if BUILDFLAG(IS_WIN)

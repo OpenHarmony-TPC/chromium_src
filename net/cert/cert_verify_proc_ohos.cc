@@ -246,12 +246,9 @@ void X509CertChainVerify(const std::vector<std::string>& cert_chain,
                          int* status,
                          bool* is_issued_by_known_root,
                          std::vector<std::string>* verified_chain) {
-  *is_issued_by_known_root = true;
+  *is_issued_by_known_root = false;
 
   *status = CertVerify(cert_chain);
-  if (*status == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY) {
-    *is_issued_by_known_root = false;
-  }
 
   verified_chain->assign(cert_chain.begin(), cert_chain.end());
 }

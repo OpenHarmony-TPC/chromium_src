@@ -24,6 +24,10 @@
 #include "ui/events/keycodes/keysym_to_unicode.h"
 
 namespace OHOS::NWeb {
+
+constexpr double MAX_ZOOM_FACTOR = 10.0;
+constexpr double ZOOM_FACTOR = 2.0;
+
 // static
 std::shared_ptr<NWebEventHandler> NWebEventHandler::Create() {
   auto event_handler = std::make_shared<NWebEventHandler>();
@@ -128,7 +132,18 @@ void NWebEventHandler::SendMouseWheelEvent(double x,
   mouseEvent.x = x;
   mouseEvent.y = y;
   mouseEvent.modifiers = input_delegate_.GetModifiers();
-  if (browser_ && browser_->GetHost()) {
+  if (!browser_ || !browser_->GetHost()){
+    return;
+  }
+  if ((mouseEvent.modifiers & EVENTFLAG_CONTROL_DOWN) && (deltaY != 0)) {
+    double curFactor = browser_->GetHost()->GetZoomLevel();
+    double tempZoomFactor = deltaY < 0 ? curFactor + ZOOM_FACTOR : curFactor - ZOOM_FACTOR;
+    if (tempZoomFactor > MAX_ZOOM_FACTOR || tempZoomFactor < 0) {
+      LOG(ERROR) << "The mouse wheel event can no longer be zoomed in or out.";
+      return;
+    }
+    browser_->GetHost()->SetZoomLevel(tempZoomFactor);
+  } else {
     browser_->GetHost()->SendMouseWheelEvent(
         mouseEvent, deltaX * input_delegate_.GetMouseWheelRatio(),
         deltaY * input_delegate_.GetMouseWheelRatio());

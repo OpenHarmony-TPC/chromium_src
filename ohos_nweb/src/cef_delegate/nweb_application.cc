@@ -17,8 +17,12 @@
 
 #include <cstdlib>
 #include <thread>
-#include "content/public/common/content_switches.h"
+
+#include "cef/include/wrapper/cef_closure_task.h"
 #include "cef/include/wrapper/cef_helpers.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
+#include "content/public/common/content_switches.h"
 #include "nweb_handler_delegate.h"
 
 namespace OHOS::NWeb {
@@ -30,7 +34,7 @@ NWebApplication::NWebApplication(
     : preference_delegate_(preference_delegate),
       url_(url),
       handler_delegate_(handler_delegate),
-      window_(window) {}
+      window_(window){}
 
 NWebApplication::~NWebApplication() {}
 
@@ -95,8 +99,23 @@ void NWebApplication::OnContextInitialized() {
   LOG(INFO) << "NWebApplication::OnContextInitialized";
   CEF_REQUIRE_UI_THREAD();
   CreateBrowser();
+  auto runWebInitedCallback = OhosAdapterHelper::GetInstance().GetInitWebAdapter()->GetRunWebInitedCallback();
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&NWebApplication::RunWebInitedCallback, this,
+                                runWebInitedCallback));
 
   OnContextInitializedInternal();
+}
+
+void NWebApplication::RunWebInitedCallback(WebRunInitedCallback* callback)
+{
+  if (callback != nullptr) {
+    callback->RunInitedCallback();
+    delete callback;
+    callback = nullptr;
+  } else {
+    LOG(ERROR) << "There is no web inited callback to run.";
+  }
 }
 
 void NWebApplication::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line)
@@ -104,6 +123,12 @@ void NWebApplication::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> comma
   LOG(INFO) << "NWebApplication::OnBeforeChildProcessLaunch";
   if (CefCommandLine::GetGlobalCommandLine()->HasSwitch(::switches::kOhosCustomScheme)) {
     command_line->AppendSwitchWithValue(::switches::kOhosCustomScheme, CefCommandLine::GetGlobalCommandLine()->GetSwitchValue(::switches::kOhosCustomScheme).ToString());
+  }
+
+  if (CefCommandLine::GetGlobalCommandLine()->HasSwitch(::switches::kOhosHapPath)) {
+    LOG(INFO) << "hap package is not decompresssed";
+    command_line->AppendSwitchWithValue(::switches::kOhosHapPath,
+      CefCommandLine::GetGlobalCommandLine()->GetSwitchValue(::switches::kOhosHapPath).ToString());
   }
 }
 /* CefBrowserProcessHandler methods end */

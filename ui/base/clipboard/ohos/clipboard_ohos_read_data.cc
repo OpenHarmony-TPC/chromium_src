@@ -10,11 +10,20 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "third_party/icu/source/i18n/unicode/regex.h"
+#include "url/gurl.h"
 
 using namespace OHOS::NWeb;
 
 namespace ui {
 const std::string kImgPasteboardDir = "/data/storage/el2/base/cache/pasteboard";
+
+std::string RemoveFileSchemePerfix(const std::string& img_src) {
+  GURL img_url(img_src);
+  if (img_url.SchemeIsFile()) {
+    return img_url.path();
+  }
+  return img_src;
+}
 
 ClipboardOhosReadData::ClipboardOhosReadData(PasteRecordList& record_list)
     : record_list_(record_list) {
@@ -28,6 +37,7 @@ ClipboardOhosReadData::ClipboardOhosReadData(PasteRecordList& record_list)
     if (!new_uri) {
       continue;
     }
+    LOG(INFO) << "new_uri:" << *new_uri;
     int fd = OhosAdapterHelper::GetInstance().GetPasteBoard().OpenRemoteUri(
         *new_uri);
     if (fd > 0) {
@@ -41,11 +51,12 @@ void ClipboardOhosReadData::SaveImgFile(const std::string& old_uri,
                                         std::string& new_uri,
                                         uint32_t token_id) {
   base::FilePath pasteboard_root_path(kImgPasteboardDir);
+  std::string old_uri_without_prefix = RemoveFileSchemePerfix(old_uri);
   base::FilePath dest_file_dir_path(
       pasteboard_root_path.Append(std::to_string(token_id))
-          .Append(base::FilePath(old_uri).DirName()));
-  base::FilePath new_file_path(
-      dest_file_dir_path.Append(base::FilePath(old_uri).BaseName()));
+          .Append(base::FilePath(old_uri_without_prefix).DirName()));
+  base::FilePath new_file_path(dest_file_dir_path.Append(
+      base::FilePath(old_uri_without_prefix).BaseName()));
   if (!base::DirectoryExists(dest_file_dir_path) &&
       !base::CreateDirectory(dest_file_dir_path)) {
     return;
@@ -60,7 +71,7 @@ void ClipboardOhosReadData::SaveImgFile(const std::string& old_uri,
                                          base::File::Flags::FLAG_WRITE);
   if (old_file.IsValid() && new_file.IsValid()) {
     if (base::CopyFileContents(old_file, new_file)) {
-      new_uri = new_file_path.AsUTF8Unsafe();
+      new_uri = "file://" + new_file_path.AsUTF8Unsafe();
     } else {
       LOG(ERROR) << "SaveImgFile copy file failed";
     }

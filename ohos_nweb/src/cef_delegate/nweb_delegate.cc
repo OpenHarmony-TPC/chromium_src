@@ -26,9 +26,12 @@
 #include "cef/include/cef_app.h"
 #include "cef/include/cef_base.h"
 #include "cef/include/cef_request_context.h"
+#include "content/public/common/content_switches.h"
 #include "nweb_find_delegate.h"
 #include "nweb_preference_delegate.h"
 #include "url/gurl.h"
+
+#include "cef/libcef/browser/navigation_state_serializer.h"
 
 namespace OHOS::NWeb {
 
@@ -49,6 +52,38 @@ class JavaScriptResultCallbackImpl : public CefJavaScriptResultCallback {
   std::shared_ptr<NWebValueCallback<std::string>> callback_;
 
   IMPLEMENT_REFCOUNTING(JavaScriptResultCallbackImpl);
+};
+
+class CefWebMessageReceiverImpl : public CefWebMessageReceiver {
+ public:
+  CefWebMessageReceiverImpl(
+      std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback)
+      : callback_(callback){};
+  void OnMessage(CefRefPtr<CefValue> message) override {
+    if (callback_ != nullptr) {
+        auto data = std::make_shared<OHOS::NWeb::NWebMessage>(NWebValue::Type::NONE);
+        if (message->GetType() == VTYPE_STRING) {
+          data->SetType(NWebValue::Type::STRING);
+          data->SetString(message->GetString());
+        } else if (message->GetType() == VTYPE_BINARY) {
+          CefRefPtr<CefBinaryValue> binValue = message->GetBinary();
+          size_t len = binValue->GetSize();
+          std::vector<uint8_t> arr(len);
+          binValue->GetData(&arr[0], len, 0);
+          data->SetType(NWebValue::Type::BINARY);
+          data->SetBinary(arr);
+        } else {
+          LOG(ERROR) << "OnMessage not support type";
+          return;
+        }
+        callback_->OnReceiveValue(data);
+    }
+  }
+
+ private:
+  std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback_;
+
+  IMPLEMENT_REFCOUNTING(CefWebMessageReceiverImpl);
 };
 
 class StoreWebArchiveResultCallbackImpl
@@ -119,24 +154,23 @@ NWebDelegate::NWebDelegate(int argc, const char* argv[])
     : argc_(argc), argv_(argv) {}
 
 NWebDelegate::~NWebDelegate() {
-  if (display_listener_ != nullptr &&
-      display_manager_adapter_ != nullptr) {
+  if (display_listener_ != nullptr && display_manager_adapter_ != nullptr) {
     display_manager_adapter_->UnregisterDisplayListener(display_listener_);
   }
 }
 
-bool NWebDelegate::Init(void* window) {
+bool NWebDelegate::Init(bool is_enhance_surface, void* window) {
   preference_delegate_ = std::make_shared<NWebPreferenceDelegate>();
   find_delegate_ = std::make_shared<NWebFindDelegate>();
-
+  is_enhance_surface_ = is_enhance_surface;
   display_manager_adapter_ =
-    OhosAdapterHelper::GetInstance().CreateDisplayMgrAdapter();
+      OhosAdapterHelper::GetInstance().CreateDisplayMgrAdapter();
   if (display_manager_adapter_ == nullptr) {
     return false;
   }
 
   display_listener_ =
-    std::make_shared<DisplayScreenListener>(shared_from_this());
+      std::make_shared<DisplayScreenListener>(shared_from_this());
   if (display_listener_ == nullptr) {
     return false;
   }
@@ -158,10 +192,10 @@ bool NWebDelegate::Init(void* window) {
   }
 
   std::string url_for_init = "";
-  InitializeCef(url_for_init, window);
+  InitializeCef(url_for_init, is_enhance_surface_, window);
 
   std::shared_ptr<DisplayAdapter> display =
-    display_manager_adapter_->GetDefaultDisplay();
+      display_manager_adapter_->GetDefaultDisplay();
   if (display != nullptr) {
     NotifyScreenInfoChanged(display->GetRotation(), display->GetOrientation());
     SetVirtualPixelRatio(display->GetVirtualPixelRatio());
@@ -171,8 +205,7 @@ bool NWebDelegate::Init(void* window) {
 }
 
 void NWebDelegate::OnDestroy(bool is_close_all) {
-  if (display_listener_ != nullptr &&
-      display_manager_adapter_ != nullptr) {
+  if (display_listener_ != nullptr && display_manager_adapter_ != nullptr) {
     display_manager_adapter_->UnregisterDisplayListener(display_listener_);
   }
   if (handler_delegate_ != nullptr) {
@@ -194,6 +227,15 @@ void NWebDelegate::RegisterDownLoadListener(
     return;
   }
   handler_delegate_->RegisterDownLoadListener(download_listener);
+}
+
+void NWebDelegate::RegisterReleaseSurfaceListener(
+    std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) {
+  if (handler_delegate_ == nullptr) {
+    LOG(ERROR) << "fail to register release surface, NWEB handler is nullptr";
+    return;
+  }
+  handler_delegate_->RegisterReleaseSurfaceListener(releaseSurfaceListener);
 }
 
 void NWebDelegate::RegisterFindListener(
@@ -243,6 +285,15 @@ void NWebDelegate::RegisterWebAppClientExtensionListener(
       web_app_client_extension_listener);
 }
 
+void NWebDelegate::UnRegisterWebAppClientExtensionListener() {
+  if (handler_delegate_ == nullptr) {
+    LOG(ERROR) << "fail to unregister web app client extension listener, nweb "
+                  "handler delegate is nullptr";
+    return;
+  }
+  handler_delegate_->UnRegisterWebAppClientExtensionListener();
+}
+
 void NWebDelegate::RegisterNWebHandler(std::shared_ptr<NWebHandler> handler) {
   if (handler_delegate_ == nullptr) {
     LOG(ERROR)
@@ -285,19 +336,22 @@ void NWebDelegate::Resize(uint32_t width, uint32_t height) {
 
 void NWebDelegate::OnTouchPress(int32_t id, double x, double y) {
   if (event_handler_ != nullptr) {
-    event_handler_->OnTouchPress(id, x, y);
+    event_handler_->OnTouchPress(id, x / default_virtual_pixel_ratio_,
+                                 y / default_virtual_pixel_ratio_);
   }
 }
 
 void NWebDelegate::OnTouchRelease(int32_t id, double x, double y) {
   if (event_handler_ != nullptr) {
-    event_handler_->OnTouchRelease(id, x, y);
+    event_handler_->OnTouchRelease(id, x / default_virtual_pixel_ratio_,
+                                   y / default_virtual_pixel_ratio_);
   }
 }
 
 void NWebDelegate::OnTouchMove(int32_t id, double x, double y) {
   if (event_handler_ != nullptr) {
-    event_handler_->OnTouchMove(id, x, y);
+    event_handler_->OnTouchMove(id, x / default_virtual_pixel_ratio_,
+                                y / default_virtual_pixel_ratio_);
   }
 }
 
@@ -315,21 +369,32 @@ bool NWebDelegate::SendKeyEvent(int32_t keyCode, int32_t keyAction) {
   return retVal;
 }
 
-void NWebDelegate::SendMouseWheelEvent(double x, double y, double deltaX, double deltaY) {
+void NWebDelegate::SendMouseWheelEvent(double x,
+                                       double y,
+                                       double deltaX,
+                                       double deltaY) {
   if (event_handler_ != nullptr) {
-    event_handler_->SendMouseWheelEvent(x, y, deltaX, deltaY);
+    event_handler_->SendMouseWheelEvent(x / default_virtual_pixel_ratio_,
+                                        y / default_virtual_pixel_ratio_,
+                                        deltaX / default_virtual_pixel_ratio_,
+                                        deltaY / default_virtual_pixel_ratio_);
   }
 }
 
-void NWebDelegate::SendMouseEvent(int x, int y, int button, int action, int count) {
+void NWebDelegate::SendMouseEvent(int x,
+                                  int y,
+                                  int button,
+                                  int action,
+                                  int count) {
   if (event_handler_ != nullptr) {
-    event_handler_->SendMouseEvent(x, y, button, action, count);
+    event_handler_->SendMouseEvent(x / default_virtual_pixel_ratio_,
+                                   y / default_virtual_pixel_ratio_, button,
+                                   action, count);
   }
 }
 
-void NWebDelegate::NotifyScreenInfoChanged(
-  RotationType rotation,
-  OrientationType orientation) {
+void NWebDelegate::NotifyScreenInfoChanged(RotationType rotation,
+                                           OrientationType orientation) {
   if (render_handler_ != nullptr) {
     if (display_manager_adapter_ == nullptr) {
       LOG(ERROR) << "Get display_manager_adapter_ failed";
@@ -348,8 +413,9 @@ void NWebDelegate::NotifyScreenInfoChanged(
     }
     int width = display->GetWidth() / display_ratio;
     int height = display->GetHeight() / display_ratio;
-    render_handler_->SetScreenInfo(rotation, orientation, width, height,
-                                   display_ratio);
+    bool default_portrait = display_manager_adapter_->IsDefaultPortrait();
+    render_handler_->SetScreenInfo({rotation, orientation, width, height,
+                                    display_ratio, default_portrait});
     auto browser = GetBrowser();
     if (browser != nullptr && browser->GetHost() != nullptr) {
       browser->GetHost()->NotifyScreenInfoChanged();
@@ -585,8 +651,7 @@ int NWebDelegate::ZoomOut() const {
   return NWEB_OK;
 }
 
-bool NWebDelegate::SetZoomInFactor(float factor)
-{
+bool NWebDelegate::SetZoomInFactor(float factor) {
   LOG(INFO) << "NWebDelegate::SetZoomInFactor";
   if (factor <= 0) {
     return false;
@@ -595,8 +660,7 @@ bool NWebDelegate::SetZoomInFactor(float factor)
   return true;
 }
 
-bool NWebDelegate::SetZoomOutFactor(float factor)
-{
+bool NWebDelegate::SetZoomOutFactor(float factor) {
   LOG(INFO) << "NWebDelegate::SetZoomOutFactor";
   if (factor >= 0) {
     return false;
@@ -641,12 +705,12 @@ void NWebDelegate::PutBackgroundColor(int color) const {
 
 void NWebDelegate::InitialScale(float scale) const {
   LOG(INFO) << "NWebDelegate::InitialScale";
-  if (scale == intial_scale_) {
+  if (scale == intial_scale_ || !render_handler_) {
     return;
   }
-
+  float ratio = render_handler_->GetVirtualPixelRatio();
   if (GetBrowser().get()) {
-    GetBrowser()->GetHost()->SetInitialScale(scale);
+    GetBrowser()->GetHost()->SetInitialScale(scale / ratio);
   }
 }
 
@@ -682,9 +746,12 @@ void NWebDelegate::OnContinue() {
   GetBrowser()->GetHost()->SetFocus(true);
 }
 
-void NWebDelegate::InitializeCef(std::string url, void* window) {
+void NWebDelegate::InitializeCef(std::string url,
+                                 bool is_enhance_surface,
+                                 void* window) {
   handler_delegate_ = NWebHandlerDelegate::Create(
-      preference_delegate_, render_handler_, event_handler_, find_delegate_, window);
+      preference_delegate_, render_handler_, event_handler_, find_delegate_,
+      is_enhance_surface, window);
   nweb_app_ =
       new NWebApplication(preference_delegate_, url, handler_delegate_, window);
 
@@ -711,7 +778,6 @@ void NWebDelegate::InitializeCef(std::string url, void* window) {
   if (is_initialized) {
     return nweb_app_->CreateBrowser();
   }
-
   if (!CefInitialize(mainargs, settings, nweb_app_, NULL)) {
     LOG(ERROR) << "CefInitialize failed";
   } else {
@@ -745,7 +811,9 @@ void NWebDelegate::CreateWebMessagePorts(std::vector<std::string>& ports) {
   }
 }
 
-void NWebDelegate::PostWebMessage(std::string& message, std::vector<std::string>& ports, std::string& targetUri) {
+void NWebDelegate::PostWebMessage(std::string& message,
+                                  std::vector<std::string>& ports,
+                                  std::string& targetUri) {
   if (!GetBrowser().get()) {
     LOG(ERROR) << "JSAPI PostWebMessage can not get browser";
     return;
@@ -777,26 +845,33 @@ void NWebDelegate::ClosePort(std::string& portHandle) {
   GetBrowser()->GetHost()->ClosePort(handleCef);
 }
 
-void NWebDelegate::PostPortMessage(std::string& portHandle, std::string& data) {
+void NWebDelegate::PostPortMessage(std::string& portHandle, std::shared_ptr<NWebMessage> data) {
   if (!GetBrowser().get()) {
     LOG(ERROR) << "JSAPI PostPortMessage can not get browser";
     return;
   }
   CefString handleCef;
   handleCef.FromString(portHandle);
-  CefString dataCef;
-  dataCef.FromString(data);
 
-  GetBrowser()->GetHost()->PostPortMessage(handleCef, dataCef);
+  CefRefPtr<CefValue> message = CefValue::Create();
+  if (data->GetType() == NWebValue::Type::STRING) {
+    message->SetString(data->GetString());
+  } else if (data->GetType() == NWebValue::Type::BINARY) {
+    std::vector<uint8_t> vecBinary = data->GetBinary();
+    CefRefPtr<CefBinaryValue> value = CefBinaryValue::Create(vecBinary.data(), vecBinary.size());
+    message->SetBinary(value);
+  }
+
+  GetBrowser()->GetHost()->PostPortMessage(handleCef, message);
 }
 
 void NWebDelegate::SetPortMessageCallback(std::string& portHandle,
-    std::shared_ptr<NWebValueCallback<std::string>> callback) {
+    std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback) {
   if (!GetBrowser().get()) {
     LOG(ERROR) << "JSAPI SetPortMessageCallback can not get browser";
     return;
   }
-  CefRefPtr<JavaScriptResultCallbackImpl> JsResultCb = new JavaScriptResultCallbackImpl(callback);
+  CefRefPtr<CefWebMessageReceiver> JsResultCb = new CefWebMessageReceiverImpl(callback);
   CefString handleCef;
   handleCef.FromString(portHandle);
   GetBrowser()->GetHost()->SetPortMessageCallback(handleCef, JsResultCb);
@@ -805,7 +880,10 @@ void NWebDelegate::SetPortMessageCallback(std::string& portHandle,
 std::string NWebDelegate::GetUrl() const {
   LOG(INFO) << "NWebDelegate::get url";
   if (GetBrowser().get()) {
-    return GetBrowser()->GetMainFrame()->GetURL().ToString();
+    auto entry = GetBrowser()->GetHost()->GetVisibleNavigationEntry();
+    if (entry) {
+      return entry->GetDisplayURL().ToString();
+    }
   }
   return "";
 }
@@ -963,21 +1041,25 @@ void NWebDelegate::RegisterNWebJavaScriptCallBack(
 }
 
 void NWebDelegate::OnFocus() const {
-  LOG(INFO) << "NWebDelegate::OnFocus";
   if (!GetBrowser().get()) {
+    LOG(ERROR) << "NWebDelegate::OnFocus GetBrowser().get() fail";
     return;
   }
-
-  GetBrowser()->GetHost()->SetFocus(true);
+  if (handler_delegate_ && !handler_delegate_->GetFocusState()) {
+    GetBrowser()->GetHost()->SetFocus(true);
+  }
 }
 
 void NWebDelegate::OnBlur() const {
-  LOG(INFO) << "NWebDelegate::OnBlur";
   if (!GetBrowser().get()) {
+    LOG(ERROR) << "NWebDelegate::OnBlur GetBrowser().get() fail";
     return;
   }
 
-  GetBrowser()->GetHost()->SetFocus(false);
+  if (handler_delegate_ && handler_delegate_->GetFocusState()) {
+    handler_delegate_->SetFocusState(false);
+    GetBrowser()->GetHost()->SetFocus(false);
+  }
 }
 
 void NWebDelegate::UpdateLocale(const std::string& language,
@@ -1009,13 +1091,14 @@ void NWebDelegate::SetNWebId(uint32_t nwebId) {
 #endif
 
 void NWebDelegate::SendDragEvent(const DelegateDragEvent& dragEvent) const {
-  if (!GetBrowser().get()) {
-    LOG(ERROR) << "browser is nullptr";
+  if (!GetBrowser().get() || !render_handler_) {
+    LOG(ERROR) << "browser or render_handler is nullptr";
     return;
   }
   CefMouseEvent event;
-  event.x = dragEvent.x;
-  event.y = dragEvent.y;
+  float ratio = render_handler_->GetVirtualPixelRatio();
+  event.x = dragEvent.x / ratio;
+  event.y = dragEvent.y / ratio;
   event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
   switch (dragEvent.action) {
     case DelegateDragAction::DRAG_START:
@@ -1023,7 +1106,8 @@ void NWebDelegate::SendDragEvent(const DelegateDragEvent& dragEvent) const {
     case DelegateDragAction::DRAG_ENTER:
       if (render_handler_) {
         LOG(INFO) << "SendDragEvent enter";
-        GetBrowser()->GetHost()->DragTargetDragEnter(render_handler_->GetDragData(), event, DRAG_OPERATION_MOVE);
+        GetBrowser()->GetHost()->DragTargetDragEnter(
+            render_handler_->GetDragData(), event, DRAG_OPERATION_MOVE);
       }
       break;
     case DelegateDragAction::DRAG_LEAVE:
@@ -1040,7 +1124,8 @@ void NWebDelegate::SendDragEvent(const DelegateDragEvent& dragEvent) const {
       break;
     case DelegateDragAction::DRAG_END:
       LOG(INFO) << "SendDragEvent end";
-      GetBrowser()->GetHost()->DragSourceEndedAt(event.x, event.y, DRAG_OPERATION_MOVE);
+      GetBrowser()->GetHost()->DragSourceEndedAt(event.x, event.y,
+                                                 DRAG_OPERATION_MOVE);
       GetBrowser()->GetHost()->DragSourceSystemDragEnded();
       break;
     case DelegateDragAction::DRAG_CANCEL:
@@ -1083,5 +1168,87 @@ std::shared_ptr<NWebHistoryList> NWebDelegate::GetHistoryList() {
       new NavigationEntryVisitorImpl();
   GetBrowser()->GetHost()->GetNavigationEntries(visitor, false);
   return visitor->GetHistoryList();
+}
+
+void NWebDelegate::PageUp(bool top) {
+  if (!GetBrowser().get() || !render_handler_ || !handler_delegate_) {
+    return;
+  }
+  float ratio = render_handler_->GetVirtualPixelRatio();
+  float scale = handler_delegate_->GetScale() / 100.0;
+  if (ratio <= 0 || scale <= 0) {
+    LOG(ERROR) << "get ratio and scale invalid " << ratio << " " << scale;
+    return;
+  }
+  GetBrowser()->GetHost()->ScrollPageUpDown(true, !top,
+                                            height_ / ratio / scale);
+}
+
+void NWebDelegate::PageDown(bool bottom) {
+  if (!GetBrowser().get() || !render_handler_ || !handler_delegate_) {
+    return;
+  }
+  float ratio = render_handler_->GetVirtualPixelRatio();
+  float scale = handler_delegate_->GetScale() / 100.0;
+  if (ratio <= 0 || scale <= 0) {
+    LOG(ERROR) << "get ratio and scale invalid " << ratio << " " << scale;
+    return;
+  }
+  GetBrowser()->GetHost()->ScrollPageUpDown(false, !bottom,
+                                            height_ / ratio / scale);
+}
+
+void NWebDelegate::ScrollTo(float x, float y) {
+  if (!GetBrowser().get()) {
+    LOG(ERROR) << "JSAPI ScrollTo can not get browser";
+    return;
+  }
+
+  GetBrowser()->GetHost()->ScrollTo(x, y);
+}
+
+void NWebDelegate::ScrollBy(float delta_x, float delta_y) {
+  if (!GetBrowser().get()) {
+    LOG(ERROR) << "JSAPI ScrollBy can not get browser";
+    return;
+  }
+
+  GetBrowser()->GetHost()->ScrollBy(delta_x, delta_y);
+}
+
+void NWebDelegate::SlideScroll(float vx, float vy) {
+  if (!GetBrowser().get()) {
+    LOG(ERROR) << "JSAPI SlideScroll can not get browser";
+    return;
+  }
+
+  GetBrowser()->GetHost()->SlideScroll(vx, vy);
+}
+
+WebState NWebDelegate::SerializeWebState() {
+  CefRefPtr<CefBinaryValue> state_value =
+      GetBrowser()->GetHost()->GetWebState();
+  if (!state_value || !GetBrowser().get()) {
+    return nullptr;
+  }
+  size_t state_size = state_value->GetSize();
+  if (state_size == 0) {
+    return nullptr;
+  }
+  WebState state = std::make_shared<std::vector<uint8_t>>(state_size);
+  size_t read_size = state_value->GetData(state->data(), state_size, 0);
+  if (read_size != state_size) {
+    LOG(ERROR) << "SerializeWebState failed";
+    return nullptr;
+  }
+  return state;
+}
+
+bool NWebDelegate::RestoreWebState(WebState state) {
+  if (!GetBrowser().get() || !state || state->size() == 0) {
+    return false;
+  }
+  auto web_state = CefBinaryValue::Create(state->data(), state->size());
+  return GetBrowser()->GetHost()->RestoreWebState(web_state);
 }
 }  // namespace OHOS::NWeb

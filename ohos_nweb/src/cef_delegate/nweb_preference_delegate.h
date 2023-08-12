@@ -45,7 +45,8 @@ class NWebPreferenceDelegate : public NWebPreference {
   void PutDomStorageEnabled(bool flag) override;
   void PutFantasyFontFamilyName(std::string font) override;
   void PutFixedFontFamilyName(std::string font) override;
-  void PutDarkModeEnabled(int forceDark) override;
+  void PutForceDarkModeEnabled(int forceDark) override;
+  void PutDarkSchemeEnabled(int darkScheme) override;
   void PutIsCreateWindowsByJavaScriptAllowed(bool flag) override;
   void PutJavaScriptEnabled(bool flag) override;
   void PutImageLoadingAllowed(bool flag) override;
@@ -66,7 +67,8 @@ class NWebPreferenceDelegate : public NWebPreference {
   void PutMediaPlayGestureAccess(bool flag) override;
   void PutPinchSmoothMode(bool flag) override;
   void PutMultiWindowAccess(bool flag) override;
-
+  void PutHorizontalScrollBarAccess(bool flag) override;
+  void PutVerticalScrollBarAccess(bool flag) override;
   /* get methods*/
   bool EnableContentAccess() override;
   bool EnableRawFileAccess() override;
@@ -82,7 +84,8 @@ class NWebPreferenceDelegate : public NWebPreference {
   bool IsDomStorageEnabled() override;
   std::string FantasyFontFamilyName() override;
   std::string FixedFontFamilyName() override;
-  int DarkModeEnabled() override;
+  int ForceDarkModeEnabled() override;
+  int DarkSchemeEnabled() override;
   bool IsCreateWindowsByJavaScriptAllowed() override;
   bool IsJavaScriptAllowed() override;
   bool IsImageLoadingAllowed() override;
@@ -102,6 +105,8 @@ class NWebPreferenceDelegate : public NWebPreference {
   bool IsWebDebuggingAccess() override;
   bool GetMediaPlayGestureAccess() override;
   bool IsMultiWindowAccess() override;
+  bool IsHorizontalScrollBarAccess() override;
+  bool IsVerticalScrollBarAccess() override;
 
   bool RunningInsecureContentAllowed();
   bool UseStricMixedContentCheckingAllowed();
@@ -134,10 +139,13 @@ class NWebPreferenceDelegate : public NWebPreference {
   bool raw_file_access_{false};
   bool universal_access_from_file_urls_{false};
   bool raw_file_access_from_file_urls_{false};
-  bool dark_mode_enabled_{false};
+  bool force_dark_mode_enabled_{false};
+  bool dark_prefer_color_scheme_enabled_{false};
   bool is_need_gesture_access_{true};
   bool pinch_smooth_mode_{false};
   bool multiWindow_access_{false};
+  bool horizontal_scrollBar_access_{true};
+  bool vertical_scrollBar_access_{true};
   /* Web preferences end*/
   bool create_windows_by_javascript_allowed_{false};
   std::string user_agent_{""};

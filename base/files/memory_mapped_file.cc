@@ -28,7 +28,20 @@ bool MemoryMappedFile::Region::operator!=(
 }
 
 MemoryMappedFile::~MemoryMappedFile() {
+#if BUILDFLAG(IS_OHOS)
+  if (!customizeData_) {
+    CloseHandles();
+    return;
+  }
+
+  if (data_) {
+    delete [] data_;
+    data_ = nullptr;
+  }
+  length_ = 0;
+#else
   CloseHandles();
+#endif
 }
 
 #if !BUILDFLAG(IS_NACL)

@@ -54,6 +54,10 @@ buildflag_header("media_buildflags") {
     "USE_PROPRIETARY_CODECS=$proprietary_codecs",
     "ENABLE_PLATFORM_DTS_AUDIO=$enable_platform_dts_audio",
   ]
+
+  if (is_ohos) {
+    flags += [ "OHOS_ENABLE_MEDIA_ROUTER=$ohos_enable_media_router" ]
+  }
 }
 
 if (proprietary_codecs && media_use_ffmpeg) {

@@ -36,7 +36,8 @@ class NWebDataBaseDelegate {
   void SaveHttpAuthCredentials(const std::string& host, const std::string& realm,
     const std::string& username, const char* password);
 
-  std::vector<std::string> GetHttpAuthCredentials(const std::string& host, const std::string& realm);
+  void GetHttpAuthCredentials(const std::string& host, const std::string& realm,
+    std::string& username, char* password, uint32_t passwordSize);
 
   bool ExistPermissionByOrigin(const std::string& origin, int type);
 

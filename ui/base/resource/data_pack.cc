@@ -25,6 +25,13 @@
 #include "net/filter/gzip_header.h"
 #include "third_party/zlib/google/compression_utils.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include <unordered_map>
+#include "base/command_line.h"
+#include "content/public/common/content_switches.h"
+#include "ohos_adapter_helper.h"
+#endif
+
 // For details of the file layout, see
 // http://dev.chromium.org/developers/design-documents/linuxresourcesandlocalizedstrings
 
@@ -173,6 +180,38 @@ bool MmapHasGzipHeader(const base::MemoryMappedFile* mmap) {
   return header_status == net::GZipHeader::COMPLETE_HEADER;
 }
 
+#if BUILDFLAG(IS_OHOS)
+std::unordered_map<ui::ResourceScaleFactor, std::string> kPakFileNameHapMap = {
+    {ui::ResourceScaleFactor::kScaleFactorNone,
+     "resources/rawfile/resources.pak"},
+    {ui::ResourceScaleFactor::k100Percent,
+     "resources/rawfile/chrome_100_percent.pak"},
+    {ui::ResourceScaleFactor::k200Percent,
+     "resources/rawfile/chrome_200_percent.pak"}};
+
+bool IsPathFromHap(ui::ResourceScaleFactor factor,
+                   const base::FilePath& path,
+                   std::string& pathHap) {
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kOhosHapPath)) {
+    LOG(INFO) << "not has switch kOhosHapPath, hap is decompress";
+    return false;
+  }
+  auto iter = kPakFileNameHapMap.find(factor);
+  if (iter == kPakFileNameHapMap.end()) {
+    LOG(ERROR) << "kPakFileNameHapMap not find path: " << path;
+    return false;
+  }
+  std::string pathStr = path.MaybeAsASCII();
+  if (pathStr.find("zh-CN.pak") != std::string::npos) {
+    pathHap = "resources/rawfile/locales/zh-CN.pak";
+  } else if (pathStr.find("en-US.pak") != std::string::npos) {
+    pathHap = "resources/rawfile/locales/en-US.pak";
+  } else {
+    pathHap = iter->second;
+  }
+  return true;
+}
+#endif
 }  // namespace
 
 namespace ui {
@@ -278,10 +317,46 @@ DataPack::DataPack(ResourceScaleFactor resource_scale_factor)
   static_assert(sizeof(Alias) == 4, "size of Alias must be 4");
 }
 
-DataPack::~DataPack() {
-}
+DataPack::~DataPack() {}
 
 bool DataPack::LoadFromPath(const base::FilePath& path) {
+#if BUILDFLAG(IS_OHOS)
+  std::string pathHap;
+  if (IsPathFromHap(resource_scale_factor_, path, pathHap)) {
+    size_t length = 0;
+    std::unique_ptr<uint8_t[]> data;
+    auto resourceInstance =
+        OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter();
+    if (!resourceInstance->GetRawFileData(pathHap, length, data, true)) {
+      LOG(ERROR) << "DataPack::LoadFromPath couldn't data file: "
+                 << pathHap.c_str();
+      return false;
+    }
+
+    LOG(INFO) << "DataPack::LoadFromPath " << pathHap.c_str()
+              << ", data file length: " << length;
+    std::unique_ptr<base::MemoryMappedFile> mmap =
+        std::make_unique<base::MemoryMappedFile>();
+    mmap->SetDataAndLength(data, length);
+    if (MmapHasGzipHeader(mmap.get())) {
+      base::StringPiece compressed(reinterpret_cast<char*>(mmap->data()),
+                                   mmap->length());
+      std::string data;
+      if (!compression::GzipUncompress(compressed, &data)) {
+        LOG(ERROR) << "Failed to unzip compressed datapack: "
+                   << pathHap.c_str();
+        LogDataPackError(UNZIP_FAILED);
+        return false;
+      }
+      return LoadImpl(std::make_unique<StringDataSource>(std::move(data)));
+    }
+    return LoadImpl(std::make_unique<MemoryMappedDataSource>(std::move(mmap)));
+  }
+  if (!base::PathExists(path)) {
+    LOG(ERROR) << "LoadFromPath file not exist";
+    return false;
+  }
+#endif
   std::unique_ptr<base::MemoryMappedFile> mmap =
       std::make_unique<base::MemoryMappedFile>();
   // Open the file for reading; allowing other consumers to also open it for
@@ -502,9 +577,9 @@ void DataPack::CheckForDuplicateResources(
       if (GetScaleForResourceScaleFactor(handle->GetResourceScaleFactor()) !=
           resource_scale)
         continue;
-      DCHECK(!handle->HasResource(resource_id)) << "Duplicate resource "
-                                                << resource_id << " with scale "
-                                                << resource_scale;
+      DCHECK(!handle->HasResource(resource_id))
+          << "Duplicate resource " << resource_id << " with scale "
+          << resource_scale;
     }
   }
 }

@@ -76,15 +76,17 @@ class NWebImpl : public NWeb {
   const std::shared_ptr<NWebPreference> GetPreference() const override;
   void PutDownloadCallback(
       std::shared_ptr<NWebDownloadCallback> downloadListener) override;
+  void PutReleaseSurfaceCallback(
+    std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) override;
   void SetNWebHandler(std::shared_ptr<NWebHandler> handler) override;
   const std::shared_ptr<NWebHandler> GetNWebHandler() const override;
   std::string Title() override;
   void CreateWebMessagePorts(std::vector<std::string>& ports) override;
   void PostWebMessage(std::string& message, std::vector<std::string>& ports, std::string& targetUri) override;
   void ClosePort(std::string& port_handle) override;
-  void PostPortMessage(std::string& port_handle, std::string& data) override;
+  void PostPortMessage(std::string& port_handle, std::shared_ptr<NWebMessage> data) override;
   void SetPortMessageCallback(std::string& port_handle,
-      std::shared_ptr<NWebValueCallback<std::string>> callback) override;
+      std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback) override;
   uint32_t GetWebId() const override;
   HitTestResult GetHitTestResult() const override;
   int PageLoadProgress() override;
@@ -129,7 +131,13 @@ class NWebImpl : public NWeb {
   void HasImages(std::shared_ptr<NWebValueCallback<bool>> callback) override;
   void RemoveCache(bool include_disk_files) override;
   std::shared_ptr<NWebHistoryList> GetHistoryList() override;
-
+  WebState SerializeWebState() override;
+  bool RestoreWebState(WebState state) override;
+  void PageUp(bool top) override;
+  void PageDown(bool bottom) override;
+  void ScrollTo(float x, float y) override;
+  void ScrollBy(float delta_x, float delta_y) override;
+  void SlideScroll(float vx, float vy) override;
 
   // For NWebEx
   static NWebImpl* FromID(int32_t nweb_id);
@@ -141,14 +149,18 @@ class NWebImpl : public NWeb {
   void PutWebAppClientExtensionCallback(
       std::shared_ptr<NWebAppClientExtensionCallback>
           web_app_client_extension_listener);
+  void RemoveWebAppClientExtensionCallback();
 
   CefRefPtr<CefClient> GetCefClient() const {
     return nweb_delegate_->GetCefClient();
   }
+  void AddNWebToMap(uint32_t id, std::shared_ptr<NWebImpl>& nweb);
  private:
   void ProcessInitArgs(const NWebInitArgs& init_args);
   void InitWebEngineArgs(const NWebInitArgs& init_args);
   bool InitWebEngine(const NWebCreateInfo& create_info);
+  bool SetVirtualDeviceRatio();
+  uint32_t NormalizeVirtualDeviceRatio(uint32_t length);
 
  private:
   uint32_t nweb_id_ = 0;
@@ -159,6 +171,7 @@ class NWebImpl : public NWeb {
 
   std::shared_ptr<NWebDelegateInterface> nweb_delegate_ = nullptr;
   std::list<std::string> web_engine_args_;
+  float device_pixel_ratio_ = 0.f;
 };
 }  // namespace OHOS::NWeb
 

@@ -47,6 +47,12 @@
 #endif
 #endif  // V8_USE_EXTERNAL_STARTUP_DATA
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/command_line.h"
+#include "content/public/common/content_switches.h"
+#include "ohos_adapter_helper.h"
+#endif
+
 namespace gin {
 
 namespace {
@@ -487,12 +493,42 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
     // files in a process.
     return;
   }
-
+#if BUILDFLAG(IS_OHOS)
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(::switches::kOhosHapPath)) {
+    LoadV8SnapshotFromFileByHap(snapshot_file_type);
+  } else {
+    base::MemoryMappedFile::Region file_region;
+    base::File file =
+        OpenV8File(GetSnapshotFileName(snapshot_file_type), &file_region);
+    LoadV8SnapshotFromFile(std::move(file), &file_region, snapshot_file_type);
+  }
+#else
   base::MemoryMappedFile::Region file_region;
   base::File file =
       OpenV8File(GetSnapshotFileName(snapshot_file_type), &file_region);
   LoadV8SnapshotFromFile(std::move(file), &file_region, snapshot_file_type);
+#endif
 }
+
+#if BUILDFLAG(IS_OHOS)
+const char kSnapshotFileNameHap[] = "resources/rawfile/snapshot_blob.bin";
+// static
+int V8Initializer::LoadV8SnapshotFromFileByHap(V8SnapshotFileType snapshot_file_type) {
+  size_t length = 0;
+  std::unique_ptr<uint8_t[]> data;
+  auto resourceInstance = OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter();
+  if (!resourceInstance->GetRawFileData(kSnapshotFileNameHap, length, data, true)) {
+    LOG(FATAL) << "couldn't mmap snapshot_blob data file " << kSnapshotFileNameHap;
+    return 1;
+  }
+  LOG(INFO) << "snapshot_blob data file length: " << length;
+  std::unique_ptr<base::MemoryMappedFile> mmapped_file = std::make_unique<base::MemoryMappedFile>();
+  mmapped_file->SetDataAndLength(data, length);
+  g_mapped_snapshot = mmapped_file.release();
+  g_snapshot_file_type = snapshot_file_type;
+  return 0;
+}
+#endif
 
 // static
 void V8Initializer::LoadV8SnapshotFromFile(

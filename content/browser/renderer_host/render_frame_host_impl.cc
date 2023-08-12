@@ -8104,6 +8104,18 @@ void RenderFrameHostImpl::CommitNavigation(
     }
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+  if (effective_scheme == url::kResourcesScheme && !navigation_to_web_bundle) {
+    base::TaskPriority file_factory_priority = base::TaskPriority::USER_BLOCKING;
+    non_network_factories.emplace(
+        url::kResourcesScheme,
+        FileURLLoaderFactory::Create(
+            browser_context->GetPath(),
+            browser_context->GetSharedCorsOriginAccessList(),
+            file_factory_priority));
+  }
+#endif
+
     auto* partition = GetStoragePartition();
     non_network_factories.emplace(
         url::kFileSystemScheme,

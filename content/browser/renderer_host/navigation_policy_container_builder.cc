@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "content/browser/renderer_host/policy_container_navigation_bundle.h"
+#include "content/browser/renderer_host/navigation_policy_container_builder.h"
 
 #include <utility>
 
@@ -75,7 +75,7 @@ std::unique_ptr<PolicyContainerPolicies> GetHistoryPolicies(
 
 }  // namespace
 
-PolicyContainerNavigationBundle::PolicyContainerNavigationBundle(
+NavigationPolicyContainerBuilder::NavigationPolicyContainerBuilder(
     RenderFrameHostImpl* parent,
     const blink::LocalFrameToken* initiator_frame_token,
     const FrameNavigationEntry* history_entry)
@@ -84,36 +84,36 @@ PolicyContainerNavigationBundle::PolicyContainerNavigationBundle(
       history_policies_(GetHistoryPolicies(history_entry)),
       delivered_policies_(std::make_unique<PolicyContainerPolicies>()) {}
 
-PolicyContainerNavigationBundle::~PolicyContainerNavigationBundle() = default;
+NavigationPolicyContainerBuilder::~NavigationPolicyContainerBuilder() = default;
 
 const PolicyContainerPolicies*
-PolicyContainerNavigationBundle::InitiatorPolicies() const {
+NavigationPolicyContainerBuilder::InitiatorPolicies() const {
   return initiator_policies_.get();
 }
 
-const PolicyContainerPolicies* PolicyContainerNavigationBundle::ParentPolicies()
+const PolicyContainerPolicies* NavigationPolicyContainerBuilder::ParentPolicies()
     const {
   return parent_policies_.get();
 }
 
 const PolicyContainerPolicies*
-PolicyContainerNavigationBundle::HistoryPolicies() const {
+NavigationPolicyContainerBuilder::HistoryPolicies() const {
   return history_policies_.get();
 }
 
-void PolicyContainerNavigationBundle::SetIPAddressSpace(
+void NavigationPolicyContainerBuilder::SetIPAddressSpace(
     network::mojom::IPAddressSpace address_space) {
   DCHECK(!HasComputedPolicies());
   delivered_policies_->ip_address_space = address_space;
 }
 
-void PolicyContainerNavigationBundle::SetIsOriginPotentiallyTrustworthy(
+void NavigationPolicyContainerBuilder::SetIsOriginPotentiallyTrustworthy(
     bool value) {
   DCHECK(!HasComputedPolicies());
   delivered_policies_->is_web_secure_context = value;
 }
 
-void PolicyContainerNavigationBundle::AddContentSecurityPolicy(
+void NavigationPolicyContainerBuilder::AddContentSecurityPolicy(
     network::mojom::ContentSecurityPolicyPtr policy) {
   DCHECK(!HasComputedPolicies());
   DCHECK(policy);
@@ -121,21 +121,21 @@ void PolicyContainerNavigationBundle::AddContentSecurityPolicy(
   delivered_policies_->content_security_policies.push_back(std::move(policy));
 }
 
-void PolicyContainerNavigationBundle::AddContentSecurityPolicies(
+void NavigationPolicyContainerBuilder::AddContentSecurityPolicies(
     std::vector<network::mojom::ContentSecurityPolicyPtr> policies) {
   DCHECK(!HasComputedPolicies());
 
   delivered_policies_->AddContentSecurityPolicies(std::move(policies));
 }
 
-void PolicyContainerNavigationBundle::SetCrossOriginOpenerPolicy(
+void NavigationPolicyContainerBuilder::SetCrossOriginOpenerPolicy(
     network::CrossOriginOpenerPolicy coop) {
   DCHECK(!HasComputedPolicies());
 
   delivered_policies_->cross_origin_opener_policy = coop;
 }
 
-void PolicyContainerNavigationBundle::SetCrossOriginEmbedderPolicy(
+void NavigationPolicyContainerBuilder::SetCrossOriginEmbedderPolicy(
     network::CrossOriginEmbedderPolicy coep) {
   DCHECK(!HasComputedPolicies());
 
@@ -143,13 +143,13 @@ void PolicyContainerNavigationBundle::SetCrossOriginEmbedderPolicy(
 }
 
 const PolicyContainerPolicies&
-PolicyContainerNavigationBundle::DeliveredPoliciesForTesting() const {
+NavigationPolicyContainerBuilder::DeliveredPoliciesForTesting() const {
   DCHECK(!HasComputedPolicies());
 
   return *delivered_policies_;
 }
 
-void PolicyContainerNavigationBundle::ComputePoliciesForError() {
+void NavigationPolicyContainerBuilder::ComputePoliciesForError() {
   // The decision to commit an error page can happen after receiving the
   // response for a regular document. It overrides any previous attempt to
   // |ComputePolicies()|.
@@ -172,7 +172,7 @@ void PolicyContainerNavigationBundle::ComputePoliciesForError() {
   DCHECK(HasComputedPolicies());
 }
 
-void PolicyContainerNavigationBundle::ComputeIsWebSecureContext() {
+void NavigationPolicyContainerBuilder::ComputeIsWebSecureContext() {
   DCHECK(!HasComputedPolicies());
 
   if (!parent_policies_) {
@@ -186,7 +186,7 @@ void PolicyContainerNavigationBundle::ComputeIsWebSecureContext() {
 }
 
 std::unique_ptr<PolicyContainerPolicies>
-PolicyContainerNavigationBundle::IncorporateDeliveredPolicies(
+NavigationPolicyContainerBuilder::IncorporateDeliveredPolicies(
     const GURL& url,
     std::unique_ptr<PolicyContainerPolicies> policies) {
   // Delivered content security policies must be appended.
@@ -203,7 +203,7 @@ PolicyContainerNavigationBundle::IncorporateDeliveredPolicies(
 }
 
 std::unique_ptr<PolicyContainerPolicies>
-PolicyContainerNavigationBundle::ComputeInheritedPolicies(const GURL& url) {
+NavigationPolicyContainerBuilder::ComputeInheritedPolicies(const GURL& url) {
   DCHECK(HasLocalScheme(url)) << "No inheritance allowed for non-local schemes";
 
   if (url.IsAboutSrcdoc()) {
@@ -220,42 +220,59 @@ PolicyContainerNavigationBundle::ComputeInheritedPolicies(const GURL& url) {
 }
 
 std::unique_ptr<PolicyContainerPolicies>
-PolicyContainerNavigationBundle::ComputeFinalPolicies(const GURL& url) {
+NavigationPolicyContainerBuilder::ComputeFinalPolicies(const GURL& url) {
+  std::unique_ptr<PolicyContainerPolicies> policies;
   // Policies are either inherited from another document for local scheme, or
   // directly set from the delivered response.
-  if (!HasLocalScheme(url))
-    return delivered_policies_->Clone();
+  if (!HasLocalScheme(url)) {
+    policies = delivered_policies_->Clone();
+  } else if (history_policies_) {
+    // For a local scheme, history policies should not incorporate delivered
+    // ones as this may lead to duplication of some policies already stored in
+    // history. For example, consider the following HTML:
+    //    <iframe src="about:blank" csp="something">
+    // This will store CSP: something in history. The next time we have a
+    // history navigation we will have CSP: something twice.
+    policies = history_policies_->Clone();
+  } else {
+    policies = IncorporateDeliveredPolicies(url, ComputeInheritedPolicies(url));
+  }
 
-  // For a local scheme, history policies should not incorporate delivered ones
-  // as this may lead to duplication of some policies already stored in history.
-  // For example, consider the following HTML:
-  //    <iframe src="about:blank" csp="something">
-  // This will store CSP: something in history. The next time we have a history
-  // navigation we will have CSP: something twice.
-  if (history_policies_)
-    return history_policies_->Clone();
+  // `can_navigate_top_without_user_gesture` is inherited from the parent.
+  // Later in `NavigationRequest::CommitNavigation()` it will either be made
+  // less strict for same-origin navigations, or stricter for cross-origin
+  // navigations that do not explicitly allow top-level navigation without user
+  // gesture.
+  policies->can_navigate_top_without_user_gesture =
+      parent_policies_ ? parent_policies_->can_navigate_top_without_user_gesture
+                       : true;
 
-  return IncorporateDeliveredPolicies(url, ComputeInheritedPolicies(url));
+  return policies;
 }
 
-void PolicyContainerNavigationBundle::ComputePolicies(const GURL& url) {
+void NavigationPolicyContainerBuilder::ComputePolicies(const GURL& url) {
   DCHECK(!HasComputedPolicies());
   ComputeIsWebSecureContext();
   SetFinalPolicies(ComputeFinalPolicies(url));
 }
 
-bool PolicyContainerNavigationBundle::HasComputedPolicies() const {
+bool NavigationPolicyContainerBuilder::HasComputedPolicies() const {
   return host_ != nullptr;
 }
 
-void PolicyContainerNavigationBundle::SetFinalPolicies(
+void NavigationPolicyContainerBuilder::SetAllowTopNavigationWithoutUserGesture(
+    bool allow_top) {
+  host_->SetCanNavigateTopWithoutUserGesture(allow_top);
+}
+
+void NavigationPolicyContainerBuilder::SetFinalPolicies(
     std::unique_ptr<PolicyContainerPolicies> policies) {
   DCHECK(!HasComputedPolicies());
 
   host_ = base::MakeRefCounted<PolicyContainerHost>(std::move(policies));
 }
 
-const PolicyContainerPolicies& PolicyContainerNavigationBundle::FinalPolicies()
+const PolicyContainerPolicies& NavigationPolicyContainerBuilder::FinalPolicies()
     const {
   DCHECK(HasComputedPolicies());
 
@@ -263,20 +280,20 @@ const PolicyContainerPolicies& PolicyContainerNavigationBundle::FinalPolicies()
 }
 
 blink::mojom::PolicyContainerPtr
-PolicyContainerNavigationBundle::CreatePolicyContainerForBlink() {
+NavigationPolicyContainerBuilder::CreatePolicyContainerForBlink() {
   DCHECK(HasComputedPolicies());
 
   return host_->CreatePolicyContainerForBlink();
 }
 
 scoped_refptr<PolicyContainerHost>
-PolicyContainerNavigationBundle::TakePolicyContainerHost() && {
+NavigationPolicyContainerBuilder::TakePolicyContainerHost() && {
   DCHECK(HasComputedPolicies());
 
   return std::move(host_);
 }
 
-void PolicyContainerNavigationBundle::ResetForCrossDocumentRestart() {
+void NavigationPolicyContainerBuilder::ResetForCrossDocumentRestart() {
   host_ = nullptr;
   delivered_policies_ = std::make_unique<PolicyContainerPolicies>();
 }

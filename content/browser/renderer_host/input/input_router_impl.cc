@@ -143,7 +143,12 @@ void InputRouterImpl::SendGestureEvent(
 #if BUILDFLAG(IS_OHOS)
   if (gesture_event.event.GetType() ==
       WebInputEvent::Type::kGestureFlingStart) {
-    client_->GetWidgetInputHandler()->StartFling();
+    LOG(INFO) << "InputRouterImpl::SendGestureEvent type=kGestureFlingStart";
+    client_->GetWidgetInputHandler()->TryStartFling();
+  } else if (gesture_event.event.GetType() ==
+             WebInputEvent::Type::kGestureScrollEnd) {
+    LOG(INFO) << "InputRouterImpl::SendGestureEvent type=kGestureScrollEnd";
+    client_->GetWidgetInputHandler()->TryFinishFling();
   }
 #endif
   if (gesture_event_queue_.PassToFlingController(gesture_event)) {

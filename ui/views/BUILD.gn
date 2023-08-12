@@ -15,7 +15,13 @@ import("//ui/views/features.gni")
 assert(toolkit_views || is_ohos)
 
 config("flags") {
-  defines = [ "TOOLKIT_VIEWS=1" ]
+  if (is_ohos) {
+    if (toolkit_views) {
+      defines = [ "TOOLKIT_VIEWS=1" ]
+    } 
+  } else {
+    defines = [ "TOOLKIT_VIEWS=1" ]
+  }
 }
 
 aggregate_vector_icons("views_vector_icons") {

@@ -42,6 +42,9 @@ namespace {
 // Timeout for the SSL handshake portion of the connect.
 constexpr base::TimeDelta kSSLHandshakeTimeout(base::Seconds(30));
 
+#if BUILDFLAG(IS_OHOS)
+constexpr uint16_t k3DESCipher = 0x000a;
+#endif
 }  // namespace
 
 SSLSocketParams::SSLSocketParams(
@@ -469,7 +472,16 @@ int SSLConnectJob::DoSSLConnectComplete(int result) {
           }
         }
       }
-      if (ssl_info.peer_signature_algorithm == SSL_SIGN_RSA_PKCS1_SHA1) {
+#if BUILDFLAG(IS_OHOS)
+      if (cipher_suite == k3DESCipher /* TLS_RSA_WITH_3DES_EDE_CBC_SHA */) {
+        // TLS_RSA_WITH_3DES_EDE_CBC_SHA does not involve a peer signature.
+        DCHECK_EQ(0, ssl_info.peer_signature_algorithm);
+        fallback = sent_sha1_cert
+                       ? SSLLegacyCryptoFallback::kSentSHA1CertAndUsed3DES
+                       : SSLLegacyCryptoFallback::kUsed3DES;
+      } else
+#endif  
+          if (ssl_info.peer_signature_algorithm == SSL_SIGN_RSA_PKCS1_SHA1) {
         fallback = sent_sha1_cert
                        ? SSLLegacyCryptoFallback::kSentSHA1CertAndUsedSHA1
                        : SSLLegacyCryptoFallback::kUsedSHA1;

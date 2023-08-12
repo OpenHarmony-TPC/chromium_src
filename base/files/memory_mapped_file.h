@@ -111,6 +111,17 @@ class BASE_EXPORT MemoryMappedFile {
   // Is file_ a valid file handle that points to an open, memory mapped file?
   bool IsValid() const;
 
+#if BUILDFLAG(IS_OHOS)
+  void SetDataAndLength(std::unique_ptr<uint8_t[]> &data, size_t length) {
+    if (IsValid() && !customizeData_) {
+      CloseHandles();
+    }
+    customizeData_ = true;
+    data_ = data.release();
+    length_ = length;
+  }
+#endif
+
  private:
   // Given the arbitrarily aligned memory region [start, size], returns the
   // boundaries of the region aligned to the granularity specified by the OS,
@@ -140,6 +151,9 @@ class BASE_EXPORT MemoryMappedFile {
   File file_;
   uint8_t* data_;
   size_t length_;
+#if BUILDFLAG(IS_OHOS)
+  bool customizeData_ = false;
+#endif
 
 #if BUILDFLAG(IS_WIN)
   win::ScopedHandle file_mapping_;

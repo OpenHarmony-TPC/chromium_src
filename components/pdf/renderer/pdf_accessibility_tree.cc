@@ -665,9 +665,11 @@ class PdfAccessibilityTreeBuilder {
         ax::mojom::Role::kPdfActionableHighlight,
         ax::mojom::Restriction::kReadOnly, render_accessibility_, nodes_);
 
+#if BUILDFLAG(IS_OHOS) && BUILDFLAG(ENABLE_PLUGINS)
     highlight_node->AddStringAttribute(
         ax::mojom::StringAttribute::kRoleDescription,
         l10n_util::GetStringUTF8(IDS_AX_ROLE_DESCRIPTION_PDF_HIGHLIGHT));
+#endif
     highlight_node->AddStringAttribute(ax::mojom::StringAttribute::kName,
                                        std::string());
     highlight_node->relative_bounds.bounds = highlight.bounds;
@@ -683,9 +685,11 @@ class PdfAccessibilityTreeBuilder {
         CreateNode(ax::mojom::Role::kNote, ax::mojom::Restriction::kReadOnly,
                    render_accessibility_, nodes_);
 
+#if BUILDFLAG(IS_OHOS) && BUILDFLAG(ENABLE_PLUGINS)
     popup_note_node->AddStringAttribute(
         ax::mojom::StringAttribute::kRoleDescription,
         l10n_util::GetStringUTF8(IDS_AX_ROLE_DESCRIPTION_PDF_POPUP_NOTE));
+#endif
     popup_note_node->relative_bounds.bounds = highlight.bounds;
 
     ui::AXNodeData* static_popup_note_text_node = CreateNode(
@@ -1330,9 +1334,11 @@ void PdfAccessibilityTree::SetAccessibilityDocInfo(
   doc_node_ =
       CreateNode(ax::mojom::Role::kPdfRoot, ax::mojom::Restriction::kReadOnly,
                  render_accessibility, &nodes_);
+#if BUILDFLAG(IS_OHOS) && BUILDFLAG(ENABLE_PLUGINS)
   doc_node_->AddStringAttribute(ax::mojom::StringAttribute::kName,
                                 l10n_util::GetPluralStringFUTF8(
                                     IDS_PDF_DOCUMENT_PAGE_COUNT, page_count_));
+#endif
 
   // Because all of the coordinates are expressed relative to the
   // doc's coordinates, the origin of the doc must be (0, 0). Its
@@ -1371,9 +1377,11 @@ void PdfAccessibilityTree::SetAccessibilityPageInfo(
   ui::AXNodeData* page_node =
       CreateNode(ax::mojom::Role::kRegion, ax::mojom::Restriction::kReadOnly,
                  render_accessibility, &nodes_);
+#if BUILDFLAG(IS_OHOS) && BUILDFLAG(ENABLE_PLUGINS)
   page_node->AddStringAttribute(
       ax::mojom::StringAttribute::kName,
       l10n_util::GetPluralStringFUTF8(IDS_PDF_PAGE_INDEX, page_index + 1));
+#endif
   page_node->AddBoolAttribute(ax::mojom::BoolAttribute::kIsPageBreakingObject,
                               true);
 

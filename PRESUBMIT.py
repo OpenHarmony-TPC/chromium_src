@@ -985,6 +985,19 @@ _BANNED_CPP_FUNCTIONS = (
           r'^base[\\/]win[\\/]scoped_winrt_initializer\.cc$'
       ),
     ),
+    (
+      r'\bchartorune\b',
+      (
+        'chartorune is not memory-safe, unless you can guarantee the input ',
+        'string is always null-terminated. Otherwise, please use charntorune ',
+        'from libphonenumber instead.'
+      ),
+      True,
+      [
+        _THIRD_PARTY_EXCEPT_BLINK,
+        # Exceptions to this rule should have a fuzzer.
+      ],
+    ),
 )
 
 # Format: Sequence of tuples containing:

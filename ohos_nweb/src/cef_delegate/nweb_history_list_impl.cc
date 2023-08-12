@@ -51,9 +51,12 @@ NWebHistoryItemImpl::NWebHistoryItemImpl(CefRefPtr<CefNavigationEntry> entry)
     : entry_(entry) {}
 
 std::string NWebHistoryItemImpl::GetHistoryRawUrl() {
-  return (entry_ != nullptr && entry_->IsValid())
-             ? entry_->GetOriginalURL().ToString()
-             : std::string();
+  if (!entry_ || !entry_->IsValid()) {
+    return std::string();
+  }
+  return entry_->GetOriginalURL().ToString().empty()
+             ? entry_->GetDisplayURL().ToString()
+             : entry_->GetOriginalURL().ToString();
 }
 
 std::string NWebHistoryItemImpl::GetHistoryTitle() {

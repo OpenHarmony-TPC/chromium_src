@@ -595,6 +595,11 @@ class WebContents : public PageNavigator,
                               std::string& targetUri) = 0;
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void SetTouchInsertHandleMenuShow(bool show) = 0;
+  virtual bool GetTouchInsertHandleMenuShow() = 0;
+#endif
+
   // Saves the given title to the navigation entry and does associated work. It
   // will update history and the view with the new title, and also synthesize
   // titles for file URLs that have none. Thus |entry| must have a URL set.

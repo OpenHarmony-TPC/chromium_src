@@ -21,11 +21,20 @@
 #include <vector>
 #include "cef/include/cef_render_handler.h"
 #include "display_manager_adapter.h"
-#include "nweb_inputmethod_client.h"
 #include "nweb_handler.h"
+#include "nweb_inputmethod_client.h"
 #include "nweb_touch_handle_state_impl.h"
 
 namespace OHOS::NWeb {
+struct NWebScreenInfo {
+  RotationType rotation = RotationType::ROTATION_0;
+  OrientationType orientation = OrientationType::UNSPECIFIED;
+  int width = 0;
+  int height = 0;
+  double display_ratio = -1.0;
+  bool default_portrait = false;
+};
+
 class NWebRenderHandler : public CefRenderHandler {
  public:
   static CefRefPtr<NWebRenderHandler> Create();
@@ -35,8 +44,7 @@ class NWebRenderHandler : public CefRenderHandler {
   void RegisterRenderCb(std::function<void(const char*)> render_update_cb);
   void RegisterNWebHandler(std::shared_ptr<NWebHandler> handler);
   void Resize(uint32_t width, uint32_t height);
-  void SetScreenInfo(RotationType rotation, OrientationType orientation,
-                      int width, int height, double display_ratio);
+  void SetScreenInfo(const NWebScreenInfo& screen_info);
   int ContentHeight();
   void SetInputMethodClient(CefRefPtr<NWebInputMethodClient> client);
 
@@ -51,14 +59,14 @@ class NWebRenderHandler : public CefRenderHandler {
                        const void* buffer,
                        int width,
                        int height) override;
-                       
+
   void OnRootLayerChanged(CefRefPtr<CefBrowser> browser,
                           int height,
                           int width) override;
 
   void OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser,
-                                     double x,
-                                     double y) override;
+                             double x,
+                             double y) override;
 
   virtual void OnImeCompositionRangeChanged(
       CefRefPtr<CefBrowser> browser,
@@ -70,15 +78,17 @@ class NWebRenderHandler : public CefRenderHandler {
                                       const CefRange& selected_range) override;
 
   virtual void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
-                                          TextInputMode input_mode, bool show_keyboard) override;
+                                          TextInputMode input_mode,
+                                          bool show_keyboard) override;
 
   void GetTouchHandleSize(CefRefPtr<CefBrowser> browser,
                           cef_horizontal_alignment_t orientation,
                           CefSize& size) override;
-  void OnTouchSelectionChanged(const CefTouchHandleState& insert_handle,
-                               const CefTouchHandleState& start_selection_handle,
-                               const CefTouchHandleState& end_selection_handle,
-                               bool need_report) override;
+  void OnTouchSelectionChanged(
+      const CefTouchHandleState& insert_handle,
+      const CefTouchHandleState& start_selection_handle,
+      const CefTouchHandleState& end_selection_handle,
+      bool need_report) override;
 
   bool StartDragging(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefDragData> drag_data,
@@ -92,21 +102,22 @@ class NWebRenderHandler : public CefRenderHandler {
 
   CefRefPtr<CefDragData> GetDragData();
 
+  float GetVirtualPixelRatio() const { return screen_info_.display_ratio; }
+
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(NWebRenderHandler);
 
  private:
+  CefTouchHandleState ConvertTouchHandleDisplayRatio(
+      const CefTouchHandleState& touch_handle);
+
   std::function<void(const char*)> render_update_cb_ = nullptr;
   CefRefPtr<NWebInputMethodClient> inputmethod_client_ = nullptr;
   uint32_t width_ = 0;
   uint32_t height_ = 0;
-  RotationType rotation_ = RotationType::ROTATION_0;
-  OrientationType orientation_ = OrientationType::UNSPECIFIED;
   int content_height_ = 0;
   int content_width_ = 0;
-  double display_ratio_ = -1.0;
-  uint32_t screen_width_ = 0;
-  uint32_t screen_height_ = 0;
+  NWebScreenInfo screen_info_;
 
   std::weak_ptr<NWebHandler> handler_;
   CefTouchHandleState insert_handle_;
@@ -114,6 +125,6 @@ class NWebRenderHandler : public CefRenderHandler {
   CefTouchHandleState end_selection_handle_;
   CefRefPtr<CefDragData> drag_data_ = nullptr;
 };
-}
+}  // namespace OHOS::NWeb
 
 #endif  // NWEB_RENDER_HANDLER_H
