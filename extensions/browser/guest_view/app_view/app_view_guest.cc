@@ -241,6 +241,12 @@ void AppViewGuest::CompleteCreateWebContents(
     const GURL& url,
     const Extension* guest_extension,
     WebContentsCreatedCallback callback) {
+  if (!owner_web_contents()) {
+    // The owner was destroyed before getting a response to the embedding
+    // request, so we can't proceed with creating a guest.
+    std::move(callback).Run(nullptr);
+    return;
+  }
   if (!url.is_valid()) {
     std::move(callback).Run(nullptr);
     return;

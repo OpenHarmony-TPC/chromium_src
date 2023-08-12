@@ -29,6 +29,10 @@
 #include "components/viz/service/frame_sinks/external_begin_frame_source_android.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "components/viz/service/frame_sinks/external_begin_frame_source_ohos.h"
+#endif
+
 namespace viz {
 
 // static
@@ -93,6 +97,9 @@ RootCompositorFrameSinkImpl::Create(
         std::make_unique<ExternalBeginFrameSourceAndroid>(
             restart_id, params->refresh_rate,
             /*requires_align_with_java=*/false);
+#elif BUILDFLAG(IS_OHOS)
+    external_begin_frame_source =
+        std::make_unique<ExternalBeginFrameSourceOHOS>(restart_id);
 #else
     if (params->disable_frame_rate_limit) {
       synthetic_begin_frame_source =

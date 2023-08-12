@@ -182,6 +182,7 @@ char* CopyCefStringToChar(const CefString& str) {
   return result;
 }
 
+const char kOffScreenFrameRate[] = "off-screen-frame-rate";
 }  // namespace
 
 // static
@@ -383,9 +384,22 @@ CefRefPtr<CefKeyboardHandler> NWebHandlerDelegate::GetKeyboardHandler() {
 
 /* CefLifeSpanHandler methods begin */
 void NWebHandlerDelegate::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
-  LOG(INFO) << "NWebHandlerDelegate::OnAfterCreated";
+  LOG(INFO) << "NWebHandlerDelegate::OnAfterCreated IsPopup " << browser->IsPopup();
   CEF_REQUIRE_UI_THREAD();
-
+  if (!main_browser_ && browser->IsPopup()) {
+    main_browser_ = browser;
+    if (preference_delegate_.get()) {
+      preference_delegate_->SetBrowser(main_browser_);
+      preference_delegate_->WebPreferencesChanged();
+    }
+    if (event_handler_.get()) {
+      event_handler_->SetBrowser(main_browser_);
+    }
+    if (main_browser_ && main_browser_->GetHost()) {
+      main_browser_->GetHost()->SetNativeWindow((void *)window_);
+    }
+    return;
+  }
   if (!main_browser_) {
     main_browser_ = browser;
     if (event_handler_.get()) {
@@ -475,7 +489,7 @@ bool NWebHandlerDelegate::OnPreBeforePopup(CefRefPtr<CefBrowser> browser,
       popIndex_++;
       std::shared_ptr<NWebControllerHandler> handler = std::make_shared<NWebControllerHandlerImpl>(popIndex_, true);
       nweb_handler_->OnWindowNewByJS(target_url, false, user_gesture, handler);
-      return true;
+      return false;
     }
     default:
       break;
@@ -504,7 +518,9 @@ bool NWebHandlerDelegate::OnBeforePopup(
   if (preference_delegate_->IsMultiWindowAccess()) {
     switch (target_disposition) {
       case WOD_NEW_WINDOW:
-      case WOD_NEW_POPUP: {
+      case WOD_NEW_POPUP:
+      case WOD_NEW_BACKGROUND_TAB:
+      case WOD_NEW_FOREGROUND_TAB: {
         if (nweb_handler_ == nullptr) {
           return true;
         }
@@ -512,22 +528,31 @@ bool NWebHandlerDelegate::OnBeforePopup(
             std::make_shared<NWebControllerHandlerImpl>(popIndex_, false);
         nweb_handler_->OnWindowNewByJS(target_url, true, user_gesture, handler);
         NWebImpl* nweb = NWebImpl::FromID(handler->GetNWebHandlerId());
-        if (nweb) {
-          client = nweb->GetCefClient();
-          if (client) {
-            return false;
+        if (!nweb) {
+          return true;
+        }
+        client = nweb->GetCefClient();
+        if (!client) {
+          return true;
+        }
+        auto preference = nweb->GetPreference();;
+        if (preference) {
+          CefRefPtr<CefCommandLine> command_line =
+            CefCommandLine::GetGlobalCommandLine();
+          if (command_line->HasSwitch(kOffScreenFrameRate)) {
+            settings.windowless_frame_rate =
+                atoi(command_line->GetSwitchValue(kOffScreenFrameRate)
+                        .ToString()
+                        .c_str());
           }
+          settings.background_color = 0xffffffff;
+          static_cast<NWebPreferenceDelegate *>(preference.get())->ComputeBrowserSettings(settings);
+        } else {
+          preference_delegate_->ComputeBrowserSettings(settings);
         }
-        return true;
-      }
-      case WOD_NEW_BACKGROUND_TAB:
-      case WOD_NEW_FOREGROUND_TAB: {
-        if (nweb_handler_ != nullptr) {
-          std::shared_ptr<NWebControllerHandler> handler =
-		        std::make_shared<NWebControllerHandlerImpl>(popIndex_, false);
-          nweb_handler_->OnWindowNewByJS(target_url, false, user_gesture, handler);
-        }
-        return true;
+        CefWindowHandle handle = kNullWindowHandle;
+        window_info.SetAsWindowless(handle);
+        return false;
       }
       default:
         break;
@@ -947,7 +972,7 @@ bool NWebHandlerDelegate::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                                         const CefKeyEvent& event,
                                         CefEventHandle os_event,
                                         bool* is_keyboard_shortcut) {
-  LOG(INFO) << "NWebHandlerDelegate::OnPreKeyEvent type:" << event.type
+  LOG(DEBUG) << "NWebHandlerDelegate::OnPreKeyEvent type:" << event.type
             << ", win:" << event.windows_key_code;
   if (nweb_handler_ != nullptr) {
     int32_t action = NWebInputDelegate::CefConverter("ohoskeyaction", event.type);
@@ -969,7 +994,7 @@ bool NWebHandlerDelegate::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 bool NWebHandlerDelegate::OnKeyEvent(CefRefPtr<CefBrowser> browser,
                                      const CefKeyEvent& event,
                                      CefEventHandle os_event) {
-  LOG(INFO) << "NWebHandlerDelegate::OnKeyEvent type:" << event.type
+  LOG(DEBUG) << "NWebHandlerDelegate::OnKeyEvent type:" << event.type
             << ", win:" << event.windows_key_code;
   if (nweb_handler_ != nullptr) {
       int32_t action = NWebInputDelegate::CefConverter("ohoskeyaction", event.type);
@@ -1221,6 +1246,9 @@ bool NWebHandlerDelegate::OnSetFocus(CefRefPtr<CefBrowser> browser,
     focusState_ = true;
     nweb_handler_->OnFocus();
   }
+  if (event_handler_ != nullptr) {
+    event_handler_->SetIsFocus(true);
+  }
   return false;
 }
 /* CefFocusHandler method end */
@@ -1367,7 +1395,7 @@ void NWebHandlerDelegate::OnSelectPopupMenu(
   if (!nweb_handler_ || !render_handler_) {
     return;
   }
-  float ratio = render_handler_->GetVirtualPixelRatio();
+  float ratio = render_handler_->GetCefDeviceRatio();
   std::shared_ptr<NWebSelectPopupMenuParam> param =
       std::make_shared<NWebSelectPopupMenuParam>();
   if (!param) {
@@ -1417,7 +1445,7 @@ void NWebHandlerDelegate::CopyImageToClipboard(CefRefPtr<CefImage> image) {
     int pixel_width = 0;
     int pixel_height = 0;
     CefRefPtr<CefBinaryValue> bitMap =
-        image->GetAsBitmap(1, CEF_COLOR_TYPE_BGRA_8888, CEF_ALPHA_TYPE_OPAQUE,
+        image->GetAsBitmap(1, CEF_COLOR_TYPE_RGBA_8888, CEF_ALPHA_TYPE_OPAQUE,
                            pixel_width, pixel_height);
     size_t bitMapSize = bitMap->GetSize();
     uint8_t* data = (uint8_t*)calloc((size_t)bitMapSize, sizeof(uint8_t));
@@ -1753,5 +1781,8 @@ bool NWebHandlerDelegate::GetFocusState() {
 
 void NWebHandlerDelegate::SetFocusState(bool focusState) {
   focusState_ = focusState;
+  if (event_handler_ != nullptr) {
+    event_handler_->SetIsFocus(focusState);
+  }
 }
 }  // namespace OHOS::NWeb

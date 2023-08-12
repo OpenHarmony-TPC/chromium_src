@@ -336,6 +336,13 @@ viz_component("service") {
     deps += [ ":service_jni_headers" ]
   }
 
+  if (is_ohos) {
+    sources += [
+      "frame_sinks/external_begin_frame_source_ohos.cc",
+      "frame_sinks/external_begin_frame_source_ohos.h",
+    ]
+  }
+
   if (use_ozone) {
     sources += [
       "display/overlay_processor_ozone.cc",

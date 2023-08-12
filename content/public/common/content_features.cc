@@ -163,7 +163,7 @@ const base::Feature kBlockInsecurePrivateNetworkRequestsForNavigations{
 const base::Feature kBrowserUseDisplayThreadPriority {
   "BrowserUseDisplayThreadPriority",
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS_ASH)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS_ASH) || BUILDFLAG(IS_OHOS)
       base::FEATURE_ENABLED_BY_DEFAULT
 #else
       base::FEATURE_DISABLED_BY_DEFAULT
@@ -177,6 +177,13 @@ const base::Feature kBrowserVerifiedUserActivationKeyboard{
 // When enabled, mouse user activation will be verified by the browser side.
 const base::Feature kBrowserVerifiedUserActivationMouse{
     "BrowserVerifiedUserActivationMouse", base::FEATURE_DISABLED_BY_DEFAULT};
+
+// Compute the NavigationDownloadPolicy bit about sandbox flags from the browser
+// process side. This is a fix for https://crbug.com/1357366. The feature flag
+// is used as a temporary kill switch in case it breaks something important on
+// stable. To be removed by M111.
+const base::Feature kBrowserSideDownloadPolicySandbox(
+     "BrowserSideDownloadPolicySandbox", base::FEATURE_ENABLED_BY_DEFAULT);
 
 // Enables code caching for inline scripts.
 const base::Feature kCacheInlineScriptCode{"CacheInlineScriptCode",

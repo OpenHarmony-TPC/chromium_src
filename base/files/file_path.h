@@ -477,6 +477,11 @@ class BASE_EXPORT FilePath {
   bool IsContentUri() const;
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+  // Return true if the path is a datashare uri or dataability, or false otherwise
+  bool IsDataShareUri() const;
+#endif
+
  private:
   // Remove trailing separators from this object.  If the path is absolute, it
   // will never be stripped any more than to refer to the absolute root

@@ -33,6 +33,17 @@ const int32_t MIDDLE_BUTTON = 4;
 const int32_t BACK_BUTTON = 8;
 const int32_t FORWARD_BUTTON = 16;
 
+const std::vector<unsigned int> mmiKeyEvent {
+    KeyEvent::KEYCODE_SHIFT_LEFT,
+    KeyEvent::KEYCODE_SHIFT_RIGHT,
+    KeyEvent::KEYCODE_CTRL_LEFT,
+    KeyEvent::KEYCODE_CTRL_RIGHT,
+    KeyEvent::KEYCODE_ALT_LEFT,
+    KeyEvent::KEYCODE_ALT_RIGHT,
+    KeyEvent::KEYCODE_ESCAPE,
+    KeyEvent::KEYCODE_CAPS_LOCK
+};
+
 const std::unordered_map<int, int> keycodeConverter = {
     {KeyEvent::KEYCODE_0, ui::VKEY_0},
     {KeyEvent::KEYCODE_1, ui::VKEY_1},
@@ -472,3 +483,12 @@ uint32_t NWebInputDelegate::GetModifiers(cef_mouse_button_type_t button) {
   }
   return result;
 }
+
+bool NWebInputDelegate::IsMMIKeyEvent(int32_t keyCode) {
+  auto item = find(mmiKeyEvent.begin(), mmiKeyEvent.end(), keyCode);
+  if (item == mmiKeyEvent.end()) {
+    return false;
+  }
+  return true;
+}
+

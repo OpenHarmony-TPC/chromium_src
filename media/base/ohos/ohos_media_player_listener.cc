@@ -10,7 +10,7 @@ namespace media {
 OHOSMediaPlayerListener::OHOSMediaPlayerListener(
     const scoped_refptr<base::SingleThreadTaskRunner>& task_runner,
     base::WeakPtr<OHOSMediaPlayerBridge> media_player,
-    OHOS::sptr<OHOS::Surface> impl)
+    OHOS::sptr<OHOS::IConsumerSurface> impl)
     : task_runner_(task_runner), media_player_(media_player), surface_(impl) {
   DCHECK(task_runner_.get());
   DCHECK(media_player_);

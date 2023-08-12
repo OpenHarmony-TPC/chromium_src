@@ -25,11 +25,13 @@
 
 #include "base/lazy_instance.h"
 #include "base/trace_event/common/trace_event_common.h"
-#include "ohos_adapter_helper.h"
+#include "cef/include/cef_app.h"
+#include "cef/libcef/browser/net_service/net_helpers.h"
 #include "nweb_delegate_adapter.h"
 #include "nweb_export.h"
 #include "nweb_handler.h"
 #include "nweb_hilog.h"
+#include "ohos_adapter_helper.h"
 
 #if defined(REPORT_SYS_EVENT)
 #include "event_reporter.h"
@@ -40,8 +42,9 @@ uint32_t g_nweb_count = 0;
 const uint32_t kSurfaceMaxWidth = 7680;
 const uint32_t kSurfaceMaxHeight = 7680;
 
-// For NWebEx
+#ifdef OHOS_NWEB_EX
 bool g_browser_service_api_enabled = false;
+#endif  // OHOS_NWEB_EX
 
 #if defined(REPORT_SYS_EVENT)
   // For maximum count of nweb instance
@@ -51,13 +54,14 @@ bool g_browser_service_api_enabled = false;
 
 namespace OHOS::NWeb {
 
-// For NWebEx
 typedef std::unordered_map<int32_t, std::weak_ptr<NWebImpl>> NWebMap;
 base::LazyInstance<NWebMap>::DestructorAtExit g_nweb_map =
     LAZY_INSTANCE_INITIALIZER;
 
+#ifdef OHOS_NWEB_EX
 base::LazyInstance<std::vector<std::string>>::DestructorAtExit g_browser_args =
     LAZY_INSTANCE_INITIALIZER;
+#endif  // OHOS_NWEB_EX
 
 void NWebImpl::AddNWebToMap(uint32_t id, std::shared_ptr<NWebImpl>& nweb) {
   if (nweb) {
@@ -77,25 +81,11 @@ NWebImpl* NWebImpl::FromID(int32_t nweb_id) {
   return nullptr;
 }
 
-void NWebImpl::InitBrowserServiceApi(std::vector<std::string>& browser_args) {
-  auto args = g_browser_args.Pointer();
-  args->clear();
-  for (const std::string& arg : browser_args) {
-    args->push_back(arg);
-  }
-  g_browser_service_api_enabled = true;
-}
-
-bool NWebImpl::GetBrowserServiceApiEnabled() {
-  return g_browser_service_api_enabled;
-}
-
 NWebImpl::NWebImpl(uint32_t id) : nweb_id_(id) {}
 
 NWebImpl::~NWebImpl() {
   g_nweb_map.Get().erase(nweb_id_);
 }
-
 
 bool NWebImpl::Init(const NWebCreateInfo& create_info) {
   output_handler_ = NWebOutputHandler::Create(
@@ -181,7 +171,7 @@ bool NWebImpl::SetVirtualDeviceRatio() {
 uint32_t NWebImpl::NormalizeVirtualDeviceRatio(uint32_t length) {
   float ratio = static_cast<int>(length / device_pixel_ratio_)
     * device_pixel_ratio_;
-  return std::ceil(ratio); 
+  return std::ceil(ratio);
 }
 
 bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
@@ -204,9 +194,9 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
   for (auto it = web_engine_args_.begin(); i < argc; ++i, ++it) {
     argv[i] = it->c_str();
   }
-  bool is_enhance_surface = create_info.init_args.is_enhance_surface;
+  is_enhance_surface_  = create_info.init_args.is_enhance_surface;
   void* window = nullptr;
-  if (is_enhance_surface) {
+  if (is_enhance_surface_) {
     window = create_info.enhance_surface_info;
   } else {
     window =
@@ -219,7 +209,8 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
     delete[] argv;
     return false;
   }
-  nweb_delegate_ = NWebDelegateAdapter::CreateNWebDelegate(argc, argv, is_enhance_surface, window);
+  WVLOG_D("nweb create_info.init_args.is_popup: %{public}d", create_info.init_args.is_popup);
+  nweb_delegate_ = NWebDelegateAdapter::CreateNWebDelegate(argc, argv, is_enhance_surface_, window, create_info.init_args.is_popup);
   if (nweb_delegate_ == nullptr) {
     WVLOG_E("fail to create nweb delegate of web engine");
     delete[] argv;
@@ -254,12 +245,6 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
 void NWebImpl::InitWebEngineArgs(const NWebInitArgs& init_args) {
   web_engine_args_.clear();
 
-  WVLOG_E("===OH=== InitWebEngineArgs 60fps");
-  auto args = g_browser_args.Get();
-  for (const std::string& arg : args) {
-    web_engine_args_.emplace_back(arg);
-  }
-
   web_engine_args_.emplace_back("/system/bin/web_render");
   web_engine_args_.emplace_back("--in-process-gpu");
   web_engine_args_.emplace_back("--disable-dev-shm-usage");
@@ -284,6 +269,10 @@ void NWebImpl::InitWebEngineArgs(const NWebInitArgs& init_args) {
   web_engine_args_.emplace_back("--zygote-cmd-prefix=/system/bin/web_render");
   web_engine_args_.emplace_back("--remote-debugging-port=9222");
   web_engine_args_.emplace_back("--enable-touch-drag-drop");
+  web_engine_args_.emplace_back("--gpu-rasterization-msaa-sample-count=1");
+  // enable aggressive domstorage flushing to minimize data loss
+  // http://crbug.com/479767
+  web_engine_args_.emplace_back("--enable-aggressive-domstorage-flushing");
   if (init_args.is_enhance_surface) {
     WVLOG_I("is_enhance_surface is true");
     web_engine_args_.emplace_back("--ohos-enhance-surface");
@@ -300,22 +289,18 @@ void NWebImpl::InitWebEngineArgs(const NWebInitArgs& init_args) {
   if (init_args.multi_renderer_process) {
     web_engine_args_.emplace_back("--enable-multi-renderer-process");
   }
+
+#ifdef OHOS_NWEB_EX
+  auto args = g_browser_args.Get();
+  for (const std::string& arg : args) {
+    web_engine_args_.emplace_back(arg);
+  }
+#endif  // OHOS_NWEB_EX
 }
 
 void NWebImpl::PutDownloadCallback(
     std::shared_ptr<NWebDownloadCallback> downloadListener) {
   nweb_delegate_->RegisterDownLoadListener(downloadListener);
-}
-
-void NWebImpl::PutWebAppClientExtensionCallback(
-    std::shared_ptr<NWebAppClientExtensionCallback>
-        web_app_client_extension_listener) {
-  nweb_delegate_->RegisterWebAppClientExtensionListener(
-      web_app_client_extension_listener);
-}
-
-void NWebImpl::RemoveWebAppClientExtensionCallback() {
-  nweb_delegate_->UnRegisterWebAppClientExtensionListener();
 }
 
 void NWebImpl::SetNWebHandler(std::shared_ptr<NWebHandler> client) {
@@ -710,7 +695,7 @@ void NWebImpl::OnFocus() const {
   nweb_delegate_->OnFocus();
 }
 
-void NWebImpl::OnBlur() const {
+void NWebImpl::OnBlur(const BlurReason& blurReason) const {
   if (nweb_delegate_ == nullptr) {
     return;
   }
@@ -718,22 +703,10 @@ void NWebImpl::OnBlur() const {
   if (inputmethod_handler_ == nullptr) {
     return;
   }
+  if (is_enhance_surface_ && blurReason == OHOS::NWeb::BlurReason::WINDOW_BLUR) {
+    return;
+  }
   inputmethod_handler_->HideTextInput();
-}
-
-void NWebImpl::ReloadOriginalUrl() const {
-  if (nweb_delegate_ == nullptr) {
-    return;
-  }
-
-  nweb_delegate_->ReloadOriginalUrl();
-}
-
-void NWebImpl::SetBrowserUserAgentString(const std::string& user_agent) {
-  if (nweb_delegate_ == nullptr) {
-    return;
-  }
-  nweb_delegate_->SetBrowserUserAgentString(user_agent);
 }
 
 void NWebImpl::PutFindCallback(std::shared_ptr<NWebFindCallback> findListener) {
@@ -906,6 +879,73 @@ void NWebImpl::SlideScroll(float vx, float vy) {
   return nweb_delegate_->SlideScroll(vx, vy);
 }
 
+bool NWebImpl::GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("get cert chain data failed, nweb_delegate_ is null");
+    return false;
+  }
+  return nweb_delegate_->GetCertChainDerData(certChainData, isSingleCert);
+}
+
+#if defined (OHOS_NWEB_EX)
+// static
+const std::vector<std::string>& NWebImpl::GetCommandLineArgsForNWebEx() {
+  return g_browser_args.Get();
+}
+
+void NWebImpl::InitBrowserServiceApi(std::vector<std::string>& browser_args) {
+  auto args = g_browser_args.Pointer();
+  args->clear();
+  for (const std::string& arg : browser_args) {
+    args->push_back(arg);
+  }
+  g_browser_service_api_enabled = true;
+}
+
+bool NWebImpl::GetBrowserServiceApiEnabled() {
+  return g_browser_service_api_enabled;
+}
+
+void NWebImpl::ReloadOriginalUrl() const {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+
+  nweb_delegate_->ReloadOriginalUrl();
+}
+
+void NWebImpl::SetBrowserUserAgentString(const std::string& user_agent) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->SetBrowserUserAgentString(user_agent);
+}
+
+void NWebImpl::PutWebAppClientExtensionCallback(
+    std::shared_ptr<NWebAppClientExtensionCallback>
+        web_app_client_extension_listener) {
+  nweb_delegate_->RegisterWebAppClientExtensionListener(
+      web_app_client_extension_listener);
+}
+
+void NWebImpl::RemoveWebAppClientExtensionCallback() {
+  nweb_delegate_->UnRegisterWebAppClientExtensionListener();
+}
+
+void NWebImpl::SetForceEnableZoom(bool forceEnableZoom) const {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->SetForceEnableZoom(forceEnableZoom);
+}
+
+bool NWebImpl::GetForceEnableZoom() const {
+  if (nweb_delegate_ == nullptr) {
+    return false;
+  }
+  return nweb_delegate_->GetForceEnableZoom();
+}
+#endif //OHOS_NWEB_EX
 }  // namespace OHOS::NWeb
 
 using namespace OHOS::NWeb;
@@ -945,5 +985,18 @@ extern "C" OHOS_NWEB_EXPORT void GetNWeb(int32_t nweb_id,
   NWebMap* map = OHOS::NWeb::g_nweb_map.Pointer();
   if (auto it = map->find(nweb_id); it != map->end()) {
     nweb = it->second;
+  }
+}
+
+extern "C" OHOS_NWEB_EXPORT void SetHttpDns(const NWebDOHConfig& config) {
+  WVLOG_I("set http dns config mode:%{public}d config: %{public}s",
+          config.doh_mode, config.doh_config.c_str());
+  net_service::NetHelpers::doh_mode = config.doh_mode;
+  net_service::NetHelpers::doh_config = config.doh_config;
+
+  if (g_nweb_count != 0) {
+    CefApplyHttpDns();
+  } else {
+    WVLOG_I("nweb hadn't initiated try to set http dns config later");
   }
 }

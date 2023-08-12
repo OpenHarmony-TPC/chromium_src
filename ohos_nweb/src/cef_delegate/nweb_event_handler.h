@@ -19,31 +19,38 @@
 #include "cef/include/cef_client.h"
 #include "nweb_input_delegate.h"
 #include "nweb_inputmethod_handler.h"
+#include "nweb_key_event.h"
+#include "ohos_adapter_helper.h"
 
 namespace OHOS::NWeb {
+
 class NWebEventHandler {
  public:
   static std::shared_ptr<NWebEventHandler> Create();
 
-  NWebEventHandler() = default;
+  NWebEventHandler();
   ~NWebEventHandler() = default;
   void OnDestroy();
 
   void SetBrowser(CefRefPtr<CefBrowser> browser);
-
+  void SetIsFocus(bool isFocus) { isFocus_ = isFocus; }
   void OnTouchPress(int32_t id, double x, double y);
   void OnTouchMove(int32_t id, double x, double y);
   void OnTouchRelease(int32_t id, double x, double y);
   void OnTouchCancel();
-  void OnKeyBack();
-  bool SendKeyEvent(int32_t keyCode, int32_t keyAction);
+  bool SendKeyEventFromAce(int32_t keyCode, int32_t keyAction);
   void SendMouseWheelEvent(double x, double y, double deltaX, double deltaY);
   void SendMouseEvent(int x, int y, int button, int action, int count);
 
  private:
+  void SendKeyEventFromMMI(int32_t keyCode, int32_t keyAction);
+  bool SendKeyEvent(int32_t keyCode, int32_t keyAction);
   bool IsCharInputEvent(CefKeyEvent& keyEvent);
   CefRefPtr<CefBrowser> browser_ = nullptr;
   NWebInputDelegate input_delegate_;
+  std::unique_ptr<MMIAdapter> mmi_adapter_ = nullptr;
+  int32_t mmi_id_ = -1;
+  bool isFocus_ = false;
 };
 }  // namespace OHOS::NWeb
 

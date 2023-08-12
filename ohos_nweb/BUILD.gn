@@ -44,9 +44,8 @@ config("cef_nweb_config") {
 
   lib_dirs = ohos_libs_dir
   libs = [
-    "inputmethod_client.z",
+    "mmi-client.z",
     "ipc_core.z",
-    "inputmethod_ability.z",
     "accesstoken_sdk.z",
     "nweb_ohos_adapter.z",
     "hisysevent.z",

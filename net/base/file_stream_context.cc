@@ -21,6 +21,10 @@
 #include "base/android/content_uri_utils.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/datashare_uri_utils.h"
+#endif
+
 namespace net {
 
 namespace {
@@ -173,6 +177,11 @@ FileStream::Context::OpenResult FileStream::Context::OpenFileImpl(
     file = base::OpenContentUriForRead(path);
   } else {
 #endif  // BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_OHOS)
+  if (path.IsDataShareUri()) {
+    file = base::OpenDatashareUriForRead(path);
+  } else {
+#endif
     // FileStream::Context actually closes the file asynchronously,
     // independently from FileStream's destructor. It can cause problems for
     // users wanting to delete the file right after FileStream deletion. Thus
@@ -184,6 +193,9 @@ FileStream::Context::OpenResult FileStream::Context::OpenFileImpl(
 #if BUILDFLAG(IS_ANDROID)
   }
 #endif  // BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_OHOS)
+  }
+#endif  // BUILDFLAG(IS_OHOS)
   if (!file.IsValid()) {
     return OpenResult(base::File(),
                       IOResult::FromOSError(logging::GetLastSystemErrorCode()));

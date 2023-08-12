@@ -38,7 +38,21 @@ std::shared_ptr<NWebEventHandler> NWebEventHandler::Create() {
   return event_handler;
 }
 
+NWebEventHandler::NWebEventHandler() {
+  mmi_adapter_ = OHOS::NWeb::OhosAdapterHelper::GetInstance().CreateMMIAdapter();
+  if (mmi_adapter_ == nullptr) {
+    LOG(ERROR) << "display_manager_adapter is nullptr";
+    return;
+  }
+  mmi_id_ = mmi_adapter_->RegisterMMIInputListener([this](int32_t keyCode, int32_t keyAction) {
+    this->SendKeyEventFromMMI(keyCode, keyAction);
+  });
+}
+
 void NWebEventHandler::OnDestroy() {
+  if (mmi_id_ > 0 && mmi_adapter_ != nullptr) {
+    mmi_adapter_->UnregisterMMIInputListener(mmi_id_);
+  }
   browser_ = nullptr;
 }
 
@@ -93,7 +107,24 @@ void NWebEventHandler::OnTouchCancel() {
   }
 }
 
+void NWebEventHandler::SendKeyEventFromMMI(int32_t keyCode, int32_t keyAction) {
+  if (!isFocus_ || !NWebInputDelegate::IsMMIKeyEvent(keyCode)) {
+    return;
+  }
+  LOG(DEBUG) << "SendKeyEventFromMMI keyCode = " << keyCode << " keyAction = " << keyAction;
+  SendKeyEvent(keyCode, keyAction);
+}
+
+bool NWebEventHandler::SendKeyEventFromAce(int32_t keyCode, int32_t keyAction) {
+  if (mmi_id_ >= 0 && NWebInputDelegate::IsMMIKeyEvent(keyCode)) {
+    return true;
+  }
+  LOG(DEBUG) << "SendKeyEventFromAce keyCode = " << keyCode << " keyAction = " << keyAction;
+  return SendKeyEvent(keyCode, keyAction);
+}
+
 bool NWebEventHandler::SendKeyEvent(int32_t keyCode, int32_t keyAction) {
+  LOG(DEBUG) << "SendKeyEvent keyCode = " << keyCode << " keyAction = " << keyAction;
   CefKeyEvent keyEvent;
   input_delegate_.SetModifiers(keyCode, keyAction);
   keyEvent.windows_key_code =
@@ -143,11 +174,18 @@ void NWebEventHandler::SendMouseWheelEvent(double x,
       return;
     }
     browser_->GetHost()->SetZoomLevel(tempZoomFactor);
-  } else {
-    browser_->GetHost()->SendMouseWheelEvent(
-        mouseEvent, deltaX * input_delegate_.GetMouseWheelRatio(),
-        deltaY * input_delegate_.GetMouseWheelRatio());
+    return;
   }
+  double horizontalDelta;
+  double verticalDelta;
+  if (mmi_id_ > 0 && (mouseEvent.modifiers & EVENTFLAG_SHIFT_DOWN)) {
+    horizontalDelta = deltaY * input_delegate_.GetMouseWheelRatio();
+    verticalDelta = deltaX * input_delegate_.GetMouseWheelRatio();
+  } else {
+    horizontalDelta = deltaX * input_delegate_.GetMouseWheelRatio();
+    verticalDelta = deltaY * input_delegate_.GetMouseWheelRatio();
+  }
+  browser_->GetHost()->SendMouseWheelEvent(mouseEvent, horizontalDelta, verticalDelta);
 }
 
 void NWebEventHandler::SendMouseEvent(int x, int y, int button, int action, int count) {

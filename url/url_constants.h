@@ -8,6 +8,7 @@
 #include <stddef.h>
 
 #include "base/component_export.h"
+#include "build/build_config.h"
 
 namespace url {
 
@@ -67,6 +68,11 @@ COMPONENT_EXPORT(URL) extern const char kStandardSchemeSeparator[];
 COMPONENT_EXPORT(URL) extern const char16_t kStandardSchemeSeparator16[];
 
 COMPONENT_EXPORT(URL) extern const size_t kMaxURLChars;
+
+#if BUILDFLAG(IS_OHOS)
+COMPONENT_EXPORT(URL) extern const char kDatashareScheme[];
+COMPONENT_EXPORT(URL) extern const char kDataabilityScheme[];
+#endif
 
 }  // namespace url
 

@@ -3104,7 +3104,7 @@ void RenderFrameHostImpl::RenderFrameCreated() {
   // Initialize the RenderWidgetHost which marks it and the RenderViewHost as
   // live before calling to the `delegate_`.
   if (GetLocalRenderWidgetHost()) {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || defined(OHOS_NWEB_EX)
     GetLocalRenderWidgetHost()->SetForceEnableZoom(
         delegate_->GetOrCreateWebPreferences().force_enable_zoom);
 #endif  // BUILDFLAG(IS_ANDROID)

@@ -32,6 +32,7 @@ class NWebInputDelegate {
   virtual ~NWebInputDelegate() = default;
   static int CefConverter(const std::string keyValue, int input);
   static int OhosConverter(const std::string keyValue, int input);
+  static bool IsMMIKeyEvent(int32_t keyCode);
   void SetModifiers(int keyCode, int keyAction);
   uint32_t GetModifiers();
   uint32_t GetModifiers(cef_mouse_button_type_t button);

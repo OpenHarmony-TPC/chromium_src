@@ -100,17 +100,20 @@ class GuestViewBase::OwnerContentsObserver : public WebContentsObserver {
     if (destroyed_)
       return;
 
+    if (!IsGuestInitialized()) {
+      return;
+    }
+
     is_fullscreen_ = entered_fullscreen;
     guest_->EmbedderFullscreenToggled(is_fullscreen_);
   }
 
   void PrimaryMainFrameWasResized(bool width_changed) override {
-    if (destroyed_ || !web_contents()->GetDelegate())
+    if (destroyed_ || !IsGuestInitialized()) {
       return;
+    }
 
-    bool current_fullscreen =
-        web_contents()->GetDelegate()->IsFullscreenForTabOrPending(
-            web_contents());
+    bool current_fullscreen = web_contents()->IsFullscreen();
     if (is_fullscreen_ && !current_fullscreen) {
       is_fullscreen_ = false;
       guest_->EmbedderFullscreenToggled(is_fullscreen_);
@@ -121,7 +124,9 @@ class GuestViewBase::OwnerContentsObserver : public WebContentsObserver {
     if (destroyed_)
       return;
 
-    guest_->web_contents()->SetAudioMuted(muted);
+    if (IsGuestInitialized()) {
+      guest_->web_contents()->SetAudioMuted(muted);
+    }
   }
 
   void RenderFrameDeleted(content::RenderFrameHost* rfh) override {
@@ -130,6 +135,8 @@ class GuestViewBase::OwnerContentsObserver : public WebContentsObserver {
   }
 
  private:
+  bool IsGuestInitialized() { return guest_->web_contents(); }
+
   bool is_fullscreen_;
   bool destroyed_;
   raw_ptr<GuestViewBase> guest_;

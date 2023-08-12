@@ -63,6 +63,9 @@ void FileSelectorCallbackImpl::OnReceiveValue(std::vector<std::string>& value) {
     callback_->Cancel();
   } else {
     for (auto& c : value) {
+      if (c.empty()) {
+        continue;
+      }
       file_path_.push_back(CefString(c));
     }
     callback_->Continue(0, file_path_);

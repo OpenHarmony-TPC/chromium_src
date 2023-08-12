@@ -100,7 +100,7 @@ void OHOSMediaPlayerBridge::Prepare() {
     return;
   }
 
-  consumer_surface_ = OHOS::Surface::CreateSurfaceAsConsumer();
+  consumer_surface_ = OHOS::IConsumerSurface::Create();
   if (consumer_surface_ == nullptr) {
     LOG(ERROR) << "media create surface failed";
     return;
@@ -111,7 +111,10 @@ void OHOSMediaPlayerBridge::Prepare() {
   consumer_surface_->SetUserData(surfaceFormat,
                                  std::to_string(PIXEL_FMT_RGBA_8888));
   consumer_surface_->SetQueueSize(3);
-  ret = player_->SetVideoSurface(consumer_surface_);
+  consumer_surface_->GetProducer();
+  OHOS::sptr<OHOS::IBufferProducer> producer = consumer_surface_->GetProducer();
+  OHOS::sptr<OHOS::Surface> pSurface = OHOS::Surface::CreateSurfaceAsProducer(producer);
+  ret = player_->SetVideoSurface(pSurface);
   if (ret != 0) {
     LOG(ERROR) << "SetVideoSurface error::ret=" << ret;
     consumer_surface_ = nullptr;

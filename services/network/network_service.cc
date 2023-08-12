@@ -493,6 +493,18 @@ void NetworkService::ConfigureStubHostResolver(
   host_resolver_manager_->SetInsecureDnsClientEnabled(
       insecure_dns_client_enabled, additional_dns_types_enabled);
 
+#if BUILDFLAG(IS_OHOS)
+  // Since the system dnsconfig is not obtained and null in OHOS, so override
+  // the full config with default.
+  net::DnsConfigOverrides overrides =
+      net::DnsConfigOverrides::CreateOverridingEverythingWithDefaults();
+  overrides.secure_dns_mode = secure_dns_mode;
+  overrides.dns_over_https_servers = dns_over_https_servers;
+
+  // Keep the dns_over_https_upgrade disabled in OHOS since we don't have
+  // available update providers.
+  overrides.allow_dns_over_https_upgrade = false;
+#else
   // Configure DNS over HTTPS.
   net::DnsConfigOverrides overrides;
   overrides.dns_over_https_servers = dns_over_https_servers;
@@ -502,6 +514,7 @@ void NetworkService::ConfigureStubHostResolver(
   overrides.disabled_upgrade_providers =
       SplitString(features::kDnsOverHttpsUpgradeDisabledProvidersParam.Get(),
                   ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+#endif
 
   host_resolver_manager_->SetDnsConfigOverrides(overrides);
 }

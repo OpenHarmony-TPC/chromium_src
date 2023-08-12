@@ -15,8 +15,6 @@
 
 #include "nweb_inputmethod_handler.h"
 
-#include "input_method_utils.h"
-
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/callback_helpers.h"
@@ -24,17 +22,18 @@
 #include "cef/include/cef_task.h"
 #include "content/public/browser/browser_thread.h"
 #include "libcef/browser/thread_util.h"
+#include "ohos_adapter_helper.h"
 #include "ui/events/keycodes/keyboard_codes_posix.h"
 
 namespace OHOS::NWeb {
-using namespace OHOS::MiscServices;
 
 static constexpr char16_t DEL_CHAR = 127;
 
-class OnTextChangedListenerImpl : public OnTextChangedListener {
+class OnTextChangedListenerImpl : public IMFTextListenerAdapter {
  public:
   OnTextChangedListenerImpl(NWebInputMethodHandler* handler)
       : handler_(handler) {}
+  ~OnTextChangedListenerImpl() = default;
 
   // All following listenser callbacks should invoke call on UI thread
   void InsertText(const std::u16string& text) override {
@@ -52,17 +51,17 @@ class OnTextChangedListenerImpl : public OnTextChangedListener {
     handler_->DeleteBackward(length);
   }
 
-  void SendKeyEventFromInputMethod(const KeyEvent& event) override {
+  void SendKeyEventFromInputMethod() override {
     LOG(INFO) << "NWebInputMethodHandler::SendKeyEventFromInputMethod";
   }
 
-  void SendKeyboardInfo(const KeyboardInfo& info) override {
-    auto status = info.GetKeyboardStatus();
-    if (status == KeyboardStatus::SHOW) {
+  void SendKeyboardInfo(const IMFAdapterKeyboardInfo& info) override {
+    auto status = info.keyboardStatus;
+    if (status == IMFAdapterKeyboardStatus::SHOW) {
       handler_->SetIMEStatus(true);
-    } else if (status == KeyboardStatus::HIDE) {
+    } else if (status == IMFAdapterKeyboardStatus::HIDE) {
       handler_->SetIMEStatus(false);
-    } else if (status == KeyboardStatus::NONE) {
+    } else if (status == IMFAdapterKeyboardStatus::NONE) {
       handler_->SendEnterKeyEvent();
     }
   }
@@ -71,8 +70,8 @@ class OnTextChangedListenerImpl : public OnTextChangedListener {
     handler_->SetIMEStatus(status);
   }
 
-  void MoveCursor(const Direction direction) override {
-    if (direction == Direction::NONE) {
+  void MoveCursor(const IMFAdapterDirection direction) override {
+    if (direction == IMFAdapterDirection::NONE) {
       LOG(ERROR) << "NWebInputMethodHandler::MoveCursor got none direction";
       return;
     }
@@ -106,24 +105,31 @@ class InputMethodTask : public CefTask {
 };
 
 NWebInputMethodHandler::NWebInputMethodHandler()
-    : selected_from_(0), selected_to_(0) {}
+    : selected_from_(0), selected_to_(0) {
+  inputmethod_adapter_ = OhosAdapterHelper::GetInstance().CreateIMFAdapter();
+  if (inputmethod_adapter_ == nullptr) {
+    LOG(ERROR) << "inputmethod_adapter_ create failed";
+  }
+}
 
 NWebInputMethodHandler::~NWebInputMethodHandler() {}
 
 void NWebInputMethodHandler::Attach(CefRefPtr<CefBrowser> browser,
-                                    bool show_keyboard) {
+                                    bool show_keyboard,
+                                    cef_text_input_mode_t input_mode) {
   composing_text_.clear();
   browser_ = browser;
-  if (inputmethod_listener_ == nullptr) {
-    inputmethod_listener_ = new OnTextChangedListenerImpl(this);
+  if (inputmethod_adapter_ == nullptr) {
+    LOG(ERROR) << "inputmethod_adapter_ is nullptr";
+    return;
   }
-
-  if (show_keyboard && isAttached_) {
-    LOG(INFO) << "Attach ShowCurrentInput" ;
-    InputMethodController::GetInstance()->ShowCurrentInput();
+  if (inputmethod_listener_ == nullptr) {
+    inputmethod_listener_ = std::make_shared<OnTextChangedListenerImpl>(this);
+  }
+  if (input_mode == CEF_TEXT_INPUT_MODE_NUMERIC) {
+    inputmethod_adapter_->Attach(inputmethod_listener_, show_keyboard, IMFAdapterTextInputType::NUMBER);
   } else {
-    InputMethodController::GetInstance()->Attach(inputmethod_listener_, show_keyboard);
-    isAttached_ = true;
+    inputmethod_adapter_->Attach(inputmethod_listener_, show_keyboard, IMFAdapterTextInputType::TEXT);
   }
 }
 
@@ -132,13 +138,11 @@ void NWebInputMethodHandler::ShowTextInput() {
 }
 
 void NWebInputMethodHandler::HideTextInput() {
-  if (!isAttached_) {
-    LOG(INFO) << "keyboard is not attach";
+  if (inputmethod_adapter_ == nullptr) {
+    LOG(ERROR) << "inputmethod_adapter_ is nullptr";
     return;
   }
-  InputMethodController::GetInstance()->HideTextInput();
-  InputMethodController::GetInstance()->Close();
-  isAttached_ = false;
+  inputmethod_adapter_->HideTextInput();
 }
 
 void NWebInputMethodHandler::OnTextSelectionChanged(
@@ -234,7 +238,7 @@ void NWebInputMethodHandler::InsertTextHandlerOnUI(const std::u16string& text) {
   browser_->GetHost()->SendKeyEvent(keyEvent);
 }
 
-void NWebInputMethodHandler::DeleteBackwardHandlerOnUI(int32_t length) {
+void NWebInputMethodHandler::DeleteForwardHandlerOnUI(int32_t length) {
   CefKeyEvent keyEvent;
   keyEvent.windows_key_code = ui::VKEY_DELETE;
   keyEvent.native_key_code = static_cast<int>(ScanKeyCode::DELETE_SCAN_CODE);
@@ -257,7 +261,7 @@ void NWebInputMethodHandler::DeleteBackwardHandlerOnUI(int32_t length) {
   browser_->GetHost()->SendKeyEvent(keyEvent);
 }
 
-void NWebInputMethodHandler::DeleteForwardHandlerOnUI(int32_t length) {
+void NWebInputMethodHandler::DeleteBackwardHandlerOnUI(int32_t length) {
   CefKeyEvent keyEvent;
   keyEvent.windows_key_code = ui::VKEY_BACK;
   keyEvent.native_key_code = static_cast<int>(ScanKeyCode::BACKSPACE_SCAN_CODE);
@@ -304,27 +308,27 @@ void NWebInputMethodHandler::SendEnterKeyEvent() {
   }
 }
 
-void NWebInputMethodHandler::MoveCursor(const Direction direction) {
+void NWebInputMethodHandler::MoveCursor(const IMFAdapterDirection direction) {
   LOG(INFO) << "NWebInputMethodHandler::MoveCursor called";
   CefKeyEvent keyEvent;
 
   switch (direction) {
-    case Direction::UP: {
+    case IMFAdapterDirection::UP: {
       keyEvent.windows_key_code = ui::VKEY_UP;
       keyEvent.native_key_code = static_cast<int>(ScanKeyCode::UP_SCAN_CODE);
       break;
     }
-    case Direction::LEFT: {
+    case IMFAdapterDirection::LEFT: {
       keyEvent.windows_key_code = ui::VKEY_LEFT;
       keyEvent.native_key_code = static_cast<int>(ScanKeyCode::LEFT_SCAN_CODE);
       break;
     }
-    case Direction::RIGHT: {
+    case IMFAdapterDirection::RIGHT: {
       keyEvent.windows_key_code = ui::VKEY_RIGHT;
       keyEvent.native_key_code = static_cast<int>(ScanKeyCode::RIGHT_SCAN_CODE);
       break;
     }
-    case Direction::DOWN: {
+    case IMFAdapterDirection::DOWN: {
       keyEvent.windows_key_code = ui::VKEY_DOWN;
       keyEvent.native_key_code = static_cast<int>(ScanKeyCode::DOWN_SCAN_CODE);
       break;

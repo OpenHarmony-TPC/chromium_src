@@ -144,6 +144,7 @@ bool NWebRenderHandler::GetScreenInfo(CefRefPtr<CefBrowser> browser,
   screen_info.depth = 24;
   screen_info.depth_per_component = 8;
 
+  cef_device_ratio_ = screen_info.device_scale_factor;
   return true;
 }
 
@@ -218,7 +219,7 @@ void NWebRenderHandler::OnVirtualKeyboardRequested(
 
   if (inputmethod_client_) {
     if (input_mode != CEF_TEXT_INPUT_MODE_NONE) {
-      inputmethod_client_->Attach(browser, show_keyboard);
+      inputmethod_client_->Attach(browser, show_keyboard, input_mode);
     } else {
       inputmethod_client_->HideTextInput();
     }
@@ -254,7 +255,7 @@ void NWebRenderHandler::GetTouchHandleSize(
     size.width = 60 / screen_info_.display_ratio;
     size.height = 60 / screen_info_.display_ratio;
   }
-  LOG(ERROR) << "GetTouchHandleSize " << size.width << " " << size.height;
+  LOG(INFO) << "GetTouchHandleSize " << size.width << " " << size.height;
 }
 
 std::shared_ptr<NWebTouchHandleState> NWebRenderHandler::GetTouchHandleState(

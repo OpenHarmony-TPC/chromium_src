@@ -27,7 +27,7 @@
 #include <Security/Security.h>
 #include <mach/mach.h>
 #endif
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 #include <sys/prctl.h>
 #endif
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
@@ -62,7 +62,7 @@ namespace base {
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 const char* PageTagToName(PageTag tag) {
   // Important: All the names should be string literals. As per prctl.h in
   // //third_party/android_ndk the kernel keeps a pointer to the name instead
@@ -178,7 +178,7 @@ uintptr_t SystemAllocPagesInternal(uintptr_t hint,
     ret = nullptr;
   }
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   // On Android, anonymous mappings can have a name attached to them. This is
   // useful for debugging, and double-checking memory attribution.
   if (ret) {

@@ -20,6 +20,10 @@
 #include "base/android/content_uri_utils.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/datashare_uri_utils.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -50,7 +54,15 @@ void HandleFileUploadRequest(
       files.emplace_back(file_path, file_flags);
     }
 #else
+#if BUILDFLAG(IS_OHOS)
+    if (file_path.IsDataShareUri()) {
+      files.push_back(base::OpenDatashareUriForRead(file_path));
+    } else {
+      files.emplace_back(file_path, file_flags);
+    }
+#else
     files.emplace_back(file_path, file_flags);
+#endif // BUILDFLAG(IS_OHOS)
 #endif
     if (!files.back().IsValid()) {
       task_runner->PostTask(

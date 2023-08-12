@@ -107,6 +107,33 @@ std::string GetImgLocalPath(const char* img_src) {
   }
   return "";
 }
+
+ClipBoardImageAlphaType ImageToClipboardAlphaType(
+    SkAlphaType alpha_type) {
+  switch (alpha_type) {
+    case kUnknown_SkAlphaType:
+      return ClipBoardImageAlphaType::ALPHA_TYPE_UNKNOWN;
+    case kOpaque_SkAlphaType:
+      return ClipBoardImageAlphaType::ALPHA_TYPE_OPAQUE;
+    case kPremul_SkAlphaType:
+      return ClipBoardImageAlphaType::ALPHA_TYPE_PREMULTIPLIED;
+    default:
+      return ClipBoardImageAlphaType::ALPHA_TYPE_UNKNOWN;
+  }
+}
+
+ClipBoardImageColorType ImageToClipboardColorType(
+    SkColorType color_type) {
+  switch (color_type) {
+    case kRGBA_8888_SkColorType:
+      return ClipBoardImageColorType::COLOR_TYPE_RGBA_8888;
+    case kBGRA_8888_SkColorType:
+      return ClipBoardImageColorType::COLOR_TYPE_BGRA_8888;
+    default:
+      return ClipBoardImageColorType::COLOR_TYPE_UNKNOWN;
+  }
+}
+
 }  // namespace
 
 Clipboard* Clipboard::Create() {
@@ -358,6 +385,19 @@ class ClipboardOHOSInternal {
         LOG(ERROR) << "set text to record failed";
       }
     }
+
+    if (HasFormat(ClipboardInternalFormat::kPng)) {
+      auto bitmap = currentData->GetBitmapIfPngNotEncoded();
+      if (bitmap.has_value()) {
+        auto bitmap_record = WriteBitmapToClipboard(bitmap.value());
+        if (record->SetImgData(bitmap_record)) {
+          LOG(INFO) << "set image to record success";
+        } else {
+          LOG(ERROR) << "set image to record failed";
+        }
+      }
+    }
+
     result_list.push_back(record);
     if (currentData->html_img_src_set().size() > 0) {
       std::map<std::string, std::vector<int>>::const_iterator it;
@@ -469,7 +509,17 @@ class ClipboardOHOSInternal {
     }
     return true;
   }
-
+   std::shared_ptr<ClipBoardImageData> WriteBitmapToClipboard(
+      const SkBitmap& bitmap) {
+    ClipBoardImageData imageInfo;
+    imageInfo.colorType = ImageToClipboardColorType(bitmap.colorType());
+    imageInfo.alphaType = ImageToClipboardAlphaType(bitmap.alphaType());
+    imageInfo.data = (uint32_t*)bitmap.getPixels();
+    imageInfo.dataSize = bitmap.computeByteSize();
+    imageInfo.width = bitmap.width();
+    imageInfo.height = bitmap.height();
+    return std::make_shared<ClipBoardImageData>(imageInfo);
+  }
   // Current ClipboardData.
   std::unique_ptr<ClipboardData> data_;
 
@@ -511,6 +561,13 @@ class ClipboardDataBuilder {
       data->set_markup_data(std::string(markup_data, markup_len));
       data->set_url(std::string(url_data, url_len));
       WriteMixImgUriList(markup_data, markup_len);
+    }
+  }
+
+  static void WriteBitmap(const SkBitmap& bitmap) {
+    ClipboardData* data = GetCurrentData();
+    if (data) {
+      data->SetBitmapData(bitmap);
     }
   }
 
@@ -871,7 +928,9 @@ void ClipboardOHOS::WriteBookmark(const char* title_data,
 
 void ClipboardOHOS::WriteWebSmartPaste() {}
 
-void ClipboardOHOS::WriteBitmap(const SkBitmap& bitmap) {}
+void ClipboardOHOS::WriteBitmap(const SkBitmap& bitmap) {
+  ClipboardDataBuilder::WriteBitmap(bitmap);
+}
 
 void ClipboardOHOS::WriteData(const ClipboardFormatType& format,
                               const char* data_data,

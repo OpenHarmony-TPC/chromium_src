@@ -1790,11 +1790,21 @@ void WebContentsImpl::SetUserAgentOverride(
     return;
   }
 
-#if BUILDFLAG(IS_OHOS)
+#if defined(OHOS_NWEB_EX)
   const base::CommandLine& command_line =
       *base::CommandLine::ForCurrentProcess();
   if (command_line.HasSwitch(switches::kForBrowser)) {
+    user_agent_ = ua_override.ua_string_override;
     UpdateOverridingUserAgent();
+
+    // DTS2023022711784
+    // 子进程打开新窗口时，会先创建delayed_load_url_params_，等到加载url时直接使用
+    // delayed_load_url_params_的值创建NavigationRequest。其override_user_agent默认值是
+    // UA_OVERRIDE_FALSE，故这里也要更新。
+    if (delayed_load_url_params_) {
+      delayed_load_url_params_->override_user_agent =
+          NavigationController::UA_OVERRIDE_TRUE;
+    }
   }
 #endif
 
@@ -2818,6 +2828,17 @@ const blink::web_pref::WebPreferences WebContentsImpl::ComputeWebPreferences() {
 #endif  // BUILDFLAG(IS_ANDROID)
 
   GetContentClient()->browser()->OverrideWebkitPrefs(this, &prefs);
+
+#if defined(OHOS_NWEB_EX)
+  if (command_line.HasSwitch(switches::kForBrowser)) {
+    bool is_win =
+        (user_agent_.find("Windows NT") != std::string::npos) &&
+        (user_agent_.find("Win64") != std::string::npos ||
+         user_agent_.find("WOW64") != std::string::npos);
+    prefs.viewport_meta_enabled = !is_win;
+  }
+#endif
+
   return prefs;
 }
 
@@ -2898,7 +2919,7 @@ void WebContentsImpl::OnWebPreferencesChanged() {
     return;
   updating_web_preferences_ = true;
   SetWebPreferences(ComputeWebPreferences());
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || defined(OHOS_NWEB_EX)
   for (FrameTreeNode* node : primary_frame_tree_.Nodes()) {
     RenderFrameHostImpl* rfh = node->current_frame_host();
     if (rfh->is_local_root()) {
@@ -3939,6 +3960,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
   new_contents_impl->GetController().SetSessionStorageNamespace(
       partition_id, session_storage_namespace);
 
+#if BUILDFLAG(IS_OHOS)
+  if (delegate_) {
+    delegate_->WebContentsCreated(this, render_process_id,
+                                  opener->GetRoutingID(), params.frame_name,
+                                  params.target_url, new_contents_impl);
+  }
+#endif
+
   // If the new frame has a name, make sure any SiteInstances that can find
   // this named frame have proxies for it.  Must be called after
   // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
@@ -3978,11 +4007,13 @@ FrameTree* WebContentsImpl::CreateNewWindow(
     AddWebContentsDestructionObserver(new_contents_impl);
   }
 
+#if !BUILDFLAG(IS_OHOS)
   if (delegate_) {
     delegate_->WebContentsCreated(this, render_process_id,
                                   opener->GetRoutingID(), params.frame_name,
                                   params.target_url, new_contents_impl);
   }
+#endif
 
   observers_.NotifyObservers(&WebContentsObserver::DidOpenRequestedURL,
                              new_contents_impl, opener, params.target_url,
@@ -9331,6 +9362,15 @@ std::unique_ptr<PrerenderHandle> WebContentsImpl::StartPrerendering(
   }
   return nullptr;
 }
+
+#if defined (OHOS_NWEB_EX)
+void WebContentsImpl::SetForceEnableZoom(bool forceEnableZoom) {
+  if (force_enable_zoom_ != forceEnableZoom) {
+    force_enable_zoom_ = forceEnableZoom;
+    OnWebPreferencesChanged();
+  }
+}
+#endif
 
 // static
 std::pair<int, int> WebContentsImpl::GetAvailablePointerAndHoverTypes() {

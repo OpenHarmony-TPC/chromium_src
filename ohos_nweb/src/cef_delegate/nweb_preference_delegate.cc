@@ -157,14 +157,7 @@ void NWebPreferenceDelegate::ComputeBrowserSettings(
       !IsHorizontalScrollBarAccess() ? STATE_ENABLED : STATE_DISABLED;
   browser_settings.hide_vertical_scrollbars =
       !IsVerticalScrollBarAccess() ? STATE_ENABLED : STATE_DISABLED;
-  CefRefPtr<CefCommandLine> command_line =
-      CefCommandLine::GetGlobalCommandLine();
-  if (command_line->HasSwitch(::switches::kForBrowser)) {
-    bool is_win =
-        (UserAgent().find("Windows NT") >= 0) &&
-        (UserAgent().find("Win64") >= 0 || UserAgent().find("WOW64") >= 0);
-    browser_settings.viewport_meta_enabled = !is_win;
-  }
+  browser_settings.viewport_meta_enabled = true;
 }
 
 void NWebPreferenceDelegate::SetBrowserSettingsToNetHelpers() {
@@ -392,7 +385,7 @@ void NWebPreferenceDelegate::PutMediaPlayGestureAccess(bool flag) {
 
 void NWebPreferenceDelegate::PutPinchSmoothMode(bool flag) {
   pinch_smooth_mode_ = flag;
-  LOG(ERROR) << "Put Pinch Smooth Mode:" << pinch_smooth_mode_;
+  LOG(INFO) << "Put Pinch Smooth Mode:" << pinch_smooth_mode_;
   WebPreferencesChanged();
 }
 

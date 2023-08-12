@@ -63,4 +63,9 @@ const char16_t kStandardSchemeSeparator16[] = u"://";
 
 const size_t kMaxURLChars = 2 * 1024 * 1024;
 
+#if BUILDFLAG(IS_OHOS)
+const char kDataabilityScheme[] ="dataability";
+const char kDatashareScheme[] ="datashare";
+#endif
+
 }  // namespace url

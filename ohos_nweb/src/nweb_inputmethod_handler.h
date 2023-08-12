@@ -17,7 +17,7 @@
 #define OHOS_NWEB_SRC_NWEB_INPUTMETHOD_HANDLER_H_
 #include <chrono>
 #include <condition_variable>
-#include "input_method_controller.h"
+#include "imf_adapter.h"
 
 #include "cef_delegate/nweb_inputmethod_client.h"
 
@@ -29,7 +29,7 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
   NWebInputMethodHandler(const NWebInputMethodHandler&) = delete;
   NWebInputMethodHandler& operator=(const NWebInputMethodHandler&) = delete;
 
-  void Attach(CefRefPtr<CefBrowser> browser, bool show_keyboard) override;
+  void Attach(CefRefPtr<CefBrowser> browser, bool show_keyboard, cef_text_input_mode_t input_mode) override;
   void ShowTextInput() override;
   void HideTextInput() override;
   void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
@@ -41,7 +41,7 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
   void DeleteBackward(int32_t length);
   void DeleteForward(int32_t length);
   void SendEnterKeyEvent();
-  void MoveCursor(const OHOS::MiscServices::Direction direction);
+  void MoveCursor(const IMFAdapterDirection direction);
 
  private:
   void SetIMEStatusOnUI(bool status);
@@ -56,9 +56,8 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
   std::u16string composing_text_;
   int selected_from_;
   int selected_to_;
-  OHOS::sptr<OHOS::MiscServices::OnTextChangedListener> inputmethod_listener_ =
-      nullptr;
-  bool isAttached_ = false;
+  std::unique_ptr<IMFAdapter> inputmethod_adapter_ = nullptr;
+  std::shared_ptr<IMFTextListenerAdapter> inputmethod_listener_ = nullptr;
 
   IMPLEMENT_REFCOUNTING(NWebInputMethodHandler);
 };

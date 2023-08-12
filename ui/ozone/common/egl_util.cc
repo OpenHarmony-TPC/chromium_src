@@ -37,13 +37,8 @@ const base::FilePath::CharType kDefaultGlesSoname[] =
 #elif BUILDFLAG(IS_OHOS)
 const base::FilePath::CharType kDefaultEglSoname[] =
     FILE_PATH_LITERAL("libEGL.so");
-#if defined(GL_RK3568)
 const base::FilePath::CharType kDefaultGlesSoname[] =
     FILE_PATH_LITERAL("libGLESv3.so");
-#else
-const base::FilePath::CharType kDefaultGlesSoname[] =
-    FILE_PATH_LITERAL("libGLES_mali.so");
-#endif
 #else
 const base::FilePath::CharType kDefaultEglSoname[] =
     FILE_PATH_LITERAL("libEGL.so.1");

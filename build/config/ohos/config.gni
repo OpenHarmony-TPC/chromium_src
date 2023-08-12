@@ -53,84 +53,52 @@ if (is_ohos) {
     ohos_ndk_root = "//../../../prebuilts"
     ohos_build_root = "//../../.."
     if (use_musl) {
-      ohos_toolchain_root = "$ohos_ndk_root/clang/ohos/linux-x86_64/llvm"
-      ohos_sysroot = "$ohos_build_root/out/rk3568/obj/third_party/musl"
-    } else {
-      ohos_toolchain_root = "$ohos_ndk_root/clang/host/linux-x86/clang-r353983c"
-      if (current_cpu == "arm") {
-        ohos_sysroot = "$ohos_ndk_root/aosp_prebuilt_libs/asdk_libs/ndk/platforms/current/arch-arm"
-      } else if (current_cpu == "arm64") {
-        ohos_sysroot = "$ohos_ndk_root/aosp_prebuilt_libs/asdk_libs/ndk/platforms/current/arch-arm64"
+      if (current_cpu == "x64") {
+        ohos_toolchain_root = "$ohos_ndk_root/clang/ohos/windows-x86_64/llvm"
+        ohos_sysroot = "$ohos_build_root/out/arm64/obj/third_party/musl"
+        ohos_libs_root = "$ohos_build_root/out/arm64/packages/phone/system/lib64"
       } else {
-        assert(false, "Unsupport target cpu")
+        ohos_toolchain_root = "$ohos_ndk_root/clang/ohos/linux-x86_64/llvm"
+        if (product_name == "rk3568") {
+          ohos_sysroot = "$ohos_build_root/out/rk3568/obj/third_party/musl"
+          if (current_cpu == "arm") {
+            ohos_libs_root = "$ohos_build_root/out/rk3568/packages/phone/system/lib"
+          } else {
+            ohos_libs_root = "$ohos_build_root/out/rk3568/packages/phone/system/lib64"
+          }
+        } else {
+          ohos_sysroot = "$ohos_build_root/out/baltimore/obj/third_party/musl"
+          ohos_libs_root = "$ohos_build_root/out/baltimore/packages/phone/system/lib64"
+        }
       }
+    } else {
+      assert(false, "Unsupport Non-musl target!")
     }
 
     # ohos include and libs dependencies
     ohos_src_includes = [
-      "$ohos_build_root/base/location/services/location_locator/callback/include",
-      "$ohos_build_root/base/location/services/location_common/common/include",
-      "$ohos_build_root/base/location/interfaces/inner_api/include",
-      "$ohos_build_root/base/notification/eventhandler/interfaces/inner_api",
-      "$ohos_build_root/base/location/services/utils/include",
-      "$ohos_build_root/foundation/bundlemanager/bundle_framework/interfaces/innerkits/libeventhandler/include",
-
-      "$ohos_build_root/foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler/include",
       "$ohos_build_root/base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-      "$ohos_build_root/foundation/graphic/graphic_2d/interfaces/inner_api/common",
+      "$ohos_build_root/base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include/",
+      "$ohos_build_root/base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter",
+      "$ohos_build_root/base/location/interfaces/inner_api/include",
+      "$ohos_build_root/base/location/services/location_locator/callback/include",
+      "$ohos_build_root/base/notification/eventhandler/interfaces/inner_api",
+      "$ohos_build_root/base/security/access_token/interfaces/innerkits/accesstoken/include/",
+      "$ohos_build_root/base/web/webview/ohos_adapter/interfaces",
+      "$ohos_build_root/commonlibrary/c_utils/base/include",
+      "$ohos_build_root/drivers/peripheral/base",
       "$ohos_build_root/drivers/peripheral/display/interfaces/include",
+      "$ohos_build_root/foundation/bundlemanager/bundle_framework/interfaces/innerkits/libeventhandler/include",
+      "$ohos_build_root/foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
+      "$ohos_build_root/foundation/graphic/graphic_2d/interfaces/inner_api/common",
+      "$ohos_build_root/foundation/graphic/graphic_2d/interfaces/inner_api/surface",
       "$ohos_build_root/foundation/graphic/graphic_2d/utils/buffer_handle/export",
       "$ohos_build_root/foundation/multimedia/player_framework/interfaces/inner_api/native",
-      "$ohos_build_root/drivers/peripheral/base",
-      "$ohos_build_root/foundation/graphic/graphic_2d/interfaces/inner_api/surface",
-      "$ohos_build_root/foundation/graphic/surface/interfaces/kits",
-      "$ohos_build_root/foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-      "$ohos_build_root/base/inputmethod/imf/frameworks/inputmethod_controller/include",
-      "$ohos_build_root/base/inputmethod/imf/services/include",
-      "$ohos_build_root/base/inputmethod/imf/frameworks/inputmethod_ability/include",
-      "$ohos_build_root/commonlibrary/c_utils/base/include",
-      "$ohos_build_root/third_party/bounds_checking_function/include",
       "$ohos_build_root/foundation/multimodalinput/input/interfaces/native/innerkits/event/include",
-      "$ohos_build_root/base/location/utils/include",
-      "$ohos_build_root/base/location/interfaces/innerkits/locator_standard/include",
-      "$ohos_build_root/base/location/location_common/common/include",
       "$ohos_build_root/foundation/systemabilitymgr/samgr/interfaces/innerkits/samgr_proxy/include",
-      "$ohos_build_root/utils/system/safwk/native/include",
-      "$ohos_build_root/foundation/aafwk/standard/interfaces/innerkits/base/include",
-      "$ohos_build_root/foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
-      "$ohos_build_root/foundation/appexecfwk/standard/common/log/include",
-      "$ohos_build_root/foundation/appexecfwk/standard/common/perf/include",
-      "$ohos_build_root/foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
-      "$ohos_build_root/foundation/aafwk/standard/interfaces/innerkits/app_manager/include",
-      "$ohos_build_root/foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
-      "$ohos_build_root/third_party/jsoncpp/include",
+      "$ohos_build_root/third_party/bounds_checking_function/include",
       "$ohos_build_root/third_party/json/include",
-      "$ohos_build_root/base/security/access_token/interfaces/innerkits/accesstoken/include/",
-      "$ohos_build_root/foundation/aafwk/standard/interfaces/innerkits/uri/include",
-      "$ohos_build_root/base/web/webview/ohos_adapter/interfaces",
-      "$ohos_build_root/base/location/services/location_common/common/include",
-      "$ohos_build_root/base/location/interfaces/inner_api/include",
-      "$ohos_build_root/base/location/services/utils/include",
-      "$ohos_build_root/base/location/services/location_locator/callback/include",
-      "$ohos_build_root/base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter",
-      "$ohos_build_root/base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include/",
     ]
-
-    if (use_musl) {
-      if (current_cpu == "arm") {
-        ohos_libs_root = "$ohos_build_root/out/rk3568/packages/phone/system/lib"
-      } else if (current_cpu == "arm64") {
-        ohos_libs_root =
-            "$ohos_build_root/out/rk3568/packages/phone/system/lib64"
-      }
-    } else {
-      if (current_cpu == "arm") {
-        ohos_libs_root =
-            "$ohos_build_root/out/ohos-arm-release/packages/phone/system/lib"
-      } else if (current_cpu == "arm64") {
-        ohos_libs_root = "$ohos_build_root/out/ohos-arm64-release/packages/phone/system/lib64"
-      }
-    }
 
     ohos_libs_dir = [
       "$ohos_libs_root",
@@ -139,21 +107,17 @@ if (is_ohos) {
     ]
   } else {
     if (use_musl) {
-      ohos_build_root = "//ohos_ndk"
-      ohos_ndk_root = "//ohos_ndk"
+      if (current_cpu == "x64") {
+        ohos_build_root = "//ohos_ndk_x86"
+        ohos_ndk_root = "//ohos_ndk_x86"
+      } else {
+        ohos_build_root = "//ohos_ndk"
+        ohos_ndk_root = "//ohos_ndk"
+      }
       ohos_toolchain_root = "$ohos_ndk_root/toolchains/llvm"
       ohos_sysroot = "$ohos_ndk_root/sysroot"
     } else {
-      ohos_build_root = "//ohos_ndk_aosp"
-      ohos_ndk_root = "//ohos_ndk_aosp"
-      ohos_toolchain_root = "$ohos_ndk_root/toolchains/clang-r353983c"
-      if (current_cpu == "arm") {
-        ohos_sysroot = "$ohos_ndk_root/aosp_prebuilt_libs/asdk_libs/ndk/platforms/current/arch-arm"
-      } else if (current_cpu == "arm64") {
-        ohos_sysroot = "$ohos_ndk_root/aosp_prebuilt_libs/asdk_libs/ndk/platforms/current/arch-arm64"
-      } else {
-        assert(false, "Unsupport target cpu")
-      }
+      assert(false, "Unsupport Non-musl target!")
     }
 
     if (use_ohos_sdk_sysroot) {
@@ -164,41 +128,34 @@ if (is_ohos) {
 
     # ohos include and libs dependencies, corresponding to gen_ohos_ndk.sh
     ohos_src_includes = [
-      "$ohos_build_root/includes/libeventhandler",
-      "$ohos_build_root/includes/utils",
+      "$ohos_build_root/includes",
+      "$ohos_build_root/includes/accesstoken",
+      "$ohos_build_root/includes/appexecfwk",
       "$ohos_build_root/includes/bounds_checking_function",
       "$ohos_build_root/includes/common",
       "$ohos_build_root/includes/display",
       "$ohos_build_root/includes/graphic_util",
+      "$ohos_build_root/includes/hisysevent",
+      "$ohos_build_root/includes/hitrace_meter",
+      "$ohos_build_root/includes/ipc_core",
+      "$ohos_build_root/includes/json",
+      "$ohos_build_root/includes/libeventhandler",
+      "$ohos_build_root/includes/location",
+      "$ohos_build_root/includes/location_callback",
       "$ohos_build_root/includes/media",
+      "$ohos_build_root/includes/multimodalinput",
+      "$ohos_build_root/includes/ohos_adapter",
       "$ohos_build_root/includes/peripheral",
       "$ohos_build_root/includes/surface",
-      "$ohos_build_root/includes/ipc_core",
-      "$ohos_build_root/includes/inputmethod_controller",
-      "$ohos_build_root/includes",
-      "$ohos_build_root/includes/inputmethod_services",
-      "$ohos_build_root/includes/inputmethod_ability",
-      "$ohos_build_root/includes/multimodalinput",
-      "$ohos_build_root/includes/location",
-      "$ohos_build_root/includes/location_utils",
-      "$ohos_build_root/includes/location_callback",
-      "$ohos_build_root/includes/location_request_config",
       "$ohos_build_root/includes/system_ability",
-      "$ohos_build_root/includes/accesstoken",
-      "$ohos_build_root/includes/aafwk/want/include/ohos/aafwk/content",
-      "$ohos_build_root/includes/aafwk/uri/include",
-      "$ohos_build_root/includes/aafwk/app_manager/include",
-      "$ohos_build_root/includes/aafwk/base/include",
-      "$ohos_build_root/includes/json",
-      "$ohos_build_root/includes/appexecfwk",
-      "$ohos_build_root/includes/ohos_adapter",
-      "$ohos_build_root/includes/hitrace_meter",
-      "$ohos_build_root/includes/hisysevent",
+      "$ohos_build_root/includes/utils",
     ]
 
     if (current_cpu == "arm") {
       ohos_libs_dir = [ "$ohos_build_root/libs" ]
     } else if (current_cpu == "arm64") {
+      ohos_libs_dir = [ "$ohos_build_root/libs64" ]
+    } else if (current_cpu == "x64") {
       ohos_libs_dir = [ "$ohos_build_root/libs64" ]
     }
   }

@@ -944,6 +944,13 @@ mixed_component("base") {
     "vlog.h",
   ]
 
+  if (is_ohos) {
+    sources += [
+      "datashare_uri_utils.h",
+      "datashare_uri_utils.cc",
+    ]
+  }
+
   # Various files that are unused in the Chromium build, but presumably here to
   # make downstream's life easier. They are not included in the main sources
   # list to avoid breaking GN formatting's auto-sorting.

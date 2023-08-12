@@ -72,6 +72,7 @@ struct OHOS_NWEB_EXPORT NWebInitArgs {
     std::list<std::string> web_engine_args_to_delete;
     bool multi_renderer_process = false;
     bool is_enhance_surface = false;
+    bool is_popup = false;
 };
 
 struct OHOS_NWEB_EXPORT NWebCreateInfo {
@@ -107,6 +108,17 @@ struct OHOS_NWEB_EXPORT DragEvent {
     DragAction action;
 };
 
+enum class BlurReason : int32_t {
+    FOCUS_SWITCH = 0,
+    WINDOW_BLUR = 1,
+    FRAME_DESTROY = 2,
+};
+
+struct OHOS_NWEB_EXPORT NWebDOHConfig {
+  int doh_mode = -1;
+  std::string doh_config = "";
+};
+
 using WebState = std::shared_ptr<std::vector<uint8_t>>;
 
 class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
@@ -123,7 +135,7 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
 
     /* focus event */
     virtual void OnFocus() const = 0;
-    virtual void OnBlur() const = 0;
+    virtual void OnBlur(const BlurReason& blurReason) const = 0;
 
     /* event interface */
     virtual void OnTouchPress(int32_t id, double x, double y) = 0;
@@ -510,10 +522,10 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      *
      */
     virtual void ClearClientAuthenticationCache() = 0;
-    
+
     /**
      * set the locale name of current system setting..
-     * 
+     *
      * @param locale the locale name of current system setting.
      */
     virtual void UpdateLocale(const std::string& language, const std::string& region) = 0;
@@ -527,7 +539,7 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
 
     /**
      * get original url of the request.
-     * 
+     *
      * @param data raw image data of the icon.
      * @param width width of the icon.
      * @param height height of the icon.
@@ -558,7 +570,7 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * @param include_disk_files bool: if false, only the RAM cache is removed
      */
     virtual void RemoveCache(bool include_disk_files) = 0;
-    
+
     /**
      * web has image or not.
      *
@@ -591,21 +603,21 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
 
     /**
      * Move page up.
-     * 
+     *
      * @param top whether move to the top.
     */
     virtual void PageUp(bool top) = 0;
 
     /**
      * Move page down.
-     * 
+     *
      * @param bottom whether move to the bottom.
     */
     virtual void PageDown(bool bottom) = 0;
 
     /**
      * Scroll to the position.
-     * 
+     *
      * @param x horizontal coordinate.
      * @param y vertical coordinate.
     */
@@ -613,7 +625,7 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
 
     /**
      * Scroll by the delta distance.
-     * 
+     *
      * @param delta_x horizontal offset.
      * @param delta_y vertical offset.
     */
@@ -621,11 +633,21 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
 
     /**
      * Slide scroll by the speed.
-     * 
+     *
      * @param vx horizontal slide speed.
      * @param vy vertical slide speed.
     */
    virtual void SlideScroll(float vx, float vy) = 0;
+
+    /**
+     * Get current website certificate.
+     *
+     * @param certChainData current website certificate array.
+     * @param isSingleCert true if only get one certificate of current website,
+     *                     false if get certificate chain of the website.
+     * @return true if get certificate successfully, otherwise false.
+    */
+   virtual bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) = 0;
 };
 }  // namespace OHOS::NWeb
 

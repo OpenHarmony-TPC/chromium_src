@@ -37,7 +37,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
  public:
   NWebDelegate(int argc, const char* argv[]);
   ~NWebDelegate();
-  bool Init(bool is_enhance_surface, void* window);
+  bool Init(bool is_enhance_surface, void* window, bool popup);
 
   bool IsReady() override;
   void OnDestroy(bool is_close_all) override;
@@ -168,6 +168,12 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void SlideScroll(float vx, float vy) override;
   WebState SerializeWebState() override;
   bool RestoreWebState(WebState state) override;
+  bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) override;
+
+#if defined (OHOS_NWEB_EX)
+  void SetForceEnableZoom(bool forceEnableZoom) override;
+  bool GetForceEnableZoom() override;
+#endif
 
  public:
   int argc_;
@@ -175,10 +181,12 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
 
  private:
   void RunMessageLoop();
-  void InitializeCef(std::string url, bool is_enhance_surface, void* window);
+  void InitializeCef(std::string url, bool is_enhance_surface, void* window, bool popup);
   const CefRefPtr<CefBrowser> GetBrowser() const;
   void RequestVisitedHistory();
   void SetVirtualPixelRatio(float ratio);
+  bool GetCertChainDerDataInner(CefRefPtr<CefX509Certificate> cert,
+                                std::vector<std::string>& certChainData, bool isSingleCert);
 
  private:
   float zoom_in_factor_ = 2.0;
@@ -204,6 +212,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   uint32_t nweb_id_;
 #endif
   bool is_enhance_surface_ = false;
+  bool is_ready_ = false;
 };
 }  // namespace OHOS::NWeb
 #endif

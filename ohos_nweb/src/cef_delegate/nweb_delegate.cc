@@ -159,7 +159,7 @@ NWebDelegate::~NWebDelegate() {
   }
 }
 
-bool NWebDelegate::Init(bool is_enhance_surface, void* window) {
+bool NWebDelegate::Init(bool is_enhance_surface, void* window, bool popup) {
   preference_delegate_ = std::make_shared<NWebPreferenceDelegate>();
   find_delegate_ = std::make_shared<NWebFindDelegate>();
   is_enhance_surface_ = is_enhance_surface;
@@ -192,7 +192,7 @@ bool NWebDelegate::Init(bool is_enhance_surface, void* window) {
   }
 
   std::string url_for_init = "";
-  InitializeCef(url_for_init, is_enhance_surface_, window);
+  InitializeCef(url_for_init, is_enhance_surface_, window, popup);
 
   std::shared_ptr<DisplayAdapter> display =
       display_manager_adapter_->GetDefaultDisplay();
@@ -364,7 +364,7 @@ void NWebDelegate::OnTouchCancel() {
 bool NWebDelegate::SendKeyEvent(int32_t keyCode, int32_t keyAction) {
   bool retVal = false;
   if (event_handler_ != nullptr) {
-    retVal = event_handler_->SendKeyEvent(keyCode, keyAction);
+    retVal = event_handler_->SendKeyEventFromAce(keyCode, keyAction);
   }
   return retVal;
 }
@@ -748,7 +748,16 @@ void NWebDelegate::OnContinue() {
 
 void NWebDelegate::InitializeCef(std::string url,
                                  bool is_enhance_surface,
-                                 void* window) {
+                                 void* window,
+                                 bool popup) {
+  if (popup) {
+    LOG(DEBUG) << "pop windows";
+    handler_delegate_ = NWebHandlerDelegate::Create(
+      preference_delegate_, render_handler_, event_handler_, find_delegate_,
+        is_enhance_surface, window);
+    is_ready_ = true;
+    return;
+  }
   handler_delegate_ = NWebHandlerDelegate::Create(
       preference_delegate_, render_handler_, event_handler_, find_delegate_,
       is_enhance_surface, window);
@@ -982,7 +991,7 @@ const CefRefPtr<CefBrowser> NWebDelegate::GetBrowser() const {
 }
 
 bool NWebDelegate::IsReady() {
-  return GetBrowser() != nullptr;
+  return is_ready_ || GetBrowser() != nullptr;
 }
 
 void NWebDelegate::RequestVisitedHistory() {
@@ -1251,4 +1260,79 @@ bool NWebDelegate::RestoreWebState(WebState state) {
   auto web_state = CefBinaryValue::Create(state->data(), state->size());
   return GetBrowser()->GetHost()->RestoreWebState(web_state);
 }
+
+bool NWebDelegate::GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) {
+  if (!GetBrowser().get()) {
+    LOG(ERROR) << "GetCertChainDerData failed, browser is null";
+    return false;
+  }
+
+  CefRefPtr<CefNavigationEntry> navigation = GetBrowser()->GetHost()->GetVisibleNavigationEntry();
+  if (!navigation) {
+    LOG(ERROR) << "GetCertChainDerData failed, visible navigation entry is null";
+    return false;
+  }
+
+  CefRefPtr<CefSSLStatus> ssl = navigation->GetSSLStatus();
+  if (!ssl) {
+    LOG(ERROR) << "GetCertChainDerData failed, ssl status is null";
+    return false;
+  }
+
+  CefRefPtr<CefX509Certificate> cert = ssl->GetX509Certificate();
+  if (!cert) {
+    LOG(ERROR) << "GetCertChainDerData failed, cef x509cert is null";
+    return false;
+  }
+
+  return GetCertChainDerDataInner(cert, certChainData, isSingleCert);
+}
+
+bool NWebDelegate::GetCertChainDerDataInner(CefRefPtr<CefX509Certificate> cert,
+                                            std::vector<std::string>& certChainData, bool isSingleCert) {
+  CefX509Certificate::IssuerChainBinaryList der_chain_list;
+  cert->GetDEREncodedIssuerChain(der_chain_list);
+  der_chain_list.insert(der_chain_list.begin(), cert->GetDEREncoded());
+
+  LOG(INFO) << "GetCertChainDerData der_chain_list size = " << der_chain_list.size();
+  for (size_t i = 0U; i < der_chain_list.size(); ++i) {
+    if (!der_chain_list[i].get()) {
+      LOG(ERROR) << "GetCertChainDerDataInner failed, der chain data is null, index = " << i;
+      continue;
+    }
+
+    const size_t cert_data_size = der_chain_list[i]->GetSize();
+    std::string cert_data_item;
+    cert_data_item.resize(cert_data_size);
+    der_chain_list[i]->GetData(const_cast<char*>(cert_data_item.data()), cert_data_size, 0);
+    certChainData.emplace_back(cert_data_item);
+    if (isSingleCert) {
+      LOG(INFO) << "get only one certificate of the current website";
+      break;
+    }
+  }
+
+  if (certChainData.size() == 0) {
+    LOG(INFO) << "GetCertChainDerData, no certificate data";
+    return false;
+  }
+
+  return true;
+}
+
+#if defined (OHOS_NWEB_EX)
+void NWebDelegate::SetForceEnableZoom(bool forceEnableZoom) {
+  LOG(INFO) << "NWebDelegate::SetForceEnableZoom " << forceEnableZoom;
+  if (GetBrowser().get()) {
+    GetBrowser()->SetForceEnableZoom(forceEnableZoom);
+  }
+}
+
+bool NWebDelegate::GetForceEnableZoom() {
+  if (GetBrowser().get()) {
+    return GetBrowser()->GetForceEnableZoom();
+  }
+  return false;
+}
+#endif
 }  // namespace OHOS::NWeb

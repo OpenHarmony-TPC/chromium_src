@@ -7,6 +7,7 @@
 
 #include <player.h>
 #include <surface.h>
+#include <iconsumer_surface.h>
 #include <deque>
 
 #include "base/memory/weak_ptr.h"
@@ -89,7 +90,7 @@ class MEDIA_EXPORT OHOSMediaPlayerBridge {
   const std::string surfaceFormat = "SURFACE_FORMAT";
   std::shared_ptr<OHOS::Media::Player> player_ = nullptr;
   std::deque<OHOS::sptr<OHOS::SurfaceBuffer>> cached_buffers_;
-  OHOS::sptr<OHOS::Surface> consumer_surface_ = nullptr;
+  OHOS::sptr<OHOS::IConsumerSurface> consumer_surface_ = nullptr;
   OHOS::sptr<OHOS::IBufferConsumerListener> listener_;
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
   Client* client_;

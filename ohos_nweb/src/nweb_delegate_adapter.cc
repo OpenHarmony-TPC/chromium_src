@@ -26,12 +26,13 @@ std::shared_ptr<NWebDelegateInterface> NWebDelegateAdapter::CreateNWebDelegate(
     int argc,
     const char* argv[],
     bool is_enhance_surface,
-    void* window) {
+    void* window,
+    bool popup) {
 #if defined(USE_CEF)
   std::shared_ptr<NWebDelegate> delegate =
       std::make_shared<NWebDelegate>(argc, argv);
 
-  if (delegate == nullptr || !delegate->Init(is_enhance_surface, window)) {
+  if (delegate == nullptr || !delegate->Init(is_enhance_surface, window, popup)) {
     WVLOG_I("FAIL to create nweb delegate instance");
     return nullptr;
   }

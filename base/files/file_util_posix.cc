@@ -66,6 +66,11 @@
 #include <grp.h>
 #endif
 
+
+#if BUILDFLAG(IS_OHOS)
+#include "base/datashare_uri_utils.h"
+#endif
+
 // We need to do this on AIX due to some inconsistencies in how AIX
 // handles XOPEN_SOURCE and ALL_SOURCE.
 #if BUILDFLAG(IS_AIX)
@@ -785,11 +790,22 @@ bool GetFileInfo(const FilePath& file_path, File::Info* results) {
     return file.GetInfo(results);
   } else {
 #endif  // BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_OHOS)
+  if (file_path.IsDataShareUri()) {
+    File file = OpenDatashareUriForRead(file_path);
+    if (!file.IsValid())
+      return false;
+    return file.GetInfo(results);
+  } else {
+#endif
     if (File::Stat(file_path.value().c_str(), &file_info) != 0)
       return false;
 #if BUILDFLAG(IS_ANDROID)
   }
 #endif  // BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_OHOS)
+  }
+#endif  // BUILDFLAG(IS_OHOS)
 
   results->FromStat(file_info);
   return true;
@@ -1124,7 +1140,15 @@ bool CopyFile(const FilePath& from_path, const FilePath& to_path) {
     infile = File(from_path, File::FLAG_OPEN | File::FLAG_READ);
   }
 #else
+#if BUILDFLAG(IS_OHOS)
+  if(from_path.IsDataShareUri()) {
+    infile = OpenDatashareUriForRead(from_path);
+  } else {
+    infile = File(from_path, File::FLAG_OPEN | File::FLAG_READ);
+  }
+#else
   infile = File(from_path, File::FLAG_OPEN | File::FLAG_READ);
+#endif
 #endif
   if (!infile.IsValid())
     return false;

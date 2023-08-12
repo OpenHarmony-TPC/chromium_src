@@ -6,6 +6,7 @@
 #define MEDIA_BASE_OHOS_MEDIA_PLAYER_LISTENER_H_
 
 #include <surface.h>
+#include <iconsumer_surface.h>
 #include "base/logging.h"
 #include "base/task/single_thread_task_runner.h"
 #include "media/base/ohos/ohos_media_player_bridge.h"
@@ -23,7 +24,7 @@ class OHOSMediaPlayerListener : public OHOS::IBufferConsumerListener {
   OHOSMediaPlayerListener(
       const scoped_refptr<base::SingleThreadTaskRunner>& task_runner,
       base::WeakPtr<OHOSMediaPlayerBridge> media_player,
-      OHOS::sptr<OHOS::Surface> impl);
+      OHOS::sptr<OHOS::IConsumerSurface> impl);
 
   OHOSMediaPlayerListener(const OHOSMediaPlayerListener&) = delete;
   OHOSMediaPlayerListener& operator=(const OHOSMediaPlayerListener&) = delete;
@@ -34,7 +35,7 @@ class OHOSMediaPlayerListener : public OHOS::IBufferConsumerListener {
  private:
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
   base::WeakPtr<OHOSMediaPlayerBridge> media_player_;
-  OHOS::wptr<OHOS::Surface> surface_;
+  OHOS::wptr<OHOS::IConsumerSurface> surface_;
   int64_t timestamp;
   OHOS::Rect damage;
 };

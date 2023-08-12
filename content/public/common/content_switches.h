@@ -189,6 +189,7 @@ CONTENT_EXPORT extern const char kQuotaChangeEventInterval[];
 CONTENT_EXPORT extern const char kRegisterPepperPlugins[];
 CONTENT_EXPORT extern const char kRemoteDebuggingPipe[];
 CONTENT_EXPORT extern const char kRemoteDebuggingPort[];
+CONTENT_EXPORT extern const char kRemoteAllowOrigins[];
 CONTENT_EXPORT extern const char kRendererClientId[];
 extern const char kRendererCmdPrefix[];
 CONTENT_EXPORT extern const char kRendererProcess[];

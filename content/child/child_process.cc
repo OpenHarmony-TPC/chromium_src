@@ -101,7 +101,7 @@ ChildProcess::ChildProcess(base::ThreadPriority io_thread_priority,
   // We can't recover from failing to start the IO thread.
   base::Thread::Options thread_options(base::MessagePumpType::IO, 0);
   thread_options.priority = io_thread_priority;
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   // TODO(reveman): Remove this in favor of setting it explicitly for each type
   // of process.
   if (base::FeatureList::IsEnabled(

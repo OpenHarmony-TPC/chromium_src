@@ -111,7 +111,7 @@ class NWebImpl : public NWeb {
   void SetNWebJavaScriptResultCallBack(
       std::shared_ptr<NWebJavaScriptResultCallBack> callback) override;
   void OnFocus() const override;
-  void OnBlur() const override;
+  void OnBlur(const BlurReason& blurReason) const override;
   void StoreWebArchive(
       const std::string& base_name,
       bool auto_name,
@@ -138,23 +138,31 @@ class NWebImpl : public NWeb {
   void ScrollTo(float x, float y) override;
   void ScrollBy(float delta_x, float delta_y) override;
   void SlideScroll(float vx, float vy) override;
-
-  // For NWebEx
+  bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) override;
   static NWebImpl* FromID(int32_t nweb_id);
-  void ReloadOriginalUrl() const;
+  std::string GetUrl() const override;
+
+  CefRefPtr<CefClient> GetCefClient() const {
+    return nweb_delegate_ ? nweb_delegate_->GetCefClient() : nullptr;
+  }
+  void AddNWebToMap(uint32_t id, std::shared_ptr<NWebImpl>& nweb);
+
+#if defined (OHOS_NWEB_EX)
+  static const std::vector<std::string>& GetCommandLineArgsForNWebEx();
   static void InitBrowserServiceApi(std::vector<std::string>& browser_args);
   static bool GetBrowserServiceApiEnabled();
-  void SetBrowserUserAgentString(const std::string& user_agent);
-  std::string GetUrl() const override;
+
   void PutWebAppClientExtensionCallback(
       std::shared_ptr<NWebAppClientExtensionCallback>
           web_app_client_extension_listener);
   void RemoveWebAppClientExtensionCallback();
 
-  CefRefPtr<CefClient> GetCefClient() const {
-    return nweb_delegate_->GetCefClient();
-  }
-  void AddNWebToMap(uint32_t id, std::shared_ptr<NWebImpl>& nweb);
+  void ReloadOriginalUrl() const;
+  void SetBrowserUserAgentString(const std::string& user_agent);
+  void SetForceEnableZoom(bool forceEnableZoom) const;
+  bool GetForceEnableZoom() const;
+#endif  // OHOS_NWEB_EX
+
  private:
   void ProcessInitArgs(const NWebInitArgs& init_args);
   void InitWebEngineArgs(const NWebInitArgs& init_args);
@@ -172,6 +180,7 @@ class NWebImpl : public NWeb {
   std::shared_ptr<NWebDelegateInterface> nweb_delegate_ = nullptr;
   std::list<std::string> web_engine_args_;
   float device_pixel_ratio_ = 0.f;
+  bool is_enhance_surface_ = false;
 };
 }  // namespace OHOS::NWeb
 

@@ -64,20 +64,20 @@ source_set("geolocation") {
     "//services/network/public/cpp",
   ]
 
-  if (is_ohos) {
-    sources += [
-      "ohos/location_provider_ohos.cc",
-      "ohos/location_provider_ohos.h",
-    ]
-    import("//build/config/ohos/config.gni")
-    include_dirs = ohos_src_includes
-    lib_dirs = ohos_libs_dir
-    libs = [
-      "locator_sdk.z",
-      "ipc_core.z",
-      "lbsservice_common.z",
-    ]
-  }
+  # if (is_ohos) {
+  #   sources += [
+  #     "ohos/location_provider_ohos.cc",
+  #     "ohos/location_provider_ohos.h",
+  #   ]
+  #   import("//build/config/ohos/config.gni")
+  #   include_dirs = ohos_src_includes
+  #   lib_dirs = ohos_libs_dir
+  #   libs = [
+  #     "locator_sdk.z",
+  #     "ipc_core.z",
+  #     "lbsservice_common.z",
+  #   ]
+  # }
 
   if (is_android) {
     sources += [

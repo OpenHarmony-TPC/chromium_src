@@ -41,13 +41,13 @@ constexpr char ERROR_DESC[] = "ERROR_DESC";
 
 void ReportPageLoadStats(int instanceId, int accessSumCount, int accessSuccCount, int accessFailCount) {
   float failRatio = float(accessFailCount)/accessSumCount;
-  HiSysEvent::Write(HiSysEvent::Domain::WEBVIEW, PAGE_LOAD_STATISTICS, HiSysEvent::EventType::STATISTIC,
+  HiSysEventWrite(HiSysEvent::Domain::WEBVIEW, PAGE_LOAD_STATISTICS, HiSysEvent::EventType::STATISTIC,
     CURRENT_INSTANCE_ID, instanceId, ACCESS_SUM_COUNT, accessSumCount, ACCESS_SUCC_COUNT, accessSuccCount,
     ACCESS_FAIL_COUNT, accessFailCount, ACCESS_FAIL_RATIO, failRatio);
 }
 
 void ReportMultiInstanceStats(int instanceId, int nwebCount, int nwebMaxCount) {
-  HiSysEvent::Write(HiSysEvent::Domain::WEBVIEW, MULTI_INSTANCE_STATISTICS, HiSysEvent::EventType::STATISTIC,
+  HiSysEventWrite(HiSysEvent::Domain::WEBVIEW, MULTI_INSTANCE_STATISTICS, HiSysEvent::EventType::STATISTIC,
     CURRENT_INSTANCE_ID, instanceId, CURRENT_INSTANCE_COUNT, nwebCount, INSTANCE_MAX_COUNT, nwebMaxCount);
 }
 
@@ -61,7 +61,7 @@ void ReportPageLoadErrorInfo(int instanceId, const std::string errorType, int er
   if (errorDesc != "") {
     error_desc = errorDesc;
   }
-  HiSysEvent::Write(HiSysEvent::Domain::WEBVIEW, PAGE_LOAD_ERROR, HiSysEvent::EventType::FAULT,
+  HiSysEventWrite(HiSysEvent::Domain::WEBVIEW, PAGE_LOAD_ERROR, HiSysEvent::EventType::FAULT,
     CURRENT_INSTANCE_ID, instanceId, ERROR_TYPE, error_type, ERROR_CODE, error_code, ERROR_DESC, error_desc);
 }
 

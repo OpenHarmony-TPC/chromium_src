@@ -35,6 +35,14 @@
 namespace ui {
 
 namespace {
+
+#if BUILDFLAG(IS_OHOS)
+constexpr int kOverlayScrollbarMinimumLength = 48;
+constexpr int kOverlayScrollbarBorderPatchWidth = 0;
+constexpr int kOverlayScrollbarCenterPatchSize = 108;
+constexpr int kOverlayScrollbarHotSize = 72;
+constexpr int kOverlayScrollbarMargin = 12;
+#else
 // Constants for painting overlay scrollbars. Other properties needed outside
 // this painting code are defined in overlay_scrollbar_constants_aura.h.
 constexpr int kOverlayScrollbarMinimumLength = 32;
@@ -43,6 +51,8 @@ constexpr int kOverlayScrollbarMinimumLength = 32;
 // color. This prevents color interpolation between the patches.
 constexpr int kOverlayScrollbarBorderPatchWidth = 2;
 constexpr int kOverlayScrollbarCenterPatchSize = 1;
+#endif  // !BUILDFLAG(IS_OHOS)
+
 const SkScalar kScrollRadius =
     1;  // select[multiple] radius+width are set in css
 }  // namespace
@@ -237,14 +247,12 @@ void NativeThemeAura::PaintScrollbarThumb(cc::PaintCanvas* canvas,
     return;
 
   TRACE_EVENT0("blink", "NativeThemeAura::PaintScrollbarThumb");
-
   gfx::Rect thumb_rect(rect);
   SkColor thumb_color;
 
   if (use_overlay_scrollbars_) {
     if (state == NativeTheme::kDisabled)
       return;
-
     const bool hovered = state != kNormal;
     if (color_scheme != ColorScheme::kPlatformHighContrast) {
       // A light system theme uses a dark overlay scrollbar, and vice versa.
@@ -256,11 +264,17 @@ void NativeThemeAura::PaintScrollbarThumb(cc::PaintCanvas* canvas,
         GetSystemColor(hovered ? kColorId_OverlayScrollbarThumbHoveredFill
                                : kColorId_OverlayScrollbarThumbFill,
                        color_scheme);
+#if BUILDFLAG(IS_OHOS)
+    if (part == kScrollbarHorizontalThumb) {
+      thumb_rect.Inset(0, kOverlayScrollbarHotSize, 0, kOverlayScrollbarMargin);
+    } else {
+      thumb_rect.Inset(kOverlayScrollbarHotSize, 0, kOverlayScrollbarMargin, 0);
+    }
+#else
     SkColor stroke_color =
         GetSystemColor(hovered ? kColorId_OverlayScrollbarThumbHoveredStroke
                                : kColorId_OverlayScrollbarThumbStroke,
                        color_scheme);
-
     // In overlay mode, draw a stroke (border).
     constexpr int kStrokeWidth = kOverlayScrollbarStrokeWidth;
     cc::PaintFlags flags;
@@ -284,6 +298,8 @@ void NativeThemeAura::PaintScrollbarThumb(cc::PaintCanvas* canvas,
     // ScrollbarThemeOverlay::paintThumb.
     gfx::Insets fill_insets(kStrokeWidth);
     thumb_rect.Inset(fill_insets + edge_adjust_insets);
+#endif 
+
   } else {
     ControlColorId color_id = kScrollbarThumb;
     SkAlpha thumb_alpha = SK_AlphaTRANSPARENT;
@@ -390,7 +406,6 @@ bool NativeThemeAura::SupportsNinePatch(Part part) const {
 
 gfx::Size NativeThemeAura::GetNinePatchCanvasSize(Part part) const {
   DCHECK(SupportsNinePatch(part));
-
   return gfx::Size(
       kOverlayScrollbarBorderPatchWidth * 2 + kOverlayScrollbarCenterPatchSize,
       kOverlayScrollbarBorderPatchWidth * 2 + kOverlayScrollbarCenterPatchSize);

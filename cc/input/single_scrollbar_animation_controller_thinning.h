@@ -22,9 +22,13 @@ class ScrollbarAnimationControllerClient;
 // ScrollbarAnimationControllerThinning for one scrollbar
 class CC_EXPORT SingleScrollbarAnimationControllerThinning {
  public:
+#if BUILDFLAG(IS_OHOS)
+  static constexpr float kIdleThicknessScale = 0.5f;
+  static constexpr float kMouseMoveDistanceToTriggerExpand = 8.f;
+#else 
   static constexpr float kIdleThicknessScale = 0.4f;
   static constexpr float kMouseMoveDistanceToTriggerExpand = 25.f;
-
+#endif
   static std::unique_ptr<SingleScrollbarAnimationControllerThinning> Create(
       ElementId scroll_element_id,
       ScrollbarOrientation orientation,

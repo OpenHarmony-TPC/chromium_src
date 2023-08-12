@@ -10,8 +10,13 @@
 
 namespace ui {
 
+#if BUILDFLAG(IS_OHOS)
+constexpr int kOverlayScrollbarStrokeWidth = 0;
+constexpr int kOverlayScrollbarThumbWidthPressed = 32;
+#else
 constexpr int kOverlayScrollbarStrokeWidth = 1;
 constexpr int kOverlayScrollbarThumbWidthPressed = 10;
+#endif
 
 constexpr base::TimeDelta kOverlayScrollbarFadeDelay = base::Milliseconds(500);
 constexpr base::TimeDelta kOverlayScrollbarFadeDuration =

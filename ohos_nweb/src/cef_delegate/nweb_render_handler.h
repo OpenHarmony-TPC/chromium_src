@@ -103,7 +103,7 @@ class NWebRenderHandler : public CefRenderHandler {
   CefRefPtr<CefDragData> GetDragData();
 
   float GetVirtualPixelRatio() const { return screen_info_.display_ratio; }
-
+  float GetCefDeviceRatio() const { return cef_device_ratio_; }
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(NWebRenderHandler);
 
@@ -118,6 +118,7 @@ class NWebRenderHandler : public CefRenderHandler {
   int content_height_ = 0;
   int content_width_ = 0;
   NWebScreenInfo screen_info_;
+  float cef_device_ratio_ = 1.0;
 
   std::weak_ptr<NWebHandler> handler_;
   CefTouchHandleState insert_handle_;

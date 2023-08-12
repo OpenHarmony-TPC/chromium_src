@@ -598,6 +598,10 @@ class WebContents : public PageNavigator,
 #if BUILDFLAG(IS_OHOS)
   virtual void SetTouchInsertHandleMenuShow(bool show) = 0;
   virtual bool GetTouchInsertHandleMenuShow() = 0;
+#if defined (OHOS_NWEB_EX)
+  virtual void SetForceEnableZoom(bool forceEnableZoom) = 0;
+  virtual bool GetForceEnableZoom() = 0;
+#endif // OHOS_NWEB_EX
 #endif
 
   // Saves the given title to the navigation entry and does associated work. It

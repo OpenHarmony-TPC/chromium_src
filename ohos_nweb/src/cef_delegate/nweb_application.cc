@@ -24,6 +24,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_switches.h"
 #include "nweb_handler_delegate.h"
+#include "nweb_impl.h"
 
 namespace OHOS::NWeb {
 NWebApplication::NWebApplication(
@@ -130,6 +131,12 @@ void NWebApplication::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> comma
     command_line->AppendSwitchWithValue(::switches::kOhosHapPath,
       CefCommandLine::GetGlobalCommandLine()->GetSwitchValue(::switches::kOhosHapPath).ToString());
   }
+
+#ifdef OHOS_NWEB_EX
+  for (const auto& arg : NWebImpl::GetCommandLineArgsForNWebEx()) {
+    command_line->AppendSwitch(arg);
+  }
+#endif  // OHOS_NWEB_EX
 }
 /* CefBrowserProcessHandler methods end */
 

@@ -1403,4 +1403,10 @@ bool FilePath::IsContentUri() const {
 }
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+bool FilePath::IsDataShareUri() const {
+   return StartsWith(path_, "datashare://", base::CompareCase::INSENSITIVE_ASCII) ||
+        StartsWith(path_, "dataability://", base::CompareCase::INSENSITIVE_ASCII);
+}
+#endif
 }  // namespace base

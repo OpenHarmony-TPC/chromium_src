@@ -174,6 +174,12 @@ class NWebDelegateInterface
   virtual void ScrollTo(float x, float y) = 0;
   virtual void ScrollBy(float delta_x, float delta_y) = 0;
   virtual void SlideScroll(float vx, float vy) = 0;
+  virtual bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) = 0;
+
+#if defined (OHOS_NWEB_EX)
+  virtual void SetForceEnableZoom(bool forceEnableZoom) = 0;
+  virtual bool GetForceEnableZoom() = 0;
+#endif
 };
 }  // namespace OHOS::NWeb
 

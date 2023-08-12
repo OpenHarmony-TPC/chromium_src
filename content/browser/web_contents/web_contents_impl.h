@@ -385,6 +385,14 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   bool GetTouchInsertHandleMenuShow() override {
     return touch_insert_handle_menu_show_;
   }
+
+#if defined (OHOS_NWEB_EX)
+void SetForceEnableZoom(bool forceEnableZoom) override;
+
+bool GetForceEnableZoom() override {
+  return force_enable_zoom_;
+}
+#endif // OHOS_NWEB_EX
 #endif
   void UpdateTitleForEntry(NavigationEntry* entry,
                            const std::u16string& title) override;
@@ -2306,6 +2314,11 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   base::Location creator_location_;
 
   VisibleTimeRequestTrigger visible_time_request_trigger_;
+
+#if defined (OHOS_NWEB_EX)
+  bool force_enable_zoom_;
+  std::string user_agent_{""};
+#endif // OHOS_NWEB_EX
 
   base::WeakPtrFactory<WebContentsImpl> loading_weak_factory_{this};
   base::WeakPtrFactory<WebContentsImpl> weak_factory_{this};

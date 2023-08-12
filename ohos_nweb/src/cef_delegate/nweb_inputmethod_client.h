@@ -23,7 +23,7 @@ namespace OHOS::NWeb {
 class NWebInputMethodClient: public virtual CefBaseRefCounted {
  public:
   virtual ~NWebInputMethodClient() = default;
-  virtual void Attach(CefRefPtr<CefBrowser> browser, bool show_keyboard) = 0;
+  virtual void Attach(CefRefPtr<CefBrowser> browser, bool show_keyboard, cef_text_input_mode_t input_mode) = 0;
   virtual void ShowTextInput() = 0;
   virtual void HideTextInput() = 0;
   virtual void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
