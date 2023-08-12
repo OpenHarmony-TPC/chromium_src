@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "base/bind.h"
+#include "base/logging.h"
 #include "base/task/post_task.h"
 #include "base/task/task_traits.h"
 #include "build/build_config.h"
@@ -17,6 +18,77 @@
 #if BUILDFLAG(IS_ANDROID)
 #include "net/android/network_change_notifier_android.h"
 #endif
+
+namespace {
+#if BUILDFLAG(IS_OHOS)
+net::NetworkChangeNotifier::ConnectionType ConvertOhosConnTypeToNetBaseConnType(
+    const OHOS::NWeb::NetConnectType& netConnectType) {
+  return static_cast<net::NetworkChangeNotifier::ConnectionType>(
+      netConnectType);
+}
+
+net::NetworkChangeNotifier::ConnectionSubtype
+ConvertOhosConnSubtypeToNetBaseConnSubtype(
+    const OHOS::NWeb::NetConnectSubtype& subtype) {
+  return static_cast<net::NetworkChangeNotifier::ConnectionSubtype>(subtype);
+}
+
+class NetConnCallbackImpl : public OHOS::NWeb::NetConnCallback {
+ public:
+  NetConnCallbackImpl(
+      net::NetworkChangeNotifierPosix* network_change_notifier_posix)
+      : network_change_notifier_posix_(network_change_notifier_posix) {}
+  virtual ~NetConnCallbackImpl() = default;
+  int32_t NetAvailable() override;
+  int32_t NetCapabilitiesChange(
+      const OHOS::NWeb::NetConnectType& netConnectType,
+      const OHOS::NWeb::NetConnectSubtype& netConnectSubtype) override;
+  int32_t NetConnectionPropertiesChange() override;
+  int32_t NetUnavailable() override;
+
+ private:
+  net::NetworkChangeNotifierPosix* network_change_notifier_posix_ = nullptr;
+};
+
+int32_t NetConnCallbackImpl::NetAvailable() {
+  return 0;
+}
+
+int32_t NetConnCallbackImpl::NetCapabilitiesChange(
+    const OHOS::NWeb::NetConnectType& netConnectType,
+    const OHOS::NWeb::NetConnectSubtype& netConnectSubtype) {
+  if (network_change_notifier_posix_) {
+    network_change_notifier_posix_->OnConnectionChanged(
+        ConvertOhosConnTypeToNetBaseConnType(netConnectType));
+    network_change_notifier_posix_->OnConnectionSubtypeChanged(
+        ConvertOhosConnTypeToNetBaseConnType(netConnectType),
+        ConvertOhosConnSubtypeToNetBaseConnSubtype(netConnectSubtype));
+  }
+  return 0;
+}
+
+int32_t NetConnCallbackImpl::NetConnectionPropertiesChange() {
+  if (network_change_notifier_posix_) {
+    network_change_notifier_posix_->OnDNSChanged();
+    network_change_notifier_posix_->OnIPAddressChanged();
+  }
+  return 0;
+}
+
+int32_t NetConnCallbackImpl::NetUnavailable() {
+  if (network_change_notifier_posix_) {
+    network_change_notifier_posix_->OnConnectionChanged(
+        net::NetworkChangeNotifier::ConnectionType::CONNECTION_NONE);
+    network_change_notifier_posix_->OnConnectionSubtypeChanged(
+        net::NetworkChangeNotifier::ConnectionType::CONNECTION_NONE,
+        net::NetworkChangeNotifier::ConnectionSubtype::SUBTYPE_NONE);
+  }
+  return 0;
+}
+
+std::shared_ptr<NetConnCallbackImpl> g_net_connect_callback = nullptr;
+#endif
+}  // namespace
 
 namespace net {
 
@@ -34,12 +106,36 @@ NetworkChangeNotifierPosix::NetworkChangeNotifierPosix(
     : NetworkChangeNotifier(NetworkChangeCalculatorParamsPosix(),
                             system_dns_config_notifier),
       connection_type_(initial_connection_type),
+#if BUILDFLAG(IS_OHOS)
+      ohos_net_conn_adapter_(OHOS::NWeb::OhosAdapterHelper::GetInstance()
+                                 .CreateNetConnectAdapter()),
+#endif
       max_bandwidth_mbps_(
           NetworkChangeNotifier::GetMaxBandwidthMbpsForConnectionSubtype(
-              initial_connection_subtype)) {}
+              initial_connection_subtype)) {
+#if BUILDFLAG(IS_OHOS)
+  g_net_connect_callback = std::make_shared<NetConnCallbackImpl>(this);
+  if (ohos_net_conn_adapter_) {
+    int32_t ret =
+        ohos_net_conn_adapter_->RegisterNetConnCallback(g_net_connect_callback);
+    if (ret != 0) {
+      LOG(ERROR) << "register ohos net connect callback failed.";
+    }
+  }
+#endif
+}
 
 NetworkChangeNotifierPosix::~NetworkChangeNotifierPosix() {
   ClearGlobalPointer();
+#if BUILDFLAG(IS_OHOS)
+  if (ohos_net_conn_adapter_) {
+    int32_t ret = ohos_net_conn_adapter_->UnregisterNetConnCallback(
+        g_net_connect_callback);
+    if (ret != 0) {
+      LOG(ERROR) << "unregister ohos net connect callback failed.";
+    }
+  }
+#endif
 }
 
 void NetworkChangeNotifierPosix::OnDNSChanged() {

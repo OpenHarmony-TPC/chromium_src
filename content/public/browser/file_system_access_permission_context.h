@@ -6,10 +6,12 @@
 #define CONTENT_PUBLIC_BROWSER_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_H_
 
 #include "base/files/file_path.h"
+#include "components/safe_browsing/buildflags.h"
 #include "content/public/browser/file_system_access_permission_grant.h"
 #include "content/public/browser/file_system_access_write_item.h"
 #include "content/public/browser/global_routing_id.h"
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom-shared.h"
+#include "ui/shell_dialogs/select_file_dialog.h"
 #include "url/origin.h"
 
 namespace content {
@@ -87,32 +89,37 @@ class FileSystemAccessPermissionContext {
 
   // These values are persisted to logs. Entries should not be renumbered and
   // numeric values should never be reused.
-  enum class SensitiveDirectoryResult {
-    kAllowed = 0,   // Access to directory is okay.
-    kTryAgain = 1,  // User should pick a different directory.
+  enum class SensitiveEntryResult {
+    kAllowed = 0,   // Access to entry is okay.
+    kTryAgain = 1,  // User should pick a different entry.
     kAbort = 2,     // Abandon entirely, as if picking was cancelled.
     kMaxValue = kAbort
   };
-  // Checks if access to the given |path| should be allowed or blocked. This is
+  // Checks if access to the given `path` should be allowed or blocked. This is
   // used to implement blocks for certain sensitive directories such as the
   // "Windows" system directory, as well as the root of the "home" directory.
-  // Calls |callback| with the result of the check, after potentially showing
-  // some UI to the user if the path should not be accessed.
-  virtual void ConfirmSensitiveDirectoryAccess(
+  // For downloads ("Save as") it also checks the file extension. Calls
+  // `callback` with the result of the check, after potentially showing some UI
+  // to the user if the path is dangerous or should not be accessed.
+  virtual void ConfirmSensitiveEntryAccess(
       const url::Origin& origin,
       PathType path_type,
       const base::FilePath& path,
       HandleType handle_type,
+      ui::SelectFileDialog::Type dialog_type,
       GlobalRenderFrameHostId frame_id,
-      base::OnceCallback<void(SensitiveDirectoryResult)> callback) = 0;
+      base::OnceCallback<void(SensitiveEntryResult)> callback) = 0;
 
   enum class AfterWriteCheckResult { kAllow, kBlock };
+
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   // Runs a recently finished write operation through checks such as malware
   // or other security checks to determine if the write should be allowed.
   virtual void PerformAfterWriteChecks(
       std::unique_ptr<FileSystemAccessWriteItem> item,
       GlobalRenderFrameHostId frame_id,
       base::OnceCallback<void(AfterWriteCheckResult)> callback) = 0;
+#endif
 
   // Returns whether the give |origin| already allows read permission, or it is
   // possible to request one. This is used to block file dialogs from being

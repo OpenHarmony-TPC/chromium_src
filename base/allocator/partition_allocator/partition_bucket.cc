@@ -272,6 +272,9 @@ SlotSpanMetadata<thread_safe>* PartitionDirectMap(
 
     {
       ScopedSyscallTimer timer{root};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+      ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
       RecommitSystemPages(
           reservation_start + SystemPageSize(),
 #if BUILDFLAG(PUT_REF_COUNT_IN_PREVIOUS_SLOT)
@@ -378,6 +381,9 @@ SlotSpanMetadata<thread_safe>* PartitionDirectMap(
 
       {
         ScopedSyscallTimer timer{root};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+        ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
 #if !defined(PA_HAS_64_BITS_POINTERS)
         AddressPoolManager::GetInstance()->MarkUnused(pool, reservation_start,
                                                       reservation_size);
@@ -625,6 +631,9 @@ ALWAYS_INLINE uintptr_t PartitionBucket<thread_safe>::AllocNewSuperPage(
   // also a tiny amount of extent metadata.
   {
     ScopedSyscallTimer timer{root};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+    ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
     RecommitSystemPages(
         super_page + SystemPageSize(),
 #if BUILDFLAG(PUT_REF_COUNT_IN_PREVIOUS_SLOT)
@@ -690,6 +699,9 @@ ALWAYS_INLINE uintptr_t PartitionBucket<thread_safe>::AllocNewSuperPage(
   if (root->IsQuarantineEnabled()) {
     {
       ScopedSyscallTimer timer{root};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+      ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
       RecommitSystemPages(state_bitmap, state_bitmap_size_to_commit,
                           PageReadWrite, PageUpdatePermissions);
     }

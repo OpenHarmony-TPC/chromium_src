@@ -17,6 +17,7 @@
 #include "components/update_client/crx_update_item.h"
 #include "components/update_client/update_client.h"
 #include "components/update_client/update_client_errors.h"
+#include "components/safe_browsing/buildflags.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/notification_details.h"
@@ -122,6 +123,7 @@ void UpdateService::OnEvent(Events event, const std::string& extension_id) {
       break;
   }
 
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   if (should_perform_action_on_omaha_attributes) {
     base::Value attributes = GetExtensionOmahaAttributes(extension_id);
     // Note that it's important to perform actions even if |attributes| is
@@ -129,6 +131,7 @@ void UpdateService::OnEvent(Events event, const std::string& extension_id) {
     ExtensionSystem::Get(browser_context_)
         ->PerformActionBasedOnOmahaAttributes(extension_id, attributes);
   }
+#endif
 }
 
 UpdateService::UpdateService(

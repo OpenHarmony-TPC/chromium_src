@@ -123,6 +123,9 @@
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/load_notification_details.h"
+#if BUILDFLAG(IS_OHOS)
+#include "content/public/browser/message_port_provider.h"
+#endif
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_service.h"
@@ -1022,9 +1025,21 @@ WebContentsImpl::~WebContentsImpl() {
     outermost->SetAsFocusedWebContentsIfNecessary();
   }
 
-  if (mouse_lock_widget_)
+  if (mouse_lock_widget_) {
     mouse_lock_widget_->RejectMouseLockOrUnlockIfNecessary(
         blink::mojom::PointerLockResult::kElementDestroyed);
+
+    // Normally, the call above clears mouse_lock_widget_ pointers on the
+    // entire WebContents chain, since it results in calling LostMouseLock()
+    // when the mouse lock is already active. However, this doesn't work for
+    // <webview> guests if the mouse lock request is still pending while the
+    // <webview> is destroyed. Hence, ensure that all mouse lock widget
+    // pointers are cleared. See https://crbug.com/1346245.
+    for (WebContentsImpl* current = this; current;
+         current = current->GetOuterWebContents()) {
+      current->mouse_lock_widget_ = nullptr;
+    }
+  }
 
   for (RenderWidgetHostImpl* widget : created_widgets_)
     widget->DetachDelegate();
@@ -1775,6 +1790,14 @@ void WebContentsImpl::SetUserAgentOverride(
     return;
   }
 
+#if BUILDFLAG(IS_OHOS)
+  const base::CommandLine& command_line =
+      *base::CommandLine::ForCurrentProcess();
+  if (command_line.HasSwitch(switches::kForBrowser)) {
+    UpdateOverridingUserAgent();
+  }
+#endif
+
   should_override_user_agent_in_new_tabs_ = override_in_new_tabs;
 
   renderer_preferences_.user_agent_override = ua_override;
@@ -1887,6 +1910,28 @@ void WebContentsImpl::SetDisplayCutoutSafeArea(gfx::Insets insets) {
     display_cutout_host_impl_->SetDisplayCutoutSafeArea(insets);
 }
 
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+void WebContentsImpl::CreateWebMessagePorts(
+    std::vector<blink::WebMessagePort>& ports) {
+  std::pair<blink::WebMessagePort, blink::WebMessagePort> pipe =
+      blink::WebMessagePort::CreatePair();
+  ports.emplace_back(std::move(pipe.first));
+  ports.emplace_back(std::move(pipe.second));
+}
+
+void WebContentsImpl::PostWebMessage(std::string& message,
+                                     std::vector<blink::WebMessagePort>& ports,
+                                     std::string& targetUri) {
+  if (targetUri.compare("*") == 0) {
+    targetUri = "";
+  }
+  // send ports to html5.
+  MessagePortProvider::OhosPostMessageToFrame(
+      GetPrimaryPage(), std::u16string(), base::UTF8ToUTF16(targetUri),
+      base::UTF8ToUTF16(message), ports);
+}
 #endif
 
 const std::u16string& WebContentsImpl::GetTitle() {
@@ -2806,7 +2851,7 @@ void WebContentsImpl::SetSlowWebPreferences(
     // Otherwise default is disabled.
     std::string touch_enabled_default_switch =
         switches::kTouchEventFeatureDetectionDisabled;
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
     touch_enabled_default_switch = switches::kTouchEventFeatureDetectionEnabled;
 #endif  // BUILDFLAG(IS_ANDROID)
     const std::string touch_enabled_switch =
@@ -2998,16 +3043,16 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
   }
 
   if (!view_) {
-  WebContentsViewDelegate* delegate =
-      GetContentClient()->browser()->GetWebContentsViewDelegate(this);
+    WebContentsViewDelegate* delegate =
+        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
 
-  if (browser_plugin_guest_) {
-    view_ = std::make_unique<WebContentsViewChildFrame>(
-        this, delegate, &render_view_host_delegate_view_);
-  } else {
-    view_.reset(CreateWebContentsView(this, delegate,
-                                      &render_view_host_delegate_view_));
-  }
+    if (browser_plugin_guest_) {
+      view_ = std::make_unique<WebContentsViewChildFrame>(
+          this, delegate, &render_view_host_delegate_view_);
+    } else {
+      view_.reset(CreateWebContentsView(this, delegate,
+                                        &render_view_host_delegate_view_));
+    }
   }
   CHECK(render_view_host_delegate_view_);
   CHECK(view_.get());
@@ -3874,12 +3919,9 @@ FrameTree* WebContentsImpl::CreateNewWindow(
   create_params.renderer_initiated_creation = !is_new_browsing_instance;
 
   if (delegate_) {
-    delegate_->GetCustomWebContentsView(this,
-                                        params.target_url,
-                                        render_process_id,
-                                        opener->GetRoutingID(),
-                                        &create_params.view,
-                                        &create_params.delegate_view);
+    delegate_->GetCustomWebContentsView(
+        this, params.target_url, render_process_id, opener->GetRoutingID(),
+        &create_params.view, &create_params.delegate_view);
   }
 
   std::unique_ptr<WebContentsImpl> new_contents;
@@ -4289,9 +4331,10 @@ bool WebContentsImpl::ShouldIgnoreUnresponsiveRenderer() {
   if (suppress_unresponsive_renderer_count_ > 0)
     return true;
 
-  // Ignore unresponsive renderers if the debugger is attached to them since the
-  // unresponsiveness might be a result of the renderer sitting on a breakpoint.
-  //
+    // Ignore unresponsive renderers if the debugger is attached to them since
+    // the unresponsiveness might be a result of the renderer sitting on a
+    // breakpoint.
+    //
 #ifdef OS_WIN
   // Check if a windows debugger is attached to the renderer process.
   base::ProcessHandle process_handle =
@@ -5984,6 +6027,7 @@ WebContentsImpl::GetOrCreateWebPreferences() {
 void WebContentsImpl::SetWebPreferences(
     const blink::web_pref::WebPreferences& prefs) {
   OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::SetWebPreferences");
+
   web_preferences_ = std::make_unique<blink::web_pref::WebPreferences>(prefs);
   // Get all the RenderViewHosts (except the ones for currently back-forward
   // cached pages), and make them send the current WebPreferences
@@ -6055,8 +6099,8 @@ WebContentsImpl::GetJavaRenderFrameHostDelegate() {
 #endif
 
 void WebContentsImpl::DOMContentLoaded(RenderFrameHostImpl* render_frame_host) {
-  OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::DOMContentLoaded",
-                        "render_frame_host", render_frame_host);
+  TRACE_EVENT1("content", "WebContentsImpl::DOMContentLoaded",
+               "render_frame_host", render_frame_host);
   SCOPED_UMA_HISTOGRAM_TIMER("WebContentsObserver.DOMContentLoaded");
   observers_.NotifyObservers(&WebContentsObserver::DOMContentLoaded,
                              render_frame_host);

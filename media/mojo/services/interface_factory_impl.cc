@@ -141,7 +141,7 @@ void InterfaceFactoryImpl::CreateCastRenderer(
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 void InterfaceFactoryImpl::CreateMediaPlayerRenderer(
     mojo::PendingRemote<mojom::MediaPlayerRendererClientExtension>
         client_extension_ptr,
@@ -150,7 +150,9 @@ void InterfaceFactoryImpl::CreateMediaPlayerRenderer(
         renderer_extension_receiver) {
   NOTREACHED();
 }
+#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 
+#if BUILDFLAG(IS_ANDROID)
 void InterfaceFactoryImpl::CreateFlingingRenderer(
     const std::string& audio_device_id,
     mojo::PendingRemote<mojom::FlingingRendererClientExtension>

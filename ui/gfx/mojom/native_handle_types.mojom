@@ -27,6 +27,8 @@ struct NativePixmapHandle {
   uint64 modifier;
   [EnableIf=is_chromeos_ash]
   uint64 modifier;
+  [EnableIf=is_ohos]
+  uint64 modifier;
 
   [EnableIf=is_fuchsia]
   mojo_base.mojom.UnguessableToken? buffer_collection_id;

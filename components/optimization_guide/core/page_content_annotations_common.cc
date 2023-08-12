@@ -5,6 +5,7 @@
 #include "components/optimization_guide/core/page_content_annotations_common.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "base/check_op.h"
 #include "base/strings/string_number_conversions.h"
@@ -40,7 +41,7 @@ WeightedString::~WeightedString() = default;
 bool WeightedString::operator==(const WeightedString& other) const {
   constexpr double kWeightTolerance = 1e-6;
   return this->value_ == other.value_ &&
-         abs(this->weight_ - other.weight_) <= kWeightTolerance;
+         std::abs(this->weight_ - other.weight_) <= kWeightTolerance;
 }
 
 std::string WeightedString::ToString() const {

@@ -3482,6 +3482,11 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
 #if BUILDFLAG(IS_CHROMEOS)
     switches::kSchedulerBoostUrgent,
 #endif
+#if BUILDFLAG(IS_OHOS)
+    switches::kForTest,
+    switches::kBundleInstallationDir,
+#endif
+
 #if BUILDFLAG(IS_CHROMEOS_LACROS)
     switches::kLacrosEnablePlatformEncryptedHevc,
     switches::kLacrosEnablePlatformHevc,

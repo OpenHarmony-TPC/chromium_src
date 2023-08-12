@@ -153,7 +153,7 @@ static_library("metrics") {
     ]
   }
 
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || is_ohos) {
     sources += [
       "drive_metrics_provider_linux.cc",
       "psi_memory_parser.h",

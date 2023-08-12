@@ -1151,6 +1151,11 @@ class CONTENT_EXPORT RenderFrameHostImpl
                                 const gfx::Rect& clip_rect);
 #endif  // BUILDFLAG(IS_ANDROID)
 
+#if BUILDFLAG(IS_OHOS)
+  void GetImageFromCache(const std::string& url,
+                         ImageCacheCallback callback) override;
+#endif
+
   // Request a one-time snapshot of the accessibility tree without changing
   // the accessibility mode.
   void RequestAXTreeSnapshot(AXTreeSnapshotCallback callback,
@@ -2627,6 +2632,12 @@ class CONTENT_EXPORT RenderFrameHostImpl
   // mojom::FrameHost:
   void CreateNewWindow(mojom::CreateNewWindowParamsPtr params,
                        CreateNewWindowCallback callback) override;
+#if BUILDFLAG(IS_OHOS)
+  void GetCreateNewWindow(const GURL& target_url,
+                          WindowOpenDisposition disposition,
+                          bool allow_popup,
+                          GetCreateNewWindowCallback callback) override;
+#endif
   void CreatePortal(
       mojo::PendingAssociatedReceiver<blink::mojom::Portal> pending_receiver,
       mojo::PendingAssociatedRemote<blink::mojom::PortalClient> client,

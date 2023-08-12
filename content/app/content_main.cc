@@ -85,7 +85,7 @@ namespace {
 constexpr size_t kMaximumMojoMessageSize = 128 * 1024 * 1024;
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
-
+#if !BUILDFLAG(IS_OHOS)
 // Setup signal-handling state: resanitize most signals, ignore SIGPIPE.
 void SetupSignalHandlers() {
   // Always ignore SIGPIPE.  We check the return value of write().
@@ -112,6 +112,7 @@ void SetupSignalHandlers() {
   for (int signal_to_reset : signals_to_reset)
     CHECK_EQ(0, sigaction(signal_to_reset, &sigact, nullptr));
 }
+#endif // !BUILDFLAG(IS_OHOS)
 
 void PopulateFDsFromCommandLine() {
   const std::string& shared_file_param =
@@ -304,8 +305,11 @@ int ContentMainInitialize(ContentMainParams params,
     // default, "C", locale.
     setlocale(LC_NUMERIC, "C");
 
+#if !BUILDFLAG(IS_OHOS)
     SetupSignalHandlers();
-#endif
+#endif  // !BUILDFLAG(IS_OHOS)
+
+#endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_WIN)
     base::win::SetupCRT(*base::CommandLine::ForCurrentProcess());

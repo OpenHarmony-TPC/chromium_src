@@ -63,8 +63,14 @@ const base::FilePath::CharType kTemporaryDirectoryPrefix[] =
 const base::FilePath::CharType kTemporaryDirectoryPattern[] =
     FILE_PATH_LITERAL("DeleteMe*");
 
-OriginInfo::OriginInfo()
-    : total_size_(0) {}
+#if BUILDFLAG(IS_OHOS)
+const std::u16string baseDatabaseDir =
+    base::UTF8ToUTF16("/data/storage/el2/base/");
+const std::u16string divisionStr = base::UTF8ToUTF16("/");
+const std::u16string suffixStr = base::UTF8ToUTF16(".db");
+#endif
+
+OriginInfo::OriginInfo() : total_size_(0) {}
 
 OriginInfo::OriginInfo(const OriginInfo& origin_info) = default;
 
@@ -184,14 +190,12 @@ void DatabaseTracker::DatabaseOpened(const std::string& origin_identifier,
   InsertOrUpdateDatabaseDetails(origin_identifier, database_name,
                                 database_description);
   if (database_connections_.AddConnection(origin_identifier, database_name)) {
-    *database_size = SeedOpenDatabaseInfo(origin_identifier,
-                                          database_name,
+    *database_size = SeedOpenDatabaseInfo(origin_identifier, database_name,
                                           database_description);
     return;
   }
-  *database_size  = UpdateOpenDatabaseInfoAndNotify(origin_identifier,
-                                                    database_name,
-                                                    &database_description);
+  *database_size = UpdateOpenDatabaseInfoAndNotify(
+      origin_identifier, database_name, &database_description);
 }
 
 void DatabaseTracker::DatabaseModified(const std::string& origin_identifier,
@@ -343,6 +347,13 @@ base::FilePath DatabaseTracker::GetOriginDirectory(
 base::FilePath DatabaseTracker::GetFullDBFilePath(
     const std::string& origin_identifier,
     const std::u16string& database_name) {
+#if BUILDFLAG(IS_OHOS)
+  DCHECK(!origin_identifier.empty());
+  std::u16string origin_directory = base::UTF8ToUTF16(origin_identifier);
+  std::u16string filename = baseDatabaseDir + origin_directory + divisionStr +
+                            database_name + suffixStr;
+  return base::FilePath::FromUTF16Unsafe(filename);
+#else
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DCHECK(!origin_identifier.empty());
   if (!LazyInit())
@@ -355,6 +366,7 @@ base::FilePath DatabaseTracker::GetFullDBFilePath(
 
   return GetOriginDirectory(origin_identifier)
       .AppendASCII(base::NumberToString(id));
+#endif
 }
 
 bool DatabaseTracker::GetOriginInfo(const std::string& origin_identifier,
@@ -378,8 +390,7 @@ bool DatabaseTracker::GetAllOriginIdentifiers(
   return databases_table_->GetAllOriginIdentifiers(origin_identifiers);
 }
 
-bool DatabaseTracker::GetAllOriginsInfo(
-    std::vector<OriginInfo>* origins_info) {
+bool DatabaseTracker::GetAllOriginsInfo(std::vector<OriginInfo>* origins_info) {
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DCHECK(origins_info);
   DCHECK(origins_info->empty());
@@ -434,7 +445,8 @@ bool DatabaseTracker::DeleteClosedDatabase(
 
   std::vector<DatabaseDetails> details;
   if (databases_table_->GetAllDatabaseDetailsForOriginIdentifier(
-          origin_identifier, &details) && details.empty()) {
+          origin_identifier, &details) &&
+      details.empty()) {
     // Try to delete the origin in case this was the last database.
     DeleteOrigin(origin_identifier, false);
   }
@@ -465,13 +477,10 @@ bool DatabaseTracker::DeleteOrigin(const std::string& origin_identifier,
   // as we can't delete the origin directory on windows if it contains opened
   // files.
   base::FilePath new_origin_dir;
-  base::CreateTemporaryDirInDir(db_dir_,
-                                kTemporaryDirectoryPrefix,
+  base::CreateTemporaryDirInDir(db_dir_, kTemporaryDirectoryPrefix,
                                 &new_origin_dir);
-  base::FileEnumerator databases(
-      origin_dir,
-      false,
-      base::FileEnumerator::FILES);
+  base::FileEnumerator databases(origin_dir, false,
+                                 base::FileEnumerator::FILES);
   for (base::FilePath database = databases.Next(); !database.empty();
        database = databases.Next()) {
     base::FilePath new_file = new_origin_dir.Append(database.BaseName());
@@ -533,11 +542,9 @@ bool DatabaseTracker::LazyInit() {
     // If there are left-over directories from failed deletion attempts, clean
     // them up.
     if (base::DirectoryExists(db_dir_)) {
-      base::FileEnumerator directories(
-          db_dir_,
-          false,
-          base::FileEnumerator::DIRECTORIES,
-          kTemporaryDirectoryPattern);
+      base::FileEnumerator directories(db_dir_, false,
+                                       base::FileEnumerator::DIRECTORIES,
+                                       kTemporaryDirectoryPattern);
       for (base::FilePath directory = directories.Next(); !directory.empty();
            directory = directories.Next()) {
         base::DeletePathRecursively(directory);
@@ -599,8 +606,8 @@ void DatabaseTracker::InsertOrUpdateDatabaseDetails(
     const std::u16string& database_description) {
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DatabaseDetails details;
-  if (!databases_table_->GetDatabaseDetails(
-          origin_identifier, database_name, &details)) {
+  if (!databases_table_->GetDatabaseDetails(origin_identifier, database_name,
+                                            &details)) {
     details.origin_identifier = origin_identifier;
     details.database_name = database_name;
     details.description = database_description;
@@ -617,7 +624,8 @@ void DatabaseTracker::ClearAllCachedOriginInfo() {
 }
 
 DatabaseTracker::CachedOriginInfo* DatabaseTracker::MaybeGetCachedOriginInfo(
-    const std::string& origin_identifier, bool create_if_needed) {
+    const std::string& origin_identifier,
+    bool create_if_needed) {
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
   if (!LazyInit())
     return nullptr;
@@ -663,8 +671,8 @@ DatabaseTracker::CachedOriginInfo* DatabaseTracker::MaybeGetCachedOriginInfo(
 int64_t DatabaseTracker::GetDBFileSize(const std::string& origin_identifier,
                                        const std::u16string& database_name) {
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
-  base::FilePath db_file_name = GetFullDBFilePath(origin_identifier,
-                                                  database_name);
+  base::FilePath db_file_name =
+      GetFullDBFilePath(origin_identifier, database_name);
   int64_t db_file_size = 0;
   if (!base::GetFileSize(db_file_name, &db_file_size))
     db_file_size = 0;
@@ -678,7 +686,7 @@ int64_t DatabaseTracker::SeedOpenDatabaseInfo(
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DCHECK(database_connections_.IsDatabaseOpened(origin_id, name));
   int64_t size = GetDBFileSize(origin_id, name);
-  database_connections_.SetOpenDatabaseSize(origin_id, name,  size);
+  database_connections_.SetOpenDatabaseSize(origin_id, name, size);
   CachedOriginInfo* info = MaybeGetCachedOriginInfo(origin_id, false);
   if (info) {
     info->SetDatabaseSize(name, size);
@@ -715,8 +723,8 @@ void DatabaseTracker::ScheduleDatabaseForDeletion(
     const std::string& origin_identifier,
     const std::u16string& database_name) {
   DCHECK(task_runner_->RunsTasksInCurrentSequence());
-  DCHECK(database_connections_.IsDatabaseOpened(origin_identifier,
-                                                database_name));
+  DCHECK(
+      database_connections_.IsDatabaseOpened(origin_identifier, database_name));
   dbs_to_be_deleted_[origin_identifier].insert(database_name);
   for (auto& observer : observers_)
     observer.OnDatabaseScheduledForDeletion(origin_identifier, database_name);
@@ -953,7 +961,6 @@ void DatabaseTracker::ClearSessionOnlyOrigins() {
     DeleteOrigin(origin, true);
   }
 }
-
 
 void DatabaseTracker::Shutdown() {
   DCHECK(task_runner_->RunsTasksInCurrentSequence());

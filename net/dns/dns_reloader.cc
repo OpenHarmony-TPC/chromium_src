@@ -7,7 +7,7 @@
 #include "build/build_config.h"
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_OPENBSD) && \
-    !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_FUCHSIA)
+    !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_FUCHSIA) && !BUILDFLAG(IS_OHOS)
 
 #include <resolv.h>
 

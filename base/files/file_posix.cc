@@ -20,7 +20,7 @@
 #include "build/chromeos_buildflags.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 #include "base/os_compat_android.h"
 #endif
 
@@ -133,14 +133,14 @@ void File::Info::FromStat(const stat_wrapper_t& stat_info) {
   // creation time. However, other than on Mac & iOS where the actual file
   // creation time is included as st_birthtime, the rest of POSIX platforms have
   // no portable way to get the creation time.
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA) || defined(__MUSL__)
   time_t last_modified_sec = stat_info.st_mtim.tv_sec;
   int64_t last_modified_nsec = stat_info.st_mtim.tv_nsec;
   time_t last_accessed_sec = stat_info.st_atim.tv_sec;
   int64_t last_accessed_nsec = stat_info.st_atim.tv_nsec;
   time_t creation_time_sec = stat_info.st_ctim.tv_sec;
   int64_t creation_time_nsec = stat_info.st_ctim.tv_nsec;
-#elif BUILDFLAG(IS_ANDROID)
+#elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   time_t last_modified_sec = stat_info.st_mtime;
   int64_t last_modified_nsec = stat_info.st_mtime_nsec;
   time_t last_accessed_sec = stat_info.st_atime;
@@ -210,7 +210,7 @@ int64_t File::Seek(Whence whence, int64_t offset) {
 
   SCOPED_FILE_TRACE_WITH_SIZE("Seek", offset);
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   static_assert(sizeof(int64_t) == sizeof(off64_t), "off64_t must be 64 bits");
   return lseek64(file_.get(), static_cast<off64_t>(offset),
                  static_cast<int>(whence));
@@ -296,7 +296,7 @@ int File::Write(int64_t offset, const char* data, int size) {
   int bytes_written = 0;
   int rv;
   do {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
     // In case __USE_FILE_OFFSET64 is not used, we need to call pwrite64()
     // instead of pwrite().
     static_assert(sizeof(int64_t) == sizeof(off64_t),
@@ -553,7 +553,7 @@ bool File::Flush() {
   NOTIMPLEMENTED();  // NaCl doesn't implement fsync.
   return true;
 #elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS) || \
-    BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_LINUX)
+    BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OHOS)
   return !HANDLE_EINTR(fdatasync(file_.get()));
 #elif BUILDFLAG(IS_APPLE)
   // On macOS and iOS, fsync() is guaranteed to send the file's data to the
@@ -588,7 +588,8 @@ File::Error File::GetLastFileError() {
 }
 
 #if BUILDFLAG(IS_BSD) || BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_NACL) || \
-    BUILDFLAG(IS_FUCHSIA) || (BUILDFLAG(IS_ANDROID) && __ANDROID_API__ < 21)
+    BUILDFLAG(IS_FUCHSIA) || (BUILDFLAG(IS_ANDROID) && __ANDROID_API__ < 21) || \
+    BUILDFLAG(IS_OHOS)
 int File::Stat(const char* path, stat_wrapper_t* sb) {
   ScopedBlockingCall scoped_blocking_call(FROM_HERE, BlockingType::MAY_BLOCK);
   return stat(path, sb);

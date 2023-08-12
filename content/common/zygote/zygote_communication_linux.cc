@@ -236,6 +236,15 @@ void ZygoteCommunication::Init(
     cmd_line.PrependWrapper(
         browser_command_line.GetSwitchValueNative(switches::kZygoteCmdPrefix));
   }
+
+#if BUILDFLAG(IS_OHOS)
+  if (browser_command_line.HasSwitch(switches::kLogFile)) {
+    cmd_line.AppendSwitchPath(
+        switches::kLogFile,
+        browser_command_line.GetSwitchValuePath(switches::kLogFile));
+  }
+#endif
+
   // Append any switches from the service manager that need to be forwarded on
   // to the zygote/renderers.
   static const char* const kForwardSwitches[] = {

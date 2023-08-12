@@ -449,7 +449,7 @@ source_set("base") {
 
   # TODO(ziyangch): Check |is_chromecast| first when using cast media pipeline
   # on Android cast devices.
-  if (is_android) {
+  if (is_android || is_ohos) {
     sources += [ "demuxer_memory_limit_android.cc" ]
   } else if (is_chromecast) {
     sources += [ "demuxer_memory_limit_cast.cc" ]

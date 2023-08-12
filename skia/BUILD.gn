@@ -114,6 +114,15 @@ config("skia_config") {
     ]
   }
 
+  # TODO: ohos use skia to be adapted
+  if (is_ohos) {
+    defines += [ "USE_CHROMIUM_SKIA" ]
+
+    if (enable_ohos_bytrace) {
+      defines += [ "ENABLE_OHOS_SKIA_TRACE" ]
+    }
+  }
+
   if (is_mac) {
     defines += [
       "SK_BUILD_FOR_MAC",
@@ -155,7 +164,7 @@ config("skia_library_config") {
       "SK_GAMMA_EXPONENT=1.2",
       "SK_GAMMA_CONTRAST=0.2",
     ]
-  } else if (is_android) {
+  } else if (is_android || is_ohos) {
     defines += [
       "SK_GAMMA_APPLY_TO_A8",
       "SK_GAMMA_EXPONENT=1.4",
@@ -173,7 +182,7 @@ config("skia_library_config") {
     ]
   }
 
-  if (is_android) {
+  if (is_android || is_ohos) {
     defines += [
       # Android devices are typically more memory constrained, so default to a
       # smaller glyph cache (it may be overriden at runtime when the renderer
@@ -262,6 +271,9 @@ component("skia") {
   }
   if (is_android) {
     sources += [ "ext/fontmgr_default_android.cc" ]
+  }
+  if (is_ohos) {
+    sources += [ "ext/fontmgr_default_ohos.cc" ]
   }
   if (is_linux || is_chromeos) {
     sources += [ "ext/fontmgr_default_linux.cc" ]
@@ -472,6 +484,19 @@ component("skia") {
     ]
   }
 
+  if (is_ohos) {
+    sources += [
+      "//third_party/skia/src/ports/skia_ohos/FontConfig_ohos.cpp",
+      "//third_party/skia/src/ports/skia_ohos/SkFontMgr_ohos.cpp",
+      "//third_party/skia/src/ports/skia_ohos/SkFontStyleSet_ohos.cpp",
+      "//third_party/skia/src/ports/skia_ohos/SkTypeface_ohos.cpp",
+    ]
+    include_dirs = [
+      "//third_party/skia/src/ports/skia_ohos",
+      "//third_party/jsoncpp/source/include",
+    ]
+  }
+
   if (is_win || is_mac) {
     sources += [
       # Add the FreeType custom font manager as a fallback backend for variable fonts.
@@ -617,6 +642,12 @@ component("skia") {
     sources += skia_sksg_sources
     sources += skia_shaper_primitive_sources
   }
+
+  #ifdef OHOS_NWEB_EX
+  if (ohos_nweb_ex_config_name != "") {
+    configs -= [ "//build/config:ohos_nweb_ex_def_main" ]
+    configs += [ "//build/config:ohos_nweb_ex_def_other" ]
+  }  #endif  // OHOS_NWEB_EX
 }
 
 # Template for things that are logically part of :skia, but need to be split out

@@ -41,6 +41,13 @@ class CONTENT_EXPORT MessagePortProvider {
                                  const std::u16string& source_origin,
                                  const std::u16string& target_origin,
                                  const std::u16string& data);
+#if BUILDFLAG(IS_OHOS)
+  static void OhosPostMessageToFrame(Page& page,
+                                     const std::u16string& source_origin,
+                                     const std::u16string& target_origin,
+                                     const std::u16string& data,
+                                     std::vector<blink::WebMessagePort>& ports);
+#endif
 
 #if BUILDFLAG(IS_ANDROID)
   static void PostMessageToFrame(

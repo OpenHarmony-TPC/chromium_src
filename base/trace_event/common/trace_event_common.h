@@ -275,6 +275,82 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
 }  // namespace perfetto
 
 #else  // !defined(BASE_USE_PERFETTO_CLIENT_LIBRARY)
+
+// Notes regarding the following definitions:
+// New values can be added and propagated to third party libraries, but existing
+// definitions must never be changed, because third party libraries may use old
+// definitions.
+
+// Phase indicates the nature of an event entry. E.g. part of a begin/end pair.
+#define TRACE_EVENT_PHASE_BEGIN ('B')
+#define TRACE_EVENT_PHASE_END ('E')
+#define TRACE_EVENT_PHASE_COMPLETE ('X')
+#define TRACE_EVENT_PHASE_INSTANT ('I')
+#define TRACE_EVENT_PHASE_ASYNC_BEGIN ('S')
+#define TRACE_EVENT_PHASE_ASYNC_STEP_INTO ('T')
+#define TRACE_EVENT_PHASE_ASYNC_STEP_PAST ('p')
+#define TRACE_EVENT_PHASE_ASYNC_END ('F')
+#define TRACE_EVENT_PHASE_NESTABLE_ASYNC_BEGIN ('b')
+#define TRACE_EVENT_PHASE_NESTABLE_ASYNC_END ('e')
+#define TRACE_EVENT_PHASE_NESTABLE_ASYNC_INSTANT ('n')
+#define TRACE_EVENT_PHASE_FLOW_BEGIN ('s')
+#define TRACE_EVENT_PHASE_FLOW_STEP ('t')
+#define TRACE_EVENT_PHASE_FLOW_END ('f')
+#define TRACE_EVENT_PHASE_METADATA ('M')
+#define TRACE_EVENT_PHASE_COUNTER ('C')
+#define TRACE_EVENT_PHASE_SAMPLE ('P')
+#define TRACE_EVENT_PHASE_CREATE_OBJECT ('N')
+#define TRACE_EVENT_PHASE_SNAPSHOT_OBJECT ('O')
+#define TRACE_EVENT_PHASE_DELETE_OBJECT ('D')
+#define TRACE_EVENT_PHASE_MEMORY_DUMP ('v')
+#define TRACE_EVENT_PHASE_MARK ('R')
+#define TRACE_EVENT_PHASE_CLOCK_SYNC ('c')
+#define TRACE_EVENT_PHASE_ENTER_CONTEXT ('(')
+#define TRACE_EVENT_PHASE_LEAVE_CONTEXT (')')
+
+// Flags for changing the behavior of TRACE_EVENT_API_ADD_TRACE_EVENT.
+#define TRACE_EVENT_FLAG_NONE (static_cast<unsigned int>(0))
+#define TRACE_EVENT_FLAG_COPY (static_cast<unsigned int>(1 << 0))
+#define TRACE_EVENT_FLAG_HAS_ID (static_cast<unsigned int>(1 << 1))
+#define TRACE_EVENT_FLAG_SCOPE_OFFSET (static_cast<unsigned int>(1 << 2))
+#define TRACE_EVENT_FLAG_SCOPE_EXTRA (static_cast<unsigned int>(1 << 3))
+#define TRACE_EVENT_FLAG_EXPLICIT_TIMESTAMP (static_cast<unsigned int>(1 << 4))
+#define TRACE_EVENT_FLAG_ASYNC_TTS (static_cast<unsigned int>(1 << 5))
+#define TRACE_EVENT_FLAG_BIND_TO_ENCLOSING (static_cast<unsigned int>(1 << 6))
+#define TRACE_EVENT_FLAG_FLOW_IN (static_cast<unsigned int>(1 << 7))
+#define TRACE_EVENT_FLAG_FLOW_OUT (static_cast<unsigned int>(1 << 8))
+#define TRACE_EVENT_FLAG_HAS_CONTEXT_ID (static_cast<unsigned int>(1 << 9))
+#define TRACE_EVENT_FLAG_HAS_PROCESS_ID (static_cast<unsigned int>(1 << 10))
+#define TRACE_EVENT_FLAG_HAS_LOCAL_ID (static_cast<unsigned int>(1 << 11))
+#define TRACE_EVENT_FLAG_HAS_GLOBAL_ID (static_cast<unsigned int>(1 << 12))
+#define TRACE_EVENT_FLAG_JAVA_STRING_LITERALS \
+  (static_cast<unsigned int>(1 << 16))
+
+#define TRACE_EVENT_FLAG_SCOPE_MASK                          \
+  (static_cast<unsigned int>(TRACE_EVENT_FLAG_SCOPE_OFFSET | \
+                             TRACE_EVENT_FLAG_SCOPE_EXTRA))
+
+// Type values for identifying types in the TraceValue union.
+#define TRACE_VALUE_TYPE_BOOL (static_cast<unsigned char>(1))
+#define TRACE_VALUE_TYPE_UINT (static_cast<unsigned char>(2))
+#define TRACE_VALUE_TYPE_INT (static_cast<unsigned char>(3))
+#define TRACE_VALUE_TYPE_DOUBLE (static_cast<unsigned char>(4))
+#define TRACE_VALUE_TYPE_POINTER (static_cast<unsigned char>(5))
+#define TRACE_VALUE_TYPE_STRING (static_cast<unsigned char>(6))
+#define TRACE_VALUE_TYPE_COPY_STRING (static_cast<unsigned char>(7))
+#define TRACE_VALUE_TYPE_CONVERTABLE (static_cast<unsigned char>(8))
+#define TRACE_VALUE_TYPE_PROTO (static_cast<unsigned char>(9))
+
+// Enum reflecting the scope of an INSTANT event. Must fit within
+// TRACE_EVENT_FLAG_SCOPE_MASK.
+#define TRACE_EVENT_SCOPE_GLOBAL (static_cast<unsigned char>(0 << 2))
+#define TRACE_EVENT_SCOPE_PROCESS (static_cast<unsigned char>(1 << 2))
+#define TRACE_EVENT_SCOPE_THREAD (static_cast<unsigned char>(2 << 2))
+
+#define TRACE_EVENT_SCOPE_NAME_GLOBAL ('g')
+#define TRACE_EVENT_SCOPE_NAME_PROCESS ('p')
+#define TRACE_EVENT_SCOPE_NAME_THREAD ('t')
+
 ////////////////////////////////////////////////////////////////////////////////
 // Legacy trace macros
 
@@ -298,26 +374,104 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
 // enabled, then this does nothing.
 // - category and name strings must have application lifetime (statics or
 //   literals). They may not include " chars.
+
+#if defined(OS_OHOS)
+#include "base/trace_event/trace_arguments.h"
+#include "base/trace_event/trace_event_ohos.h"
+
+template <class ARG1_TYPE>
+std::string GetStringFromArgs(const char* name,
+                                     const char* arg1_name,
+                                     ARG1_TYPE&& arg1_val) {
+  if (IsBytraceEnable()) {
+    std::string str(name);
+    base::trace_event::TraceArguments args(arg1_name,
+                                           std::forward<ARG1_TYPE>(arg1_val));
+    str += " | ";
+    str += arg1_name;
+    str += "=";
+    args.values()[0].AppendAsString(args.types()[0], &str);
+    return str;
+  }
+  return "";
+}
+
+template <class ARG1_TYPE, class ARG2_TYPE>
+std::string GetStringFromArgs(const char* name,
+                              const char* arg1_name,
+                              ARG1_TYPE&& arg1_val,
+                              const char* arg2_name,
+                              ARG2_TYPE&& arg2_val) {
+  if (IsBytraceEnable()) {
+    std::string str(name);
+    base::trace_event::TraceArguments args(
+        arg1_name, std::forward<ARG1_TYPE>(arg1_val), arg2_name,
+        std::forward<ARG2_TYPE>(arg2_val));
+    str += " | ";
+    str += arg1_name;
+    str += "=";
+    args.values()[0].AppendAsString(args.types()[0], &str);
+    str += " | ";
+    str += arg2_name;
+    str += "=";
+    args.values()[1].AppendAsString(args.types()[1], &str);
+    return str;
+  }
+  return "";
+}
+#endif
+
+#if defined(OS_OHOS)
+#define TRACE_EVENT0(category_group, name) \
+  (void)(category_group);                  \
+  BYTRACE_SCOPED(name);
+#define TRACE_EVENT1(category_group, name, arg1_name, arg1_val) \
+  TRACE_EVENT0(category_group, GetStringFromArgs(name, arg1_name, arg1_val));
+#define TRACE_EVENT2(category_group, name, arg1_name, arg1_val, arg2_name,  \
+                     arg2_val)                                              \
+  TRACE_EVENT0(category_group, GetStringFromArgs(name, arg1_name, arg1_val, \
+                                                 arg2_name, arg2_val));
+#else
 #define TRACE_EVENT0(category_group, name)    \
   INTERNAL_TRACE_EVENT_ADD_SCOPED(category_group, name)
-#define TRACE_EVENT_WITH_FLOW0(category_group, name, bind_id, flow_flags)  \
-  INTERNAL_TRACE_EVENT_ADD_SCOPED_WITH_FLOW(category_group, name, bind_id, \
-                                            flow_flags)
 #define TRACE_EVENT1(category_group, name, arg1_name, arg1_val) \
   INTERNAL_TRACE_EVENT_ADD_SCOPED(category_group, name, arg1_name, arg1_val)
-#define TRACE_EVENT_WITH_FLOW1(category_group, name, bind_id, flow_flags,  \
-                               arg1_name, arg1_val)                        \
-  INTERNAL_TRACE_EVENT_ADD_SCOPED_WITH_FLOW(category_group, name, bind_id, \
-                                            flow_flags, arg1_name, arg1_val)
 #define TRACE_EVENT2(category_group, name, arg1_name, arg1_val, arg2_name,   \
                      arg2_val)                                               \
   INTERNAL_TRACE_EVENT_ADD_SCOPED(category_group, name, arg1_name, arg1_val, \
                                   arg2_name, arg2_val)
+#endif
+
+#if defined(OS_OHOS)
+#define TRACE_EVENT_WITH_FLOW0(category_group, name, bind_id, flow_flags) \
+  (void)(category_group);                                                 \
+  (void)(bind_id);                                                        \
+  (void)(flow_flags);                                                     \
+  BYTRACE_SCOPED(name);
+#define TRACE_EVENT_WITH_FLOW1(category_group, name, bind_id, flow_flags, \
+                               arg1_name, arg1_val)                       \
+  TRACE_EVENT_WITH_FLOW0(category_group,                                  \
+                         GetStringFromArgs(name, arg1_name, arg1_val),    \
+                         bind_id, flow_flags);
+#define TRACE_EVENT_WITH_FLOW2(category_group, name, bind_id, flow_flags, \
+                               arg1_name, arg1_val, arg2_name, arg2_val)  \
+  TRACE_EVENT_WITH_FLOW0(category_group,                                  \
+      GetStringFromArgs(name, arg1_name, arg1_val, arg2_name, arg2_val),  \
+                        bind_id, flow_flags);
+#else
+#define TRACE_EVENT_WITH_FLOW0(category_group, name, bind_id, flow_flags)  \
+  INTERNAL_TRACE_EVENT_ADD_SCOPED_WITH_FLOW(category_group, name, bind_id, \
+                                            flow_flags)
+#define TRACE_EVENT_WITH_FLOW1(category_group, name, bind_id, flow_flags,  \
+                               arg1_name, arg1_val)                        \
+  INTERNAL_TRACE_EVENT_ADD_SCOPED_WITH_FLOW(category_group, name, bind_id, \
+                                            flow_flags, arg1_name, arg1_val)
 #define TRACE_EVENT_WITH_FLOW2(category_group, name, bind_id, flow_flags,    \
                                arg1_name, arg1_val, arg2_name, arg2_val)     \
   INTERNAL_TRACE_EVENT_ADD_SCOPED_WITH_FLOW(category_group, name, bind_id,   \
                                             flow_flags, arg1_name, arg1_val, \
                                             arg2_name, arg2_val)
+#endif
 
 // Records a single event called "name" immediately, with 0, 1 or 2
 // associated arguments. If the category is not enabled, then this
@@ -372,6 +526,18 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
 // does nothing.
 // - category and name strings must have application lifetime (statics or
 //   literals). They may not include " chars.
+#if defined(OS_OHOS)
+#define TRACE_EVENT_BEGIN0(category_group, name) \
+  (void)(category_group);                        \
+  StartBytrace(name)
+#define TRACE_EVENT_BEGIN1(category_group, name, arg1_name, arg1_val) \
+  TRACE_EVENT_BEGIN0(category_group,                                  \
+                     GetStringFromArgs(name, arg1_name, arg1_val))
+#define TRACE_EVENT_BEGIN2(category_group, name, arg1_name, arg1_val, \
+                           arg2_name, arg2_val)                       \
+  TRACE_EVENT_BEGIN0(category_group, GetStringFromArgs(name, arg1_name, \
+                     arg1_val, arg2_name, arg2_val))
+#else
 #define TRACE_EVENT_BEGIN0(category_group, name)                          \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_BEGIN, category_group, name, \
                            TRACE_EVENT_FLAG_NONE)
@@ -383,6 +549,21 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_BEGIN, category_group, name, \
                            TRACE_EVENT_FLAG_NONE, arg1_name, arg1_val,    \
                            arg2_name, arg2_val)
+#endif
+
+#if defined(OS_OHOS)
+#define TRACE_EVENT_BEGIN_WITH_FLAGS0(category_group, name, flags) \
+  (void)(flags);                                 \
+  TRACE_EVENT_BEGIN0(category_group, name)
+#define TRACE_EVENT_BEGIN_WITH_FLAGS1(category_group, name, flags, arg1_name, \
+                                      arg1_val)                               \
+  (void)(flags);                                 \
+  TRACE_EVENT_BEGIN1(category_group, name, arg1_name, arg1_name)
+#define TRACE_EVENT_COPY_BEGIN2(category_group, name, arg1_name, arg1_val, \
+                                arg2_name, arg2_val)                       \
+  TRACE_EVENT_BEGIN2(category_group, name, arg1_name, arg1_name,           \
+                     arg2_name, arg2_val)
+#else
 #define TRACE_EVENT_BEGIN_WITH_FLAGS0(category_group, name, flags) \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_BEGIN, category_group, name, flags)
 #define TRACE_EVENT_BEGIN_WITH_FLAGS1(category_group, name, flags, arg1_name, \
@@ -394,6 +575,7 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_BEGIN, category_group, name,  \
                            TRACE_EVENT_FLAG_COPY, arg1_name, arg1_val,     \
                            arg2_name, arg2_val)
+#endif
 
 // Similar to TRACE_EVENT_BEGINx but with a custom |timestamp| provided.
 // - |id| is used to match the _BEGIN event with the _END event.
@@ -431,6 +613,23 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
 // is not enabled, then this does nothing.
 // - category and name strings must have application lifetime (statics or
 //   literals). They may not include " chars.
+#if defined(OS_OHOS)
+#define TRACE_EVENT_END0(category_group, name) \
+  (void)(category_group);                      \
+  (void)(name);                                \
+  FinishBytrace()
+#define TRACE_EVENT_END1(category_group, name, arg1_name, arg1_val) \
+  (void)(arg1_name);                                                \
+  (void)(arg1_val);                                                 \
+  TRACE_EVENT_END0(category_group, name)
+#define TRACE_EVENT_END2(category_group, name, arg1_name, arg1_val, arg2_name, \
+                         arg2_val)                                             \
+  (void)(arg1_name);                                                           \
+  (void)(arg1_val);                                                            \
+  (void)(arg2_name);                                                           \
+  (void)(arg2_val);                                                            \
+  TRACE_EVENT_END0(category_group, name)
+#else
 #define TRACE_EVENT_END0(category_group, name)                          \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_END, category_group, name, \
                            TRACE_EVENT_FLAG_NONE)
@@ -442,6 +641,26 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_END, category_group, name,        \
                            TRACE_EVENT_FLAG_NONE, arg1_name, arg1_val,         \
                            arg2_name, arg2_val)
+#endif
+
+#if defined(OS_OHOS)
+#define TRACE_EVENT_END_WITH_FLAGS0(category_group, name, flags) \
+  (void)(flags);                                                 \
+  TRACE_EVENT_END0(category_group, name)
+#define TRACE_EVENT_END_WITH_FLAGS1(category_group, name, flags, arg1_name,  \
+                                    arg1_val)                                \
+  (void)(flags);                                                 \
+  (void)(arg1_name);                                             \
+  (void)(arg1_val);                                              \
+  TRACE_EVENT_END0(category_group, name)
+#define TRACE_EVENT_COPY_END2(category_group, name, arg1_name, arg1_val,  \
+                              arg2_name, arg2_val)                        \
+  (void)(arg1_name);                                                      \
+  (void)(arg1_val);                                                       \
+  (void)(arg2_name);                                                      \
+  (void)(arg2_val);                                                       \
+  TRACE_EVENT_END0(category_group, name)
+#else
 #define TRACE_EVENT_END_WITH_FLAGS0(category_group, name, flags) \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_END, category_group, name, flags)
 #define TRACE_EVENT_END_WITH_FLAGS1(category_group, name, flags, arg1_name,    \
@@ -453,11 +672,26 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_END, category_group, name,  \
                            TRACE_EVENT_FLAG_COPY, arg1_name, arg1_val,   \
                            arg2_name, arg2_val)
+#endif
 
 // Adds a trace event with the given |name| and |timestamp|. |timestamp| must be
 // non-null or it crashes. Use DCHECK(timestamp) before calling this to detect
 // an invalid timestamp even when tracing is not enabled, as the commit queue
 // doesn't run all tests with tracing enabled.
+#if defined(OS_OHOS)
+#define TRACE_EVENT_MARK_WITH_TIMESTAMP0(category_group, name, timestamp) \
+  (void)(timestamp);                                                      \
+  TRACE_EVENT0(category_group, name);
+#define TRACE_EVENT_MARK_WITH_TIMESTAMP1(category_group, name, timestamp, \
+                                         arg1_name, arg1_val)             \
+  (void)(timestamp);                                                      \
+  TRACE_EVENT1(category_group, name, arg1_name, arg1_val);
+
+#define TRACE_EVENT_MARK_WITH_TIMESTAMP2(                                      \
+    category_group, name, timestamp, arg1_name, arg1_val, arg2_name, arg2_val) \
+  (void)(timestamp);                                                           \
+  TRACE_EVENT2(category_group, name, arg1_name, arg1_val, arg2_name, arg2_val);
+#else
 #define TRACE_EVENT_MARK_WITH_TIMESTAMP0(category_group, name, timestamp) \
   INTERNAL_TRACE_EVENT_ADD_WITH_TIMESTAMP(                                \
       TRACE_EVENT_PHASE_MARK, category_group, name, timestamp,            \
@@ -474,7 +708,19 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
   INTERNAL_TRACE_EVENT_ADD_WITH_TIMESTAMP(                                     \
       TRACE_EVENT_PHASE_MARK, category_group, name, timestamp,                 \
       TRACE_EVENT_FLAG_NONE, arg1_name, arg1_val, arg2_name, arg2_val)
+#endif
 
+#if defined(OS_OHOS)
+#define TRACE_EVENT_COPY_MARK(category_group, name)                      \
+  TRACE_EVENT0(category_group, name);
+
+#define TRACE_EVENT_COPY_MARK1(category_group, name, arg1_name, arg1_val) \
+  TRACE_EVENT1(category_group, name, arg1_name, arg1_val);
+
+#define TRACE_EVENT_COPY_MARK_WITH_TIMESTAMP(category_group, name, timestamp) \
+  (void)(timestamp);                                                          \
+  TRACE_EVENT_COPY_MARK(category_group, name);
+#else
 #define TRACE_EVENT_COPY_MARK(category_group, name)                      \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_MARK, category_group, name, \
                            TRACE_EVENT_FLAG_COPY)
@@ -487,6 +733,7 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
   INTERNAL_TRACE_EVENT_ADD_WITH_TIMESTAMP(                                    \
       TRACE_EVENT_PHASE_MARK, category_group, name, timestamp,                \
       TRACE_EVENT_FLAG_COPY)
+#endif
 
 // Similar to TRACE_EVENT_ENDx but with a custom |timestamp| provided.
 // - |id| is used to match the _BEGIN event with the _END event.
@@ -524,6 +771,18 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
 // must be representable as a 32 bit integer.
 // - category and name strings must have application lifetime (statics or
 //   literals). They may not include " chars.
+#if defined(OS_OHOS)
+#define TRACE_COUNTER1(category_group, name, value)                         \
+  (void)(category_group);                                                   \
+  CountBytrace(name, value);
+#define TRACE_COUNTER_WITH_FLAG1(category_group, name, flag, value)         \
+  (void)(category_group);                                                   \
+  (void)(flag);                                                             \
+  CountBytrace(name, value);
+#define TRACE_COPY_COUNTER1(category_group, name, value)                    \
+  (void)(category_group);                                                   \
+  CountBytrace(name, static_cast<int>(value));
+#else
 #define TRACE_COUNTER1(category_group, name, value)                         \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_COUNTER, category_group, name, \
                            TRACE_EVENT_FLAG_NONE, "value",                  \
@@ -535,6 +794,7 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_COUNTER, category_group, name, \
                            TRACE_EVENT_FLAG_COPY, "value",                  \
                            static_cast<int>(value))
+#endif
 
 // Records the values of a multi-parted counter called "name" immediately.
 // The UI will treat value1 and value2 as parts of a whole, displaying their
@@ -558,10 +818,16 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
 // - |timestamp| must be non-null or it crashes. Use DCHECK(timestamp) before
 //   calling this to detect an invalid timestamp even when tracing is not
 //   enabled, as the commit queue doesn't run all tests with tracing enabled.
+#if defined(OS_OHOS)
+#define TRACE_COUNTER_WITH_TIMESTAMP1(category_group, name, timestamp, value) \
+  (void)(timestamp);                                                          \
+  TRACE_COUNTER1(category_group, name, value);
+#else
 #define TRACE_COUNTER_WITH_TIMESTAMP1(category_group, name, timestamp, value) \
   INTERNAL_TRACE_EVENT_ADD_WITH_TIMESTAMP(                                    \
       TRACE_EVENT_PHASE_COUNTER, category_group, name, timestamp,             \
       TRACE_EVENT_FLAG_NONE, "value", static_cast<int>(value))
+#endif
 
 #define TRACE_COUNTER_WITH_TIMESTAMP2(category_group, name, timestamp,      \
                                       value1_name, value1_val, value2_name, \

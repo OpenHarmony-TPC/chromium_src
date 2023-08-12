@@ -86,7 +86,7 @@ void SetEnvironment(char** env) {
 // the previous signal mask.
 sigset_t SetSignalMask(const sigset_t& new_sigmask) {
   sigset_t old_sigmask;
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   // POSIX says pthread_sigmask() must be used in multi-threaded processes,
   // but Android's pthread_sigmask() was broken until 4.1:
   // https://code.google.com/p/android/issues/detail?id=15337
@@ -196,7 +196,8 @@ struct ScopedDIRClose {
 // Automatically closes |DIR*|s.
 typedef std::unique_ptr<DIR, ScopedDIRClose> ScopedDIR;
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX) || \
+    BUILDFLAG(IS_OHOS)
 static const char kFDDir[] = "/proc/self/fd";
 #elif BUILDFLAG(IS_SOLARIS)
 static const char kFDDir[] = "/dev/fd";
@@ -307,7 +308,8 @@ Process LaunchProcess(const std::vector<std::string>& argv,
 
   pid_t pid;
   base::TimeTicks before_fork = TimeTicks::Now();
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX) || \
+    BUILDFLAG(IS_OHOS)
   if (options.clone_flags) {
     // Signal handling in this function assumes the creation of a new
     // process, so we check that a thread is not being created by mistake
@@ -670,7 +672,8 @@ bool GetAppOutputWithExitCode(const CommandLine& cl,
                               exit_code);
 }
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX) || \
+    BUILDFLAG(IS_OHOS)
 namespace {
 
 // This function runs on the stack specified on the clone call. It uses longjmp

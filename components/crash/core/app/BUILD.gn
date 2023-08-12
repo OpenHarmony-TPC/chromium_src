@@ -52,7 +52,7 @@ static_library("app") {
     "crashpad.h",
   ]
 
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || is_ohos) {
     sources += [
       "breakpad_linux.cc",
       "breakpad_linux.h",
@@ -88,7 +88,7 @@ static_library("app") {
     libs = [ "log" ]
   }
 
-  if (is_android || is_linux || is_chromeos) {
+  if (is_android || is_linux || is_chromeos || is_ohos) {
     deps += [
       "//base:base_static",
       "//components/crash/core/common",
@@ -96,7 +96,7 @@ static_library("app") {
     ]
   }
 
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || is_ohos) {
     deps += [ "//third_party/breakpad:client" ]
   }
 
@@ -211,7 +211,7 @@ if (is_win) {
   }
 }
 
-if (is_mac || is_android || is_linux || is_chromeos) {
+if (is_mac || is_android || is_linux || is_chromeos || is_ohos) {
   # We build a chromium-specific crashpad_handler executable so that we can
   # define custom UserStreamDataSources.
   executable("chrome_crashpad_handler") {

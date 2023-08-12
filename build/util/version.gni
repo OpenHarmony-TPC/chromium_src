@@ -35,7 +35,7 @@ if (is_mac) {
     "-e",
     "PATCH_LO=int(PATCH)%256",
   ]
-} else if (target_os == "android") {
+} else if (target_os == "android" || target_os == "ohos") {
   import("//build/config/android/config.gni")
 
   _version_dictionary_template +=
@@ -93,7 +93,7 @@ if (is_mac) {
 
   chrome_dylib_version = "$chrome_version_build.$chrome_version_patch_hi" +
                          ".$chrome_version_patch_lo"
-} else if (target_os == "android") {
+} else if (target_os == "android" || target_os == "ohos") {
   forward_variables_from(_result,
                          [
                            "chrome_modern_version_code",

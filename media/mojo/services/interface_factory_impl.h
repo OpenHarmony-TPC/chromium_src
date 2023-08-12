@@ -66,13 +66,15 @@ class InterfaceFactoryImpl final
       const base::UnguessableToken& overlay_plane_id,
       mojo::PendingReceiver<mojom::Renderer> receiver) final;
 #endif
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   void CreateMediaPlayerRenderer(
       mojo::PendingRemote<mojom::MediaPlayerRendererClientExtension>
           client_extension_remote,
       mojo::PendingReceiver<mojom::Renderer> receiver,
       mojo::PendingReceiver<mojom::MediaPlayerRendererExtension>
           renderer_extension_receiver) final;
+#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+#if BUILDFLAG(IS_ANDROID)
   void CreateFlingingRenderer(
       const std::string& presentation_id,
       mojo::PendingRemote<mojom::FlingingRendererClientExtension>

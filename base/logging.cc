@@ -79,6 +79,10 @@ typedef HANDLE FileHandle;
 #include <android/log.h>
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "hilog/log.h"
+#endif
+
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include <errno.h>
 #include <paths.h>
@@ -590,6 +594,22 @@ LogMessage::LogMessage(const char* file, int line, const char* condition)
   stream_ << "Check failed: " << condition << ". ";
 }
 
+#if BUILDFLAG(IS_OHOS)
+extern "C" {
+    int HiLogPrintArgs(LogType type, LogLevel level, unsigned int domain, const char* tag, const char* fmt, va_list ap);
+}
+
+int HiLogPrintOHOS(LogType type, LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...)
+{
+    int ret;
+    va_list ap;
+    va_start(ap, fmt);
+    ret = HiLogPrintArgs(type, level, domain, tag, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+#endif
+
 LogMessage::~LogMessage() {
   size_t stack_start = stream_.tellp();
 #if !defined(OFFICIAL_BUILD) && !BUILDFLAG(IS_NACL) && !defined(__UCLIBC__) && \
@@ -814,6 +834,25 @@ LogMessage::~LogMessage() {
     // The Android system may truncate the string if it's too long.
     __android_log_write(priority, kAndroidLogTag, str_newline.c_str());
 #endif
+#elif BUILDFLAG(IS_OHOS)
+    LogLevel priority =
+        (severity_ < 0) ? LogLevel::LOG_DEBUG : LogLevel::LOG_LEVEL_MAX;
+    switch (severity_) {
+      case LOGGING_INFO:
+        priority = LogLevel::LOG_INFO;
+        break;
+      case LOGGING_WARNING:
+        priority = LogLevel::LOG_WARN;
+        break;
+      case LOGGING_ERROR:
+        priority = LogLevel::LOG_ERROR;
+        break;
+      case LOGGING_FATAL:
+        priority = LogLevel::LOG_FATAL;
+        break;
+    }
+    const char kOHOSLogTag[] = "chromium";
+    HiLogPrintOHOS(LOG_CORE, priority, 0xD004500, kOHOSLogTag, str_newline.c_str());
 #elif BUILDFLAG(IS_FUCHSIA)
     // LogMessage() will silently drop the message if the logger is not valid.
     // Skip the final character of |str_newline|, since LogMessage() will add

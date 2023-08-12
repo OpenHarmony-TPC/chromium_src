@@ -543,7 +543,7 @@ void ThreadControllerWithMessagePumpImpl::AttachToMessagePump() {
 void ThreadControllerWithMessagePumpImpl::DetachFromMessagePump() {
   static_cast<MessagePumpCFRunLoopBase*>(pump_.get())->Detach();
 }
-#elif BUILDFLAG(IS_ANDROID)
+#elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 void ThreadControllerWithMessagePumpImpl::AttachToMessagePump() {
   static_cast<MessagePumpForUI*>(pump_.get())->Attach(this);
 }

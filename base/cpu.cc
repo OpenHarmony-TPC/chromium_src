@@ -19,7 +19,7 @@
 #include "build/build_config.h"
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID) || \
-    BUILDFLAG(IS_AIX)
+    BUILDFLAG(IS_AIX) || BUILDFLAG(IS_OHOS)
 #include "base/containers/flat_set.h"
 #include "base/files/file_util.h"
 #include "base/notreached.h"
@@ -32,7 +32,8 @@
 #endif
 
 #if defined(ARCH_CPU_ARM_FAMILY) && \
-    (BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS))
+    (BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || \
+     BUILDFLAG(IS_OHOS))
 #include <asm/hwcap.h>
 #include <sys/auxv.h>
 #include "base/files/file_util.h"
@@ -152,7 +153,8 @@ uint64_t xgetbv(uint32_t xcr) {
 #endif  // ARCH_CPU_X86_FAMILY
 
 #if defined(ARCH_CPU_ARM_FAMILY) && \
-    (BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS))
+    (BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || \
+     BUILDFLAG(IS_OHOS))
 StringPairs::const_iterator FindFirstProcCpuKey(const StringPairs& pairs,
                                                 StringPiece key) {
   return ranges::find_if(pairs, [key](const StringPairs::value_type& pair) {
@@ -344,7 +346,8 @@ void CPU::Initialize(bool require_branding) {
     }
   }
 #elif defined(ARCH_CPU_ARM_FAMILY)
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || \
+    BUILDFLAG(IS_OHOS)
   if (require_branding) {
     const ProcCpuInfo& info = ParseProcCpu();
     cpu_brand_ = info.brand;
@@ -383,7 +386,7 @@ CPU::IntelMicroArchitecture CPU::GetIntelMicroArchitecture() const {
 #endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID) || \
-    BUILDFLAG(IS_AIX)
+    BUILDFLAG(IS_AIX) || BUILDFLAG(IS_OHOS)
 namespace {
 
 constexpr char kTimeInStatePath[] =

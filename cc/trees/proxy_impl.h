@@ -67,6 +67,7 @@ class CC_EXPORT ProxyImpl : public LayerTreeHostImplClient,
       std::vector<std::unique_ptr<SwapPromise>> swap_promises,
       bool scroll_and_viewport_changes_synced);
   void SetVisibleOnImpl(bool visible);
+  void SetPinchSmoothModeOnImpl(bool isEnable);
   void ReleaseLayerTreeFrameSinkOnImpl(CompletionEvent* completion);
   void FinishGLOnImpl(CompletionEvent* completion);
   void NotifyReadyToCommitOnImpl(CompletionEvent* completion_event,
@@ -197,6 +198,8 @@ class CC_EXPORT ProxyImpl : public LayerTreeHostImplClient,
   bool next_frame_is_newly_committed_frame_;
 
   bool inside_draw_;
+
+  bool pinch_smooth_ = false;
 
   bool send_compositor_frame_ack_;
 

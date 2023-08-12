@@ -58,10 +58,10 @@ if (concurrent_links == -1) {
     } else {
       _args = [ "--mem_per_link_gb=4" ]
     }
-  } else if (is_android && !is_component_build && symbol_level == 2) {
+  } else if ((is_android || is_ohos) && !is_component_build && symbol_level == 2) {
     # Full debug symbols require large memory for link.
     _args = [ "--mem_per_link_gb=25" ]
-  } else if (is_android && !is_debug && !using_sanitizer && is_java_debug &&
+  } else if ((is_android || is_ohos) && !is_debug && !using_sanitizer && is_java_debug &&
              disable_android_lint && symbol_level < 2) {
     if (symbol_level == 1) {
       _args = [ "--mem_per_link_gb=6" ]
@@ -83,7 +83,7 @@ if (concurrent_links == -1) {
   # These both have a peak usage of < 2GB, but that is still large enough for
   # them to need to use a pool since they both typically happen at the
   # same time as linking.
-  if (is_android) {
+  if (is_android || is_ohos) {
     _args += [ "--secondary_mem_per_link=2" ]
   }
 

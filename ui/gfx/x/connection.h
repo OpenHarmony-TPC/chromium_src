@@ -12,9 +12,15 @@
 #include "base/sequence_checker.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/events/platform/platform_event_source.h"
+
+#if !BUILDFLAG(IS_OHOS)
 #include "ui/gfx/x/extension_manager.h"
-#include "ui/gfx/x/xlib_support.h"
 #include "ui/gfx/x/xproto.h"
+#else
+#include "ui/gfx/x/generated_protos/extension_manager.h"
+#include "ui/gfx/x/generated_protos/xproto.h"
+#endif
+#include "ui/gfx/x/xlib_support.h"
 
 typedef struct xcb_connection_t xcb_connection_t;
 

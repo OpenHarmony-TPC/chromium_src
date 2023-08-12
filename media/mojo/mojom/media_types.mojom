@@ -539,4 +539,7 @@ enum RendererType {
   kRemoting = 8,         // RemotingRendererFactory for remoting::Receiver
   kCastStreaming = 9,    // CastStreamingRendererFactory
   kContentEmbedderDefined = 10,  // Defined by the content embedder
+
+  [EnableIf=is_ohos]
+  kOHOSMediaPlayer = 11,  // OHOSMediaPlayerRendererFactory
 };

@@ -70,6 +70,10 @@ class MEDIA_EXPORT VideoRendererSink {
   virtual void PaintSingleFrame(scoped_refptr<VideoFrame> frame,
                                 bool repaint_duplicate_frame = false) = 0;
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void SetFinishPaintCallback(base::RepeatingClosure callback) = 0;
+#endif
+
   virtual ~VideoRendererSink() {}
 };
 

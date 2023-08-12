@@ -321,6 +321,11 @@ class UnboundWidgetInputHandler : public blink::mojom::WidgetInputHandler {
                      DispatchEventCallback callback) override {
     DLOG(WARNING) << "Input request on unbound interface";
   }
+#if BUILDFLAG(IS_OHOS)
+  void StartFling() override {
+    DLOG(WARNING) << "Input request on unbound interface";
+  }
+#endif
   void DispatchNonBlockingEvent(
       std::unique_ptr<blink::WebCoalescedInputEvent> event) override {
     DLOG(WARNING) << "Input request on unbound interface";

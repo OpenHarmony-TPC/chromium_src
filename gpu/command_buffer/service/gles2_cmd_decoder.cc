@@ -6834,8 +6834,6 @@ void GLES2DecoderImpl::InvalidateFramebufferImpl(
       }
     } else {
       if (!validators_->backbuffer_attachment.IsValid(attachment)) {
-        LOCAL_SET_GL_ERROR_INVALID_ENUM(function_name, attachment,
-                                        "attachments");
         return;
       }
     }

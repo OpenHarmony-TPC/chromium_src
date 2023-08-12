@@ -493,7 +493,9 @@ void InputMethodAuraLinux::OnSetPreeditRegion(
   auto* text_input_client = GetTextInputClient();
   if (!text_input_client)
     return;
+#if !BUILDFLAG(IS_OHOS)
   text_input_client->SetCompositionFromExistingText(range, spans);
+#endif
 }
 
 // Overridden from InputMethodBase.

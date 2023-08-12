@@ -5,20 +5,21 @@
 if (!is_android) {
   group("perf") {
     testonly = true
-    data_deps = [
-      ":perf_without_chrome",
-      "//tools/perf/chrome_telemetry_build:telemetry_chrome_test",
-    ]
+    data_deps = [ ":perf_without_chrome" ]
+    if (!use_musl) {
+      data_deps +=
+          [ "//tools/perf/chrome_telemetry_build:telemetry_chrome_test" ]
+    }
   }
 } else {
   template("perf_android_template") {
     forward_variables_from(invoker, [ "telemetry_target_suffix" ])
     group(target_name) {
       testonly = true
-      data_deps = [
-        ":perf_without_chrome",
-        "//tools/perf/chrome_telemetry_build:telemetry_chrome_test${telemetry_target_suffix}",
-      ]
+      data_deps = [ ":perf_without_chrome" ]
+      if (!use_musl) {
+        data_deps += [ "//tools/perf/chrome_telemetry_build:telemetry_chrome_test${telemetry_target_suffix}" ]
+      }
     }
   }
 

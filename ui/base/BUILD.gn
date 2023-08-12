@@ -503,7 +503,7 @@ component("base") {
     deps += [ "//ui/events" ]
   }
 
-  if (use_aura && (is_linux || is_chromeos)) {
+  if (use_aura && (is_linux || is_chromeos || is_ohos)) {
     sources += [ "resource/resource_bundle_auralinux.cc" ]
   }
 
@@ -521,7 +521,7 @@ component("base") {
     ]
   }
 
-  if (is_chromeos_ash || (use_aura && (is_linux || is_chromeos_lacros)) ||
+  if (is_chromeos_ash || (use_aura && (is_linux || is_chromeos_lacros || is_ohos)) ||
       is_fuchsia) {
     sources += [
       "dragdrop/os_exchange_data_provider_non_backed.cc",
@@ -1206,7 +1206,7 @@ if (is_win) {
   }
 }
 
-if (is_linux || is_chromeos) {
+if (is_linux || is_chromeos || is_ohos) {
   # This source set defines linux wm role names and must not have any external
   # dependencies and be kept as minimal as possible.
   source_set("wm_role_names") {

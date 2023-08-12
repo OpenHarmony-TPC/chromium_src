@@ -106,6 +106,8 @@ class RenderProcessHostUserData : public base::SupportsUserData::Data {
   void RemoveFrame(content::RenderFrameHost* frame) { frames_.erase(frame); }
   const std::set<content::RenderFrameHost*>& frames() const { return frames_; }
 
+  const ExtensionIdSet& content_scripts() const { return content_scripts_; }
+
  private:
   explicit RenderProcessHostUserData(content::RenderProcessHost& process)
       : process_(process) {
@@ -440,6 +442,18 @@ const Extension* FindExtensionByHostId(content::BrowserContext* browser_context,
 }
 
 }  // namespace
+
+// static
+ExtensionIdSet ContentScriptTracker::GetExtensionsThatRanScriptsInProcess(
+    const content::RenderProcessHost& process) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  const auto* process_data = RenderProcessHostUserData::Get(process);
+  if (!process_data)
+    return {};
+
+  return process_data->content_scripts();
+}
 
 // static
 bool ContentScriptTracker::DidProcessRunContentScriptFromExtension(

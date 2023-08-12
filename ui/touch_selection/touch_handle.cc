@@ -9,9 +9,9 @@
 
 #include "base/check_op.h"
 #include "base/cxx17_backports.h"
+#include "base/logging.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/notreached.h"
-
 namespace ui {
 
 namespace {
@@ -40,12 +40,16 @@ bool RectIntersectsCircle(const gfx::RectF& rect,
   DCHECK_GT(circle_radius, 0.f);
   // An intersection occurs if the closest point between the rect and the
   // circle's center is less than the circle's radius.
+#if BUILDFLAG(IS_OHOS)
+  return rect.Contains(circle_center);
+#else
   gfx::PointF closest_point_in_rect(circle_center);
   closest_point_in_rect.SetToMax(rect.origin());
   closest_point_in_rect.SetToMin(rect.bottom_right());
 
   gfx::Vector2dF distance = circle_center - closest_point_in_rect;
   return distance.LengthSquared() < (circle_radius * circle_radius);
+#endif
 }
 
 }  // namespace
@@ -93,8 +97,7 @@ TouchHandle::TouchHandle(TouchHandleClient* client,
   handle_horizontal_padding_ = drawable_->GetDrawableHorizontalPaddingRatio();
 }
 
-TouchHandle::~TouchHandle() {
-}
+TouchHandle::~TouchHandle() {}
 
 void TouchHandle::SetEnabled(bool enabled) {
   if (enabled_ == enabled)
@@ -256,6 +259,12 @@ gfx::RectF TouchHandle::GetVisibleBounds() const {
   return drawable_->GetVisibleBounds();
 }
 
+#if BUILDFLAG(IS_OHOS)
+void TouchHandle::SetEdge(const gfx::PointF& top, const gfx::PointF& bottom) {
+  drawable_->SetEdge(top, bottom);
+}
+#endif
+
 void TouchHandle::UpdateHandleLayout() {
   // Suppress repositioning a handle while invisible or fading out to prevent it
   // from "ghosting" outside the visible bounds. The position will be pushed to
@@ -330,6 +339,9 @@ void TouchHandle::UpdateHandleLayout() {
   }
 
   drawable_->SetOrientation(orientation_, mirror_vertical_, mirror_horizontal_);
+#if BUILDFLAG(IS_OHOS)
+  drawable_->SetEdge(focus_top_, focus_bottom_);
+#endif
   drawable_->SetOrigin(ComputeHandleOrigin());
 }
 
@@ -348,10 +360,17 @@ gfx::PointF TouchHandle::ComputeHandleOrigin() const {
   int focal_offset_y = mirror_vertical_ ? drawable_bounds.height() : 0;
   switch (orientation_) {
     case ui::TouchHandleOrientation::LEFT:
+#if BUILDFLAG(IS_OHOS)
+      focal_offset_x =
+          mirror_horizontal_
+              ? drawable_width * (1.0f - handle_horizontal_padding_)
+              : drawable_width * handle_horizontal_padding_;
+#else
       focal_offset_x =
           mirror_horizontal_
               ? drawable_width * handle_horizontal_padding_
               : drawable_width * (1.0f - handle_horizontal_padding_);
+#endif
       break;
     case ui::TouchHandleOrientation::RIGHT:
       focal_offset_x =
@@ -360,7 +379,14 @@ gfx::PointF TouchHandle::ComputeHandleOrigin() const {
               : drawable_width * handle_horizontal_padding_;
       break;
     case ui::TouchHandleOrientation::CENTER:
+#if BUILDFLAG(IS_OHOS)
+      focal_offset_x =
+          mirror_horizontal_
+              ? drawable_width * (1.0f - handle_horizontal_padding_)
+              : drawable_width * handle_horizontal_padding_;
+#else
       focal_offset_x = drawable_width * 0.5f;
+#endif
       break;
     case ui::TouchHandleOrientation::UNDEFINED:
       NOTREACHED() << "Invalid touch handle orientation.";

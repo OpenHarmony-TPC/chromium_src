@@ -33,26 +33,29 @@ class MockFileSystemAccessPermissionContext
                FileSystemAccessPermissionContext::UserAction user_action),
               (override));
 
-  void ConfirmSensitiveDirectoryAccess(
+  void ConfirmSensitiveEntryAccess(
       const url::Origin& origin,
       PathType path_type,
       const base::FilePath& path,
       HandleType handle_type,
+      ui::SelectFileDialog::Type dialog_type,
       GlobalRenderFrameHostId frame_id,
-      base::OnceCallback<void(SensitiveDirectoryResult)> callback) override;
+      base::OnceCallback<void(SensitiveEntryResult)> callback) override;
   MOCK_METHOD(void,
-              ConfirmSensitiveDirectoryAccess_,
+              ConfirmSensitiveEntryAccess_,
               (const url::Origin& origin,
                PathType path_type,
                const base::FilePath& path,
                HandleType handle_type,
+               ui::SelectFileDialog::Type dialog_type,
                GlobalRenderFrameHostId frame_id,
-               base::OnceCallback<void(SensitiveDirectoryResult)>& callback));
-
+               base::OnceCallback<void(SensitiveEntryResult)>& callback));
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   void PerformAfterWriteChecks(
       std::unique_ptr<FileSystemAccessWriteItem> item,
       GlobalRenderFrameHostId frame_id,
       base::OnceCallback<void(AfterWriteCheckResult)> callback) override;
+#endif
   MOCK_METHOD(void,
               PerformAfterWriteChecks_,
               (FileSystemAccessWriteItem * item,

@@ -21,6 +21,9 @@ component("shared_mojom_traits") {
 
 mojom("mojom") {
   generate_java = true
+  if (is_android || is_ohos) {
+    enabled_features = [ "is_android_or_ohos" ]
+  }
   sources = [
     "browser_controls_params.mojom",
     "browser_controls_state.mojom",

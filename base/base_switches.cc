@@ -135,7 +135,7 @@ const char kDisableUsbKeyboardDetect[]      = "disable-usb-keyboard-detect";
 // TODO(crbug.com/1052397): Revisit the macro expression once build flag switch
 // of lacros-chrome is complete.
 #if BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS_ASH) && \
-    !BUILDFLAG(IS_CHROMEOS_LACROS)
+    !BUILDFLAG(IS_CHROMEOS_LACROS) || BUILDFLAG(IS_OHOS)
 // The /dev/shm partition is too small in certain VM environments, causing
 // Chrome to fail or crash (see http://crbug.com/715363). Use this flag to
 // work-around this issue (a temporary directory will always be used to create
@@ -170,7 +170,7 @@ const char kForceFieldTrialParams[] = "force-fieldtrial-params";
 
 #endif
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OHOS)
 // Controls whether or not retired instruction counts are surfaced for threads
 // in trace events on Linux.
 //
@@ -190,6 +190,11 @@ extern const char kEnableCrashpad[] = "enable-crashpad";
 // Currently, this values directs to linux scheduler's utilization min clamp.
 // Range is 0(no biased load) ~ 100(mamximum load value).
 const char kSchedulerBoostUrgent[] = "scheduler-boost-urgent";
+#endif
+
+#if defined(OS_OHOS)
+const char kForTest[] = "for-test";
+const char kBundleInstallationDir[] = "bundle-installation-dir";
 #endif
 
 }  // namespace switches

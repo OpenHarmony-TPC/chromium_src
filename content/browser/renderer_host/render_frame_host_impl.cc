@@ -4637,6 +4637,13 @@ void RenderFrameHostImpl::OnSmartClipDataExtracted(int32_t callback_id,
 }
 #endif  // BUILDFLAG(IS_ANDROID)
 
+#if BUILDFLAG(IS_OHOS)
+void RenderFrameHostImpl::GetImageFromCache(const std::string& url,
+                                            ImageCacheCallback callback) {
+  GetAssociatedLocalFrame()->GetImageFromCache(url, std::move(callback));
+}
+#endif
+
 void RenderFrameHostImpl::RunModalAlertDialog(
     const std::u16string& alert_message,
     bool disable_third_party_subframe_suppresion,
@@ -6620,6 +6627,21 @@ RenderFrameHostImpl::CreateCrossOriginPrefetchLoaderFactoryBundle() {
 base::WeakPtr<RenderFrameHostImpl> RenderFrameHostImpl::GetWeakPtr() {
   return weak_ptr_factory_.GetWeakPtr();
 }
+
+#if BUILDFLAG(IS_OHOS)
+void RenderFrameHostImpl::GetCreateNewWindow(const GURL& target_url, WindowOpenDisposition disposition, bool allow_popup,
+    GetCreateNewWindowCallback callback) {
+  bool effective_transient_activation_state =
+      allow_popup || frame_tree_node_->HasTransientUserActivation();
+  bool can_create_window = GetContentClient()->browser()->CanCreateWindow(
+        this, target_url, disposition, effective_transient_activation_state);
+  if (can_create_window) {
+    std::move(callback).Run(mojom::CreateNewWindowStatus::kSuccess);
+  } else {
+    std::move(callback).Run(mojom::CreateNewWindowStatus::kBlocked);
+  }
+}
+#endif
 
 void RenderFrameHostImpl::CreateNewWindow(
     mojom::CreateNewWindowParamsPtr params,

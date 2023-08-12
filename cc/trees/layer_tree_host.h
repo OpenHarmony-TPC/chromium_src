@@ -238,6 +238,7 @@ class CC_EXPORT LayerTreeHost : public MutatorHostClient {
   // to make it visible before it will attempt to start producing output.
   void SetVisible(bool visible);
   bool IsVisible() const;
+  void SetPinchSmoothMode(bool isEnable);
 
   // Called in response to a LayerTreeFrameSink request made to the client
   // using LayerTreeHostClient::RequestNewLayerTreeFrameSink. The client will

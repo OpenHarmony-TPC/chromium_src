@@ -991,11 +991,17 @@ const char kEnableAutomation[] = "enable-automation";
 
 // TODO(crbug.com/1052397): Revisit the macro expression once build flag switch
 // of lacros-chrome is complete.
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS) || BUILDFLAG(IS_OHOS)
 // Allows sending text-to-speech requests to speech-dispatcher, a common
 // Linux speech service. Because it's buggy, the user must explicitly
 // enable it so that visiting a random webpage can't cause instability.
 const char kEnableSpeechDispatcher[] = "enable-speech-dispatcher";
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+const char kEnableMultiRendererProcess[] = "enable-multi-renderer-process";
+const char kForBrowser[] = "for-browser";
+const char kOhosCustomScheme[] = "ohos-custom-scheme";
 #endif
 
 #if BUILDFLAG(IS_WIN)

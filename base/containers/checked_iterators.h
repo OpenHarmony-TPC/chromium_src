@@ -237,6 +237,17 @@ using CheckedContiguousConstIterator = CheckedContiguousIterator<const T>;
 // [3] https://wg21.link/pointer.traits.optmem
 namespace std {
 
+// OHOS build toolchain use c++ 17
+#if BUILDFLAG(IS_OHOS) && !defined(__MUSL__)
+#if _LIBCPP_STD_VER > 17
+template <class _Tp>
+struct __is_cpp17_contiguous_iterator : public __has_iterator_category_convertible_to<_Tp, contiguous_iterator_tag> {};
+#else
+template <class _Tp>
+struct __is_cpp17_contiguous_iterator : public false_type {};
+#endif
+#endif
+
 template <typename T>
 struct __is_cpp17_contiguous_iterator<::base::CheckedContiguousIterator<T>>
     : true_type {};

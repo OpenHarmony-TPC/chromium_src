@@ -278,6 +278,7 @@ void StartServerOnHandlerThread(
         browser_guid.c_str());
     fprintf(stderr, "%s", message.c_str());
     fflush(stderr);
+    LOG(INFO) << "start devtools listening ok, " << message;
 
     // Write this port to a well-known file in the profile directory
     // so Telemetry, ChromeDriver, etc. can pick it up.

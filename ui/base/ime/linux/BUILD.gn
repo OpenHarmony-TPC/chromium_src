@@ -5,7 +5,7 @@
 import("//build/config/chromeos/ui_mode.gni")
 import("//build/config/linux/pangocairo/pangocairo.gni")
 
-assert(is_linux || is_chromeos_lacros)
+assert(is_linux || is_chromeos_lacros || is_ohos)
 
 component("linux") {
   output_name = "ui_base_ime_linux"

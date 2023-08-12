@@ -47,6 +47,10 @@
 #include "content/public/common/zygote/zygote_handle.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "ohos_adapter_helper.h"
+#endif
+
 namespace base {
 class CommandLine;
 }
@@ -210,6 +214,10 @@ class ChildProcessLauncherHelper :
   static void ForceNormalProcessTerminationSync(
       ChildProcessLauncherHelper::Process process);
 
+#if BUILDFLAG(IS_OHOS)
+  base::TerminationStatus GetProcessStatusByExitCode(int status);
+#endif
+
 #if BUILDFLAG(IS_ANDROID)
   void set_java_peer_available_on_client_thread() {
     java_peer_avaiable_on_client_thread_ = true;
@@ -254,6 +262,11 @@ class ChildProcessLauncherHelper :
 
 #if BUILDFLAG(IS_FUCHSIA)
   std::unique_ptr<sandbox::policy::SandboxPolicyFuchsia> sandbox_policy_;
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  std::unique_ptr<OHOS::NWeb::AafwkAppMgrClientAdapter> app_mgr_client_adapter_{
+      nullptr};
 #endif
 };
 

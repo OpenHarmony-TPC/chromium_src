@@ -948,6 +948,15 @@ class CONTENT_EXPORT ContentBrowserClient {
       bool opener_suppressed,
       bool* no_javascript_access);
 
+#if BUILDFLAG(IS_OHOS)
+  virtual bool CanCreateWindow(
+      RenderFrameHost* opener,
+      const GURL& target_url,
+      WindowOpenDisposition disposition,
+      bool user_gesture) {
+    return false;
+  }
+#endif
   // Allows the embedder to return a delegate for the SpeechRecognitionManager.
   // The delegate will be owned by the manager. It's valid to return nullptr.
   virtual SpeechRecognitionManagerDelegate*

@@ -37,6 +37,9 @@
 #include "services/data_decoder/public/mojom/web_bundler.mojom.h"
 #include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
+#if BUILDFLAG(IS_OHOS)
+#include "third_party/blink/public/common/messaging/web_message_port.h"
+#endif
 #include "third_party/blink/public/mojom/favicon/favicon_url.mojom-forward.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom-forward.h"
 #include "third_party/blink/public/mojom/input/pointer_lock_result.mojom.h"
@@ -568,6 +571,29 @@ class WebContents : public PageNavigator,
   // pending may be provisional (e.g., the navigation could result in a
   // download, in which case the URL would revert to what it was previously).
   virtual const std::u16string& GetTitle() = 0;
+
+  /**
+   * creating two ends of a message channel.
+   *
+   * @param ports the web message ports get from nweb.
+   */
+#if BUILDFLAG(IS_OHOS)
+  virtual void CreateWebMessagePorts(
+      std::vector<blink::WebMessagePort>& ports) = 0;
+#endif
+
+  /**
+   * Posts MessageEvent to the main frame.
+   *
+   * @param message message send to mmain frame.
+   * @param ports the web message ports send to main frame.
+   * @param targetUri the uri which can received the ports.
+   */
+#if BUILDFLAG(IS_OHOS)
+  virtual void PostWebMessage(std::string& message,
+                              std::vector<blink::WebMessagePort>& ports,
+                              std::string& targetUri) = 0;
+#endif
 
   // Saves the given title to the navigation entry and does associated work. It
   // will update history and the view with the new title, and also synthesize

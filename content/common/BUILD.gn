@@ -338,6 +338,18 @@ source_set("common") {
     sources -= [ "cursors/webcursor_aura.cc" ]
   }
 
+  if (is_ohos) {
+    sources += [
+      "font_list_android.cc",
+      "zygote/sandbox_support_linux.cc",
+      "zygote/send_zygote_child_ping_linux.cc",
+      "zygote/zygote_commands_linux.h",
+      "zygote/zygote_communication_linux.cc",
+      "zygote/zygote_communication_linux.h",
+    ]
+    deps += [ ":set_process_title_linux" ]
+  }
+
   if (is_linux || is_chromeos) {
     sources += [
       "zygote/sandbox_support_linux.cc",
@@ -359,7 +371,7 @@ source_set("common") {
     ]
   }
 
-  if (is_mac || is_win || is_android || is_fuchsia) {
+  if (is_mac || is_win || is_android || is_fuchsia || is_ohos) {
     sources -= [ "font_list_fontconfig.cc" ]
   }
 
@@ -401,7 +413,7 @@ source_set("common") {
   }
 }
 
-if (is_linux || is_chromeos) {
+if (is_linux || is_chromeos || is_ohos) {
   source_set("set_process_title_linux") {
     public = [ "set_process_title_linux.h" ]
     sources = [ "set_process_title_linux.cc" ]

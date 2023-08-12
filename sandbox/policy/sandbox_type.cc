@@ -70,7 +70,7 @@ bool IsUnsandboxedSandboxType(Sandbox sandbox_type) {
     case Sandbox::kLibassistant:
 #endif  // BUILDFLAG(ENABLE_CROS_LIBASSISTANT)
 #endif  // // BUILDFLAG(IS_CHROMEOS_ASH)
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OHOS)
     case Sandbox::kZygoteIntermediateSandbox:
 #endif
     case Sandbox::kSpeechRecognition:
@@ -156,7 +156,7 @@ void SetCommandLineFlagsForSandboxType(base::CommandLine* command_line,
     case Sandbox::kNaClLoader:
       break;
 #endif  // BUILDFLAG(IS_MAC)
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OHOS)
     case Sandbox::kZygoteIntermediateSandbox:
       break;
 #endif
@@ -203,7 +203,7 @@ sandbox::mojom::Sandbox SandboxTypeFromCommandLine(
   if (process_type == switches::kNaClBrokerProcess)
     return Sandbox::kNoSandbox;
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OHOS)
   // Intermediate process gains a sandbox later.
   if (process_type == switches::kZygoteProcessType)
     return Sandbox::kZygoteIntermediateSandbox;
@@ -291,7 +291,7 @@ std::string StringFromUtilitySandboxType(Sandbox sandbox_type) {
 #if BUILDFLAG(IS_MAC)
     case Sandbox::kNaClLoader:
 #endif  // BUILDFLAG(IS_MAC)
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OHOS)
     case Sandbox::kZygoteIntermediateSandbox:
 #endif
       NOTREACHED();

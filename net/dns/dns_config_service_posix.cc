@@ -25,12 +25,15 @@
 #include "net/dns/dns_config.h"
 #include "net/dns/dns_hosts.h"
 #include "net/dns/notify_watcher_mac.h"
-#include "net/dns/public/resolv_reader.h"
 #include "net/dns/serial_worker.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "net/dns/dns_config_watcher_mac.h"
+#endif
+
+#if !BUILDFLAG(IS_OHOS)
+#include "net/dns/public/resolv_reader.h"
 #endif
 
 namespace net {
@@ -93,6 +96,7 @@ absl::optional<DnsConfig> ReadDnsConfig() {
                                                 base::BlockingType::MAY_BLOCK);
 
   absl::optional<DnsConfig> dns_config;
+#if !BUILDFLAG(IS_OHOS)
   {
     std::unique_ptr<ScopedResState> scoped_res_state =
         ResolvReader().GetResState();
@@ -100,6 +104,7 @@ absl::optional<DnsConfig> ReadDnsConfig() {
       dns_config = ConvertResStateToDnsConfig(scoped_res_state->state());
     }
   }
+#endif
 
   if (!dns_config.has_value())
     return dns_config;
@@ -246,6 +251,7 @@ void DnsConfigServicePosix::CreateReader() {
   config_reader_ = std::make_unique<ConfigReader>(*this);
 }
 
+#if !BUILDFLAG(IS_OHOS)
 absl::optional<DnsConfig> ConvertResStateToDnsConfig(
     const struct __res_state& res) {
   DnsConfig dns_config;
@@ -301,7 +307,7 @@ absl::optional<DnsConfig> ConvertResStateToDnsConfig(
   }
   return dns_config;
 }
-
+#endif  //! BUILDFLAG(IS_OHOS)
 }  // namespace internal
 
 // static

@@ -4,6 +4,7 @@
 
 import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
+import("//build/config/ohos/config.gni")
 
 assert(use_ozone)
 
@@ -33,6 +34,10 @@ source_set("common") {
     "//ui/gfx/geometry",
     "//ui/ozone:ozone_base",
   ]
+  
+  if (product_name == "rk3568") {
+    defines = [ "GL_RK3568" ]
+  }
 
   deps = [
     "//build:chromeos_buildflags",

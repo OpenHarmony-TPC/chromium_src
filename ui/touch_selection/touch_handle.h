@@ -50,6 +50,11 @@ class UI_TOUCH_SELECTION_EXPORT TouchHandleDrawable {
 
   // Returns the transparent horizontal padding ratio of the handle drawable.
   virtual float GetDrawableHorizontalPaddingRatio() const = 0;
+
+#if BUILDFLAG(IS_OHOS)
+  // Sets the Selection left-handle-start or right-handle-end's edge.
+  virtual void SetEdge(const gfx::PointF& top, const gfx::PointF& bottom) = 0;
+#endif
 };
 
 // Interface through which |TouchHandle| communicates handle manipulation and
@@ -130,6 +135,12 @@ class UI_TOUCH_SELECTION_EXPORT TouchHandle : public TouchSelectionDraggable {
   const gfx::PointF& focus_bottom() const { return focus_bottom_; }
   TouchHandleOrientation orientation() const { return orientation_; }
   float alpha() const { return alpha_; }
+
+#if BUILDFLAG(IS_OHOS)
+  void SetEdge(const gfx::PointF& top, const gfx::PointF& bottom);
+  const gfx::PointF& focus_top() const { return focus_top_; }
+  bool GetEnabled() const { return enabled_; };
+#endif
 
  private:
   gfx::PointF ComputeHandleOrigin() const;

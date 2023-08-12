@@ -272,8 +272,14 @@ CONTENT_EXPORT extern const char kRendererWaitForJavaDebugger[];
 
 // TODO(crbug.com/1052397): Revisit the macro expression once build flag switch
 // of lacros-chrome is complete.
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS) || BUILDFLAG(IS_OHOS)
 CONTENT_EXPORT extern const char kEnableSpeechDispatcher[];
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+CONTENT_EXPORT extern const char kEnableMultiRendererProcess[];
+CONTENT_EXPORT extern const char kForBrowser[];
+CONTENT_EXPORT extern const char kOhosCustomScheme[];
 #endif
 
 #if BUILDFLAG(IS_WIN)

@@ -102,6 +102,11 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
 
   // blink::WebViewClient implementation --------------------------------------
 
+#if BUILDFLAG(IS_OHOS)
+  bool GetNewWindowWebView(RenderFrameImpl* creator_frame, const GURL& target_url,
+                           blink::WebNavigationPolicy policy, bool allow_popup);
+#endif
+
   blink::WebView* CreateView(
       blink::WebLocalFrame* creator,
       const blink::WebURLRequest& request,

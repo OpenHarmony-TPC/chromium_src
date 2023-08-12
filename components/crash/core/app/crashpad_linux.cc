@@ -35,6 +35,7 @@ namespace crash_reporter {
 
 namespace {
 
+#if !defined(__MUSL__)
 // TODO(jperaza): This is the first chance handler type used by Breakpad and v8.
 // The Crashpad FirstChanceHandler type explicitly declares the third parameter
 // to be a ucontext_t* instead of a void*. Using a reinterpret cast to convert
@@ -49,15 +50,18 @@ bool FirstChanceHandlerHelper(int signo,
                               ucontext_t* context) {
   return g_first_chance_handler(signo, siginfo, context);
 }
+#endif
 
 }  // namespace
 
+#if !defined(__MUSL__)
 void SetFirstChanceExceptionHandler(bool (*handler)(int, siginfo_t*, void*)) {
   DCHECK(!g_first_chance_handler);
   g_first_chance_handler = handler;
   crashpad::CrashpadClient::SetFirstChanceExceptionHandler(
       FirstChanceHandlerHelper);
 }
+#endif
 
 bool IsCrashpadEnabled() {
   return base::CommandLine::ForCurrentProcess()->HasSwitch(

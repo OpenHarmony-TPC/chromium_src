@@ -627,7 +627,7 @@
       See details
     </message>
   </if>
-  <if expr="toolkit_views">
+  <if expr="toolkit_views or is_ohos">
     <message name="IDS_AUTOFILL_PROMO_CODE_OFFERS_REMINDER_TITLE" desc="Title of the bubble shown on the merchant website when a merchant promo code offer is available to use.">
       Use this code at checkout
     </message>

@@ -31,7 +31,13 @@ enum class RendererType {
   kRemoting = 8,       // RemotingRendererFactory for remoting::Receiver
   kCastStreaming = 9,  // PlaybackCommandForwardingRendererFactory
   kContentEmbedderDefined = 10,  // Defined by the content embedder
+#if BUILDFLAG(IS_OHOS)
+  kOHOSMediaPlayer = 11,  // OHOSMediaPlayerRendererFactory
+  kMaxValue = kOHOSMediaPlayer,
+#else
   kMaxValue = kContentEmbedderDefined,
+#endif
+
 };
 
 // Get the name of the Renderer for `renderer_type`. The returned name could be

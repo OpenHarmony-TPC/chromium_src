@@ -134,7 +134,7 @@ uint32_t GetPlatformSpecificTextureTarget() {
 #if BUILDFLAG(IS_MAC)
   return macos_specific_texture_target;
 #elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || \
-    BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN)
+    BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_OHOS)
   return GL_TEXTURE_EXTERNAL_OES;
 #elif BUILDFLAG(IS_FUCHSIA)
   return GL_TEXTURE_2D;

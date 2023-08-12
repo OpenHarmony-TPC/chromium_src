@@ -72,6 +72,9 @@ declare_args() {
   # only supported on iOS 64-bit architecture, but some project build //base
   # for 32-bit architecture.
   ios_stack_profiler_enabled = true
+
+  # Dump symbols for stack trace, default disable, add gn file to enable it
+  use_symbolize = false
 }
 
 # Mutex priority inheritance is disabled by default due to security
@@ -154,6 +157,21 @@ if (is_fuchsia) {
     libs = [
       "sync",  # Used by spinning_mutex.h.
     ]
+  }
+}
+
+if (is_ohos) {
+  import("//build/config/ohos/config.gni")
+  config("ohos_system_libs") {
+    libs = [
+      "hilog",
+      "utils.z",
+      "eventhandler.z",
+      "hitrace_meter",
+    ]
+
+    include_dirs = ohos_src_includes
+    lib_dirs = ohos_libs_dir
   }
 }
 
@@ -1318,7 +1336,16 @@ mixed_component("base") {
     ]
   }
 
-  if (is_linux || is_chromeos) {
+  if (is_ohos) {
+    sources += [
+      "debug/stack_trace_ohos.cc",
+      "message_loop/message_pump_ohos.cc",
+      "profiler/stack_sampler_android.cc",
+    ]
+    public_configs = [ ":ohos_system_libs" ]
+  }
+
+  if (is_linux || is_chromeos || is_ohos) {
     sources += [
       "debug/proc_maps_linux.cc",
       "debug/proc_maps_linux.h",
@@ -1336,6 +1363,11 @@ mixed_component("base") {
       "process/process_metrics_linux.cc",
       "threading/platform_thread_linux.cc",
     ]
+  }
+
+  if (is_ohos) {
+    sources -= [ "files/scoped_file_linux.cc" ]
+    sources += [ "files/scoped_file_android.cc" ]
   }
 
   if (!is_nacl) {
@@ -1376,6 +1408,15 @@ mixed_component("base") {
         "base_paths_posix.cc",
         "debug/elf_reader.cc",
         "debug/elf_reader.h",
+        "stack_canary_linux.cc",
+        "stack_canary_linux.h",
+      ]
+    }
+
+    if (is_ohos) {
+      sources += [
+        "base_paths_ohos.cc",
+        "base_paths_ohos.h",
         "stack_canary_linux.cc",
         "stack_canary_linux.h",
       ]
@@ -1476,7 +1517,7 @@ mixed_component("base") {
       "allocator/allocator_shim_default_dispatch_to_partition_alloc.h",
       "allocator/allocator_shim_internals.h",
     ]
-    if (is_android) {
+    if (is_android || is_ohos) {
       sources += [
         "allocator/allocator_shim_override_cpp_symbols.h",
         "allocator/allocator_shim_override_linker_wrapped_symbols.h",
@@ -1510,7 +1551,7 @@ mixed_component("base") {
       sources += [ "allocator/allocator_shim_default_dispatch_to_tcmalloc.cc" ]
       deps += [ "//base/allocator:tcmalloc" ]
     } else if (use_allocator == "none") {
-      if (is_android) {
+      if (is_android || is_ohos) {
         sources += [ "allocator/allocator_shim_default_dispatch_to_linker_wrapped_symbols.cc" ]
       }
       if (is_apple) {
@@ -1553,6 +1594,35 @@ mixed_component("base") {
   # TODO(crbug/1052397): Consider replacing is_ash with is_chromeos once lacros switches to target_os=chromeos
   if (is_apple || is_chromeos_ash || is_chromecast || is_fuchsia) {
     defines += [ "SYSTEM_NATIVE_UTF8" ]
+  }
+
+  if (is_ohos) {
+    sources -= [
+      "debug/stack_trace_posix.cc",
+      "profiler/stack_sampler_posix.cc",
+    ]
+    sources += [
+      "android/build_info.cc",
+      "android/build_info.h",
+      "debug/elf_reader.cc",
+      "debug/elf_reader.h",
+      "nix/mime_util_xdg.cc",
+      "nix/mime_util_xdg.h",
+      "nix/xdg_util.cc",
+      "nix/xdg_util.h",
+      "system/sys_info_linux.cc",
+    ]
+    deps += [
+      "//base/third_party/symbolize",
+      "//base/third_party/xdg_mime",
+      "//base/third_party/xdg_user_dirs",
+    ]
+
+    # Add this build flag in gn file to enable stack trace dump
+    if (use_symbolize) {
+      defines += [ "USE_SYMBOLIZE" ]
+      deps += [ "//base/third_party/symbolize" ]
+    }
   }
 
   # Android.
@@ -2225,7 +2295,7 @@ mixed_component("base") {
       "//base/third_party/xdg_user_dirs",
     ]
   } else {
-    if (!is_android) {
+    if (!is_android && !is_ohos) {
       sources -= [
         "linux_util.cc",
         "linux_util.h",
@@ -2511,6 +2581,13 @@ mixed_component("base") {
         "trace_event/java_heap_dump_provider_android.h",
         "trace_event/trace_event_android.cc",
       ]
+    }
+
+    if (is_ohos) {
+      sources += [ "trace_event/trace_event_ohos.cc" ]
+      if (enable_ohos_bytrace) {
+        defines += [ "ENABLE_OHOS_BYTRACE" ]
+      }
     }
   } else {
     sources += [

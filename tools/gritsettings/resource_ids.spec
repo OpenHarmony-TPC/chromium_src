@@ -913,6 +913,14 @@
     "includes": [4960],
   },
 
+  # For OHOS_NWEB_EX
+  "ohos_nweb_ex/overrides/ui/resources/ohos_nweb_ex_resources.grd": {
+    "includes": [4980],
+  },
+  "ohos_nweb_ex/overrides/ui/strings/ohos_nweb_ex_strings.grd": {
+    "messages": [5000],
+  },
+
   # END "everything else" section.
   # Everything but chrome/, components/, content/, and ios/
 

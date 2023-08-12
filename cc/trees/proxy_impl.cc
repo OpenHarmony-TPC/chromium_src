@@ -235,6 +235,11 @@ void ProxyImpl::SetVisibleOnImpl(bool visible) {
   scheduler_->SetVisible(visible);
 }
 
+void ProxyImpl::SetPinchSmoothModeOnImpl(bool isEnable) {
+  DCHECK(IsImplThread());
+  pinch_smooth_ = isEnable;
+}
+
 void ProxyImpl::ReleaseLayerTreeFrameSinkOnImpl(CompletionEvent* completion) {
   DCHECK(IsImplThread());
 
@@ -406,8 +411,11 @@ void ProxyImpl::SetNeedsPrepareTilesOnImplThread() {
 }
 
 void ProxyImpl::SetNeedsCommitOnImplThread() {
-  TRACE_EVENT0("cc", "ProxyImpl::SetNeedsCommitOnImplThread");
   DCHECK(IsImplThread());
+  if ((pinch_smooth_) && (host_impl_->IsPinchGestureActive())) {
+    TRACE_EVENT0("cc", "ProxyImpl::SetNeedsCommitOnImplThread pinch smooth");
+    return;
+  }
   scheduler_->SetNeedsBeginMainFrame();
 }
 
@@ -755,6 +763,10 @@ void ProxyImpl::ScheduledActionBeginLayerTreeFrameSinkCreation() {
 void ProxyImpl::ScheduledActionPrepareTiles() {
   TRACE_EVENT0("cc", "ProxyImpl::ScheduledActionPrepareTiles");
   DCHECK(IsImplThread());
+  if ((pinch_smooth_) && (host_impl_->IsPinchGestureActive())) {
+    TRACE_EVENT0("cc", "ProxyImpl::ScheduledActionPrepareTiles pinch smooth");
+    return;
+  }
   host_impl_->PrepareTiles();
 }
 

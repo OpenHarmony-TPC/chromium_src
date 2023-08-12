@@ -226,6 +226,8 @@ PageHandler::PageHandler(
   // Video capture doesn't work on Android WebView. Use CopyFromSurface instead.
   if (!CompositorImpl::IsInitialized())
     create_video_consumer = false;
+#elif BUILDFLAG(IS_OHOS)
+  constexpr auto kScreencastPixelFormat = media::PIXEL_FORMAT_I420;
 #else
   constexpr auto kScreencastPixelFormat = media::PIXEL_FORMAT_ARGB;
 #endif

@@ -55,7 +55,9 @@ class CONTENT_EXPORT ContentMainRunnerImpl : public ContentMainRunner {
  private:
   int RunBrowser(MainFunctionParams main_function_params,
                  bool start_minimal_browser);
-
+#if BUILDFLAG(IS_OHOS)
+  bool RunRenderRemoteProxy(const base::CommandLine& command_line);
+#endif
   bool is_browser_main_loop_started_ = false;
 
   // The hang watcher is leaked to make sure it survives all watched threads.

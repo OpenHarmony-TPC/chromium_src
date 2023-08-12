@@ -51,10 +51,11 @@ class CONTENT_EXPORT SafeMoveHelper {
 
  private:
   SEQUENCE_CHECKER(sequence_checker_);
-
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   void DoAfterWriteCheck(base::File::Error hash_result,
                          const std::string& hash,
                          int64_t size);
+#endif
   void DidAfterWriteCheck(
       FileSystemAccessPermissionContext::AfterWriteCheckResult result);
   void DidFileSkipQuarantine(base::File::Error result);
@@ -86,7 +87,9 @@ class CONTENT_EXPORT SafeMoveHelper {
 
   download::QuarantineConnectionCallback quarantine_connection_callback_;
 
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   bool has_transient_user_activation_ = false;
+#endif
 
   SafeMoveHelperCallback callback_;
 

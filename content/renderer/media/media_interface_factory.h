@@ -65,13 +65,15 @@ class MediaInterfaceFactory final : public media::mojom::InterfaceFactory {
       mojo::PendingRemote<media::mojom::FlingingRendererClientExtension>
           client_extension,
       mojo::PendingReceiver<media::mojom::Renderer> receiver) final;
+#endif  // BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   void CreateMediaPlayerRenderer(
       mojo::PendingRemote<media::mojom::MediaPlayerRendererClientExtension>
           client_extension_remote,
       mojo::PendingReceiver<media::mojom::Renderer> receiver,
       mojo::PendingReceiver<media::mojom::MediaPlayerRendererExtension>
           renderer_extension_receiver) final;
-#endif  // BUILDFLAG(IS_ANDROID)
+#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 #if BUILDFLAG(IS_WIN)
   void CreateMediaFoundationRenderer(
       mojo::PendingRemote<media::mojom::MediaLog> media_log_remote,

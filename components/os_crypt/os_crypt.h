@@ -37,13 +37,13 @@ class OSCrypt {
   OSCrypt(const OSCrypt&) = delete;
   OSCrypt& operator=(const OSCrypt&) = delete;
 
-#if BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OHOS)
   // Set the configuration of OSCrypt.
   // This method, or SetRawEncryptionKey(), must be called before using
   // EncryptString() and DecryptString().
   static COMPONENT_EXPORT(OS_CRYPT) void SetConfig(
       std::unique_ptr<os_crypt::Config> config);
-#endif  // BUILDFLAG(IS_LINUX)
+#endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OHOS)
 
   // On Linux returns true iff the real secret key (not hardcoded one) is
   // available. On MacOS returns true if Keychain is available (for mock

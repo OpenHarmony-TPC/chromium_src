@@ -1,3 +1,4 @@
+// Copyright (c) 2022 Huawei Device Co., Ltd.
 // Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -36,6 +37,9 @@ bool RenderFrameMetadata::operator==(const RenderFrameMetadata& other) const {
          external_page_scale_factor == other.external_page_scale_factor &&
          top_controls_height == other.top_controls_height &&
          top_controls_shown_ratio == other.top_controls_shown_ratio &&
+#if BUILDFLAG(IS_OHOS)
+         root_layer_size == other.root_layer_size &&
+#endif
 #if BUILDFLAG(IS_ANDROID)
          bottom_controls_height == other.bottom_controls_height &&
          bottom_controls_shown_ratio == other.bottom_controls_shown_ratio &&

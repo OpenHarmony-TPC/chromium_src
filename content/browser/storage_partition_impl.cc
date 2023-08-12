@@ -12,6 +12,10 @@
 #include <utility>
 #include <vector>
 
+// TODO: below two header unused and would be removed later.
+#include <unistd.h>
+#include <thread>
+
 #include "base/barrier_closure.h"
 #include "base/bind.h"
 #include "base/callback_helpers.h"
@@ -1416,6 +1420,30 @@ StoragePartitionImpl::GetCookieManagerForBrowserProcess() {
   }
   return cookie_manager_for_browser_process_.get();
 }
+
+#if BUILDFLAG(IS_OHOS)
+network::mojom::CookieManager* StoragePartitionImpl::GetCookieManagerForOhos() {
+  DCHECK(initialized_);
+  // Create the CookieManager remote for ohos as needed.
+  if (!cookie_manager_for_ohos_ || !cookie_manager_for_ohos_.is_connected()) {
+    // Reset |cookie_manager_for_ohos_| before binding it again.
+
+    cookie_manager_for_ohos_.reset();
+    GetIOThreadTaskRunner({})->PostTask(
+        FROM_HERE,
+        base::BindOnce(&StoragePartitionImpl::GetCookieManagerForOhosInternal,
+                       base::Unretained(this)));
+    completion_.Wait();
+  }
+  return cookie_manager_for_ohos_.get();
+}
+
+void StoragePartitionImpl::GetCookieManagerForOhosInternal() {
+  GetNetworkContext()->GetCookieManager(
+      cookie_manager_for_ohos_.BindNewPipeAndPassReceiver());
+  completion_.Signal();
+}
+#endif
 
 void StoragePartitionImpl::CreateRestrictedCookieManager(
     network::mojom::RestrictedCookieManagerRole role,

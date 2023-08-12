@@ -63,7 +63,7 @@ config("symbol_visibility_default") {
 #    configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
 #  }
 config("rpath_for_built_shared_libraries") {
-  if (!is_android && !is_chromecast && current_os != "aix") {
+  if (!is_android && !is_chromecast && current_os != "aix" && !is_ohos) {
     # Note: Android, Aix don't support rpath.
     if (current_toolchain != default_toolchain || gcc_target_rpath == "") {
       ldflags = [
@@ -79,7 +79,7 @@ config("rpath_for_built_shared_libraries") {
   }
 }
 
-if (is_component_build && !is_android) {
+if (is_component_build && !(is_android || is_ohos)) {
   # See the rpath_for... config above for why this is necessary for component
   # builds.
   executable_and_shared_library_configs_ =
@@ -92,14 +92,14 @@ if (is_component_build && !is_android) {
 config("executable_config") {
   configs = executable_and_shared_library_configs_
   ldflags = [ "-pie" ]
-  if (is_android) {
+  if (is_android || is_ohos) {
     ldflags += [
       "-Bdynamic",
       "-Wl,-z,nocopyreloc",
     ]
   }
 
-  if (!is_android && current_os != "aix") {
+  if (!is_android && current_os != "aix" && !is_ohos) {
     ldflags += [
       # TODO(GYP): Do we need a check on the binutils version here?
       #

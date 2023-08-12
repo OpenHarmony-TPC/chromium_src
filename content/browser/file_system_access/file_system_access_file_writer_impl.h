@@ -115,9 +115,11 @@ class CONTENT_EXPORT FileSystemAccessFileWriterImpl
 
   download::QuarantineConnectionCallback quarantine_connection_callback_;
 
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE) || BUILDFLAG(IS_OHOS)
   // Keeps track of user activation state at creation time for after write
   // checks.
   bool has_transient_user_activation_ = false;
+#endif
 
   // Changes will be written to the target file even if the stream isn't
   // explicitly closed.

@@ -785,6 +785,8 @@ GpuControlList::OsType GpuControlList::GetOsType() {
   return kOsLinux;
 #elif BUILDFLAG(IS_MAC)
   return kOsMacosx;
+#elif BUILDFLAG(IS_OHOS)
+  return kOsOHOS;
 #else
   return kOsAny;
 #endif

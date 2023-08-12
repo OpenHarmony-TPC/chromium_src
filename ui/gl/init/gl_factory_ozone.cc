@@ -16,6 +16,10 @@
 #include "ui/gl/gl_surface_stub.h"
 #include "ui/gl/init/ozone_util.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "ui/gl/init/gl_factory_ohos.h"
+#endif
+
 namespace gl {
 namespace init {
 
@@ -59,6 +63,9 @@ scoped_refptr<GLContext> CreateGLContext(GLShareGroup* share_group,
 }
 
 scoped_refptr<GLSurface> CreateViewGLSurface(gfx::AcceleratedWidget window) {
+#if BUILDFLAG(IS_OHOS)
+  return gl::init::CreateViewGLSurfaceOhos(window);
+#endif
   TRACE_EVENT0("gpu", "gl::init::CreateViewGLSurface");
 
   if (HasGLOzone())

@@ -56,6 +56,8 @@
 #define OS_NACL 1
 #elif defined(ANDROID)
 #define OS_ANDROID 1
+#elif defined(OSOHOS)
+#define OS_OHOS 1
 #elif defined(__APPLE__)
 // Only include TargetConditionals after testing ANDROID as some Android builds
 // on the Mac have this header available and it's not needed unless the target
@@ -120,7 +122,7 @@
     defined(OS_FREEBSD) || defined(OS_IOS) || defined(OS_LINUX) ||  \
     defined(OS_CHROMEOS) || defined(OS_MAC) || defined(OS_NACL) ||  \
     defined(OS_NETBSD) || defined(OS_OPENBSD) || defined(OS_QNX) || \
-    defined(OS_SOLARIS) || defined(OS_ZOS)
+    defined(OS_SOLARIS) || defined(OS_ZOS) || defined(OS_OHOS)
 #define OS_POSIX 1
 #endif
 
@@ -231,6 +233,12 @@
 #define BUILDFLAG_INTERNAL_IS_WIN() (1)
 #else
 #define BUILDFLAG_INTERNAL_IS_WIN() (0)
+#endif
+
+#if defined(OS_OHOS)
+#define BUILDFLAG_INTERNAL_IS_OHOS() (1)
+#else
+#define BUILDFLAG_INTERNAL_IS_OHOS() (0)
 #endif
 
 // Compiler detection. Note: clang masquerades as GCC on POSIX and as MSVC on
@@ -347,7 +355,7 @@
 #error Please add support for your compiler in build/build_config.h
 #endif
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(OS_OHOS)
 // The compiler thinks std::string::const_iterator and "const char*" are
 // equivalent types.
 #define STD_STRING_ITERATOR_IS_CHAR_POINTER

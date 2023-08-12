@@ -34,7 +34,9 @@ component("clipboard_types") {
     sources += [ "clipboard_format_type_win.cc" ]
   }
 
-  if (use_aura) {
+  if (is_ohos) {
+    sources += [ "ohos/clipboard_format_type_ohos.cc" ]
+  } else if (use_aura) {
     if ((!is_chromecast && is_linux) || is_chromeos_lacros || !is_win) {
       sources += [ "clipboard_format_type_aura.cc" ]
     }
@@ -129,7 +131,20 @@ component("clipboard") {
     "//ui/base/data_transfer_policy",
   ]
 
-  if (use_aura) {
+  if (is_ohos) {
+    sources += [
+      "ohos/clipboard_ohos.cc",
+      "ohos/clipboard_ohos.h",
+      "ohos/clipboard_ohos_read_data.cc",
+      "ohos/clipboard_ohos_read_data.h",
+      "clipboard_data.cc",
+      "clipboard_data.h",
+    ]
+    import("//build/config/ohos/config.gni")
+    libs = [ "nweb_ohos_adapter.z" ]
+    include_dirs = ohos_src_includes
+    lib_dirs = ohos_libs_dir
+  } else if (use_aura) {
     if (use_ozone) {
       sources += [
         "clipboard_data.cc",

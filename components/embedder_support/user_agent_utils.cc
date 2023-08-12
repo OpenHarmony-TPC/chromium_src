@@ -409,7 +409,7 @@ std::string GetFullUserAgent(
     ForceMajorVersionToMinorPosition force_major_to_minor) {
   std::string product =
       GetProduct(/*allow_override=*/true, force_major_to_minor);
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kUseMobileUserAgent))
     product += " Mobile";

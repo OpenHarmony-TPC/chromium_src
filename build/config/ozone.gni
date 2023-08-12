@@ -10,7 +10,7 @@ declare_args() {
   # Indicates if Ozone is enabled. Ozone is a low-level library layer for Linux
   # that does not require X11.
   use_ozone =
-      is_chromeos || (is_chromecast && !is_android) || is_fuchsia || is_linux
+      is_chromeos || (is_chromecast && !is_android) || is_fuchsia || is_linux || is_ohos
 }
 
 declare_args() {
@@ -102,6 +102,8 @@ declare_args() {
       ozone_platform = "scenic"
       ozone_platform_scenic = true
       ozone_platform_flatland = true
+    } else if (is_ohos) {
+      ozone_platform_wayland = true
     }
   }
 

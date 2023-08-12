@@ -56,7 +56,12 @@ class FindTabHelper : public content::WebContentsUserData<FindTabHelper> {
                     bool forward_direction,
                     bool case_sensitive,
                     bool find_match,
-                    bool run_synchronously_for_testing = false);
+                    bool run_synchronously_for_testing = false
+#if BUILDFLAG(IS_OHOS)
+					,
+                    bool new_session = false
+#endif
+  );
 
   // Stops the current Find operation.
   void StopFinding(SelectionAction selection_action);

@@ -4,6 +4,7 @@
 
 #include "base/files/file_path.h"
 #include "content/public/browser/file_system_access_permission_context.h"
+#include "ui/shell_dialogs/select_file_dialog.h"
 
 #ifndef CONTENT_BROWSER_FILE_SYSTEM_ACCESS_FAKE_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_H_
 #define CONTENT_BROWSER_FILE_SYSTEM_ACCESS_FAKE_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_H_
@@ -32,19 +33,20 @@ class FakeFileSystemAccessPermissionContext
       HandleType handle_type,
       UserAction user_action) override;
 
-  void ConfirmSensitiveDirectoryAccess(
+  void ConfirmSensitiveEntryAccess(
       const url::Origin& origin,
       PathType path_type,
       const base::FilePath& path,
       HandleType handle_type,
+      ui::SelectFileDialog::Type dialog_type,
       GlobalRenderFrameHostId frame_id,
-      base::OnceCallback<void(SensitiveDirectoryResult)> callback) override;
-
+      base::OnceCallback<void(SensitiveEntryResult)> callback) override;
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   void PerformAfterWriteChecks(
       std::unique_ptr<FileSystemAccessWriteItem> item,
       GlobalRenderFrameHostId frame_id,
       base::OnceCallback<void(AfterWriteCheckResult)> callback) override;
-
+#endif
   bool CanObtainReadPermission(const url::Origin& origin) override;
   bool CanObtainWritePermission(const url::Origin& origin) override;
 

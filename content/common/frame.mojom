@@ -622,6 +622,9 @@ interface FrameHost {
   [Sync] CreateNewWindow(CreateNewWindowParams params)
       => (CreateNewWindowStatus status, CreateNewWindowReply? reply);
 
+  [Sync] GetCreateNewWindow(url.mojom.Url target_url, ui.mojom.WindowOpenDisposition disposition, bool allow_popup)
+      => (CreateNewWindowStatus status);
+
   // Sent by the renderer process to request the creation of a new portal.
   // |portal| is the pipe to be used for the Portal object, |client| is the pipe
   // used to communicate back with the caller. Returns:

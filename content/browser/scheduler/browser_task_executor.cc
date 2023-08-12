@@ -260,7 +260,7 @@ void BrowserTaskExecutor::CreateInternal(
   g_browser_task_executor->browser_ui_thread_handle_
       ->EnableAllExceptBestEffortQueues();
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
   base::PostTaskAndroid::SignalNativeSchedulerReady();
 #endif
 }

@@ -247,6 +247,9 @@ constexpr AcceleratedWidget kNullAcceleratedWidget = 0;
 #elif BUILDFLAG(IS_ANDROID)
 typedef ANativeWindow* AcceleratedWidget;
 constexpr AcceleratedWidget kNullAcceleratedWidget = 0;
+#elif BUILDFLAG(IS_OHOS)
+typedef uint32_t AcceleratedWidget;
+constexpr AcceleratedWidget kNullAcceleratedWidget = 0;
 #elif defined(USE_OZONE)
 typedef uint32_t AcceleratedWidget;
 constexpr AcceleratedWidget kNullAcceleratedWidget = 0;

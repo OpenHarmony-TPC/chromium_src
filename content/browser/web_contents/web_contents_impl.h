@@ -373,6 +373,13 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   bool IsWebContentsOnlyAccessibilityModeForTesting() override;
   bool IsFullAccessibilityModeForTesting() override;
   const std::u16string& GetTitle() override;
+#if BUILDFLAG(IS_OHOS)
+  void CreateWebMessagePorts(
+      std::vector<blink::WebMessagePort>& ports) override;
+  void PostWebMessage(std::string& message,
+                      std::vector<blink::WebMessagePort>& ports,
+                      std::string& targetUri) override;
+#endif
   void UpdateTitleForEntry(NavigationEntry* entry,
                            const std::u16string& title) override;
   SiteInstanceImpl* GetSiteInstance() override;
@@ -1300,6 +1307,10 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   void set_minimum_delay_between_loading_updates_for_testing(
       base::TimeDelta duration) {
     minimum_delay_between_loading_updates_ms_ = duration;
+  }
+
+  RenderWidgetHost* mouse_lock_widget_for_testing() {
+    return mouse_lock_widget_;
   }
 
  private:

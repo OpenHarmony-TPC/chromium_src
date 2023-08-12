@@ -29,11 +29,11 @@ template("android_clang_toolchain") {
     # toolchain definitions are evaluated under the default toolchain.
     # Rather than computing the value under current_os="android", just disable
     # it if target_os != "android".
-    _use_debug_fission = use_debug_fission && target_os == "android"
+    _use_debug_fission = use_debug_fission && (target_os == "android" || target_os == "ohos")
 
     toolchain_args = {
       forward_variables_from(invoker.toolchain_args, "*")
-      current_os = "android"
+      current_os = target_os
       use_debug_fission = _use_debug_fission
     }
 

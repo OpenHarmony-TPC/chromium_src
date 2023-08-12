@@ -5,7 +5,9 @@
 #ifndef BASE_ANDROID_BUILD_INFO_H_
 #define BASE_ANDROID_BUILD_INFO_H_
 
+#if !defined(OSOHOS)
 #include <jni.h>
+#endif
 
 #include <string>
 #include <vector>

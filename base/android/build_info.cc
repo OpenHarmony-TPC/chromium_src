@@ -5,11 +5,12 @@
 #include "base/android/build_info.h"
 
 #include <string>
-
+#if !BUILDFLAG(IS_OHOS)
 #include "base/android/jni_android.h"
 #include "base/android/jni_array.h"
 #include "base/android/scoped_java_ref.h"
 #include "base/base_jni_headers/BuildInfo_jni.h"
+#endif
 #include "base/check_op.h"
 #include "base/memory/singleton.h"
 #include "base/notreached.h"
@@ -36,11 +37,17 @@ int GetIntParam(const std::vector<std::string>& params, int index) {
 
 struct BuildInfoSingletonTraits {
   static BuildInfo* New() {
+#if !BUILDFLAG(IS_OHOS)
     JNIEnv* env = AttachCurrentThread();
     ScopedJavaLocalRef<jobjectArray> params_objs = Java_BuildInfo_getAll(env);
     std::vector<std::string> params;
     AppendJavaStringArrayToStringVector(env, params_objs, &params);
     return new BuildInfo(params);
+  #else
+    std::vector<std::string> params;
+    return new BuildInfo(params);
+  #endif
+
   }
 
   static void Delete(BuildInfo* x) {

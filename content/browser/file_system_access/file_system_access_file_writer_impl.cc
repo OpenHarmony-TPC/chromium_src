@@ -49,7 +49,9 @@ FileSystemAccessFileWriterImpl::FileSystemAccessFileWriterImpl(
       lock_(std::move(lock)),
       quarantine_connection_callback_(
           std::move(quarantine_connection_callback)),
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE) || BUILDFLAG(IS_OHOS)
       has_transient_user_activation_(has_transient_user_activation),
+#endif
       auto_close_(auto_close) {
   DCHECK_EQ(swap_url.type(), url.type());
   DCHECK_EQ(lock_->type(),

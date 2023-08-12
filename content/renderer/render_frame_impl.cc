@@ -247,6 +247,10 @@
 #include "content/renderer/java/gin_java_bridge_dispatcher.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "cef/libcef/renderer/javascript/oh_gin_javascript_bridge_dispatcher.h"
+#endif
+
 using base::Time;
 using blink::ContextMenuData;
 using blink::WebContentDecryptionModule;
@@ -1028,7 +1032,7 @@ void FillMiscNavigationParams(
   navigation_params->is_cross_site_cross_browsing_context_group =
       commit_params.is_cross_site_cross_browsing_context_group;
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   // Only android webview uses this.
   navigation_params->grant_load_local_resources =
       commit_params.can_load_local_resources;
@@ -1952,6 +1956,10 @@ RenderFrameImpl::RenderFrameImpl(CreateParams params)
   // deleted when the RenderFrame gets deleted.
 #if BUILDFLAG(IS_ANDROID)
   new GinJavaBridgeDispatcher(this);
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  new NWEB::OhGinJavascriptBridgeDispatcher(this);
 #endif
 }
 

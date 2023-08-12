@@ -20,6 +20,8 @@
 
 namespace aura::test {
 FORWARD_DECLARE_TEST(GestureRecognizerTest,
+                     DestroyGestureProviderAuraBeforeAck);
+FORWARD_DECLARE_TEST(GestureRecognizerTest,
                      ResetGestureRecognizerWithGestureProvider);
 }  // namespace aura::test
 
@@ -82,6 +84,8 @@ class EVENTS_EXPORT GestureRecognizerImpl : public GestureRecognizer,
 
  private:
   FRIEND_TEST_ALL_PREFIXES(aura::test::GestureRecognizerTest,
+                           DestroyGestureProviderAuraBeforeAck);
+  FRIEND_TEST_ALL_PREFIXES(aura::test::GestureRecognizerTest,
                            ResetGestureRecognizerWithGestureProvider);
 
   // Sets up the target consumer for gestures based on the touch-event.
@@ -107,6 +111,8 @@ class EVENTS_EXPORT GestureRecognizerImpl : public GestureRecognizer,
   // Overridden from GestureProviderAuraClient
   void OnGestureEvent(GestureConsumer* raw_input_consumer,
                       GestureEvent* event) override;
+  void OnGestureProviderAuraWillBeDestroyed(
+      GestureProviderAura* gesture_provider) override;
 
   // Convenience method to find the GestureEventHelper that can dispatch events
   // to a specific |consumer|.

@@ -44,8 +44,8 @@ namespace content {
 
 using base::test::RunOnceCallback;
 using blink::mojom::PermissionStatus;
-using SensitiveDirectoryResult =
-    FileSystemAccessPermissionContext::SensitiveDirectoryResult;
+using SensitiveEntryResult =
+    FileSystemAccessPermissionContext::SensitiveEntryResult;
 using PathInfo = FileSystemAccessPermissionContext::PathInfo;
 using PathType = FileSystemAccessPermissionContext::PathType;
 
@@ -507,12 +507,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest, OpenDirectory_DenyAccess) {
               SetLastPickedDirectory(origin, std::string(), test_dir,
                                      PathType::kLocal));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_dir,
-                  FileSystemAccessPermissionContext::HandleType::kDirectory,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAllowed));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_dir,
+          FileSystemAccessPermissionContext::HandleType::kDirectory,
+          ui::SelectFileDialog::Type::SELECT_FOLDER, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAllowed));
 
   EXPECT_CALL(permission_context,
               GetReadPermissionGrant(
@@ -585,12 +586,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest,
               SetLastPickedDirectory(origin, std::string(), test_dir,
                                      PathType::kLocal));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_dir,
-                  FileSystemAccessPermissionContext::HandleType::kDirectory,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAllowed));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_dir,
+          FileSystemAccessPermissionContext::HandleType::kDirectory,
+          ui::SelectFileDialog::Type::SELECT_FOLDER, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAllowed));
 
   EXPECT_CALL(permission_context,
               GetReadPermissionGrant(
@@ -670,12 +672,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest,
               SetLastPickedDirectory(origin, std::string(), test_dir,
                                      PathType::kLocal));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_dir,
-                  FileSystemAccessPermissionContext::HandleType::kDirectory,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAllowed));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_dir,
+          FileSystemAccessPermissionContext::HandleType::kDirectory,
+          ui::SelectFileDialog::Type::SELECT_FOLDER, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAllowed));
 
   EXPECT_CALL(permission_context,
               GetReadPermissionGrant(
@@ -760,12 +763,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest,
   EXPECT_CALL(permission_context, GetLastPickedDirectory(origin, std::string()))
       .WillOnce(testing::Return(PathInfo()));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_file,
-                  FileSystemAccessPermissionContext::HandleType::kFile,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAbort));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_file,
+          FileSystemAccessPermissionContext::HandleType::kFile,
+          ui::SelectFileDialog::Type::SELECT_SAVEAS_FILE, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAbort));
 
   ASSERT_TRUE(
       NavigateToURL(shell(), embedded_test_server()->GetURL("/title1.html")));
@@ -823,12 +827,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest,
   EXPECT_CALL(permission_context, GetLastPickedDirectory(origin, std::string()))
       .WillOnce(testing::Return(PathInfo()));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_file,
-                  FileSystemAccessPermissionContext::HandleType::kFile,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAbort));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_file,
+          FileSystemAccessPermissionContext::HandleType::kFile,
+          ui::SelectFileDialog::Type::SELECT_SAVEAS_FILE, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAbort));
 
   ASSERT_TRUE(
       NavigateToURL(shell(), embedded_test_server()->GetURL("/title1.html")));
@@ -960,12 +965,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest,
               SetLastPickedDirectory(origin, std::string(), test_dir,
                                      PathType::kLocal));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_dir,
-                  FileSystemAccessPermissionContext::HandleType::kDirectory,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAllowed));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_dir,
+          FileSystemAccessPermissionContext::HandleType::kDirectory,
+          ui::SelectFileDialog::Type::SELECT_FOLDER, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAllowed));
 
   EXPECT_CALL(permission_context,
               GetReadPermissionGrant(
@@ -1050,12 +1056,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest,
               SetLastPickedDirectory(origin, std::string(), test_dir,
                                      PathType::kLocal));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_dir,
-                  FileSystemAccessPermissionContext::HandleType::kDirectory,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAllowed));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_dir,
+          FileSystemAccessPermissionContext::HandleType::kDirectory,
+          ui::SelectFileDialog::Type::SELECT_FOLDER, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAllowed));
 
   EXPECT_CALL(permission_context,
               GetReadPermissionGrant(
@@ -1134,12 +1141,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest,
               SetLastPickedDirectory(origin, std::string(), test_dir,
                                      PathType::kLocal));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_dir,
-                  FileSystemAccessPermissionContext::HandleType::kDirectory,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAllowed));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_dir,
+          FileSystemAccessPermissionContext::HandleType::kDirectory,
+          ui::SelectFileDialog::Type::SELECT_FOLDER, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAllowed));
 
   EXPECT_CALL(permission_context,
               GetReadPermissionGrant(
@@ -1226,12 +1234,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest,
               SetLastPickedDirectory(origin, std::string(), test_dir,
                                      PathType::kLocal));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_dir,
-                  FileSystemAccessPermissionContext::HandleType::kDirectory,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAllowed));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_dir,
+          FileSystemAccessPermissionContext::HandleType::kDirectory,
+          ui::SelectFileDialog::Type::SELECT_FOLDER, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAllowed));
 
   EXPECT_CALL(permission_context,
               GetReadPermissionGrant(
@@ -1317,12 +1326,13 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest,
               SetLastPickedDirectory(origin, std::string(), test_dir,
                                      PathType::kLocal));
 
-  EXPECT_CALL(permission_context,
-              ConfirmSensitiveDirectoryAccess_(
-                  origin, PathType::kLocal, test_dir,
-                  FileSystemAccessPermissionContext::HandleType::kDirectory,
-                  frame_id, testing::_))
-      .WillOnce(RunOnceCallback<5>(SensitiveDirectoryResult::kAllowed));
+  EXPECT_CALL(
+      permission_context,
+      ConfirmSensitiveEntryAccess_(
+          origin, PathType::kLocal, test_dir,
+          FileSystemAccessPermissionContext::HandleType::kDirectory,
+          ui::SelectFileDialog::Type::SELECT_FOLDER, frame_id, testing::_))
+      .WillOnce(RunOnceCallback<6>(SensitiveEntryResult::kAllowed));
 
   EXPECT_CALL(permission_context,
               GetReadPermissionGrant(
@@ -1556,22 +1566,41 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest, SuggestedName) {
   name_infos.push_back({"not_matching.jpg", ListValueOf(".txt"), false,
                         "not_matching.jpg", false});
 
-#if BUILDFLAG(IS_WIN)
-  // ".local" and ".lnk" extensions should be sanitized on Windows.
-  name_infos.push_back({"dangerous_extension.local", ListValueOf(".local"),
-                        true, "dangerous_extension.download", false});
+  // ".lnk", ".local", ".scf", and ".url" extensions should be sanitized.
   name_infos.push_back({"dangerous_extension.lnk", ListValueOf(".lnk"), true,
                         "dangerous_extension.download", false});
-#else
-  // ".local" and ".lnk" extensions should be allowed on other OSes.
-  // TODO(https://crbug.com/1154757): `expected_exclude_accept_all_option` is
-  // false here because ".local" and ".lnk" extensions are not allowed in
-  // `accepts`, but are only sanitized by net::GenerateSafeFileName on Windows.
+  name_infos.push_back({"dangerous_extension.lnk", ListValueOf(".LNK"), true,
+                        "dangerous_extension.download", false});
+  name_infos.push_back({"dangerous_extension.LNK", ListValueOf(".lnk"), true,
+                        "dangerous_extension.download", false});
+  name_infos.push_back({"dangerous_extension.LNK", ListValueOf(".LNK"), true,
+                        "dangerous_extension.download", false});
   name_infos.push_back({"dangerous_extension.local", ListValueOf(".local"),
-                        true, "dangerous_extension.local", false});
-  name_infos.push_back({"dangerous_extension.lnk", ListValueOf(".lnk"), true,
-                        "dangerous_extension.lnk", false});
-#endif
+                        true, "dangerous_extension.download", false});
+
+  name_infos.push_back({"dangerous_extension.scf", ListValueOf(".scf"), true,
+                        "dangerous_extension.download", false});
+  name_infos.push_back({"dangerous_extension.url", ListValueOf(".url"), true,
+                        "dangerous_extension.download", false});
+  // Compound extensions ending in a dangerous extension should be sanitized.
+  name_infos.push_back({"dangerous_extension.png.local", ListValueOf(".local"),
+                        true, "dangerous_extension.png.download", false});
+  name_infos.push_back({"dangerous_extension.png.lnk", ListValueOf(".lnk"),
+                        true, "dangerous_extension.png.download", false});
+  name_infos.push_back({"dangerous_extension.png.scf", ListValueOf(".scf"),
+                        true, "dangerous_extension.png.download", false});
+  name_infos.push_back({"dangerous_extension.png.url", ListValueOf(".url"),
+                        true, "dangerous_extension.png.download", false});
+  // Compound extensions not ending in a dangerous extension should not be
+  // sanitized.
+  name_infos.push_back({"dangerous_extension.local.png", ListValueOf(".png"),
+                        true, "dangerous_extension.local.png", true});
+  name_infos.push_back({"dangerous_extension.lnk.png", ListValueOf(".png"),
+                        true, "dangerous_extension.lnk.png", true});
+  name_infos.push_back({"dangerous_extension.scf.png", ListValueOf(".png"),
+                        true, "dangerous_extension.scf.png", true});
+  name_infos.push_back({"dangerous_extension.url.png", ListValueOf(".png"),
+                        true, "dangerous_extension.url.png", true});
   // Invalid characters should be sanitized.
   name_infos.push_back({R"(inv*l:d\\ch%rבאמת!a<ters🤓.txt)",
                         ListValueOf(".txt"), true,

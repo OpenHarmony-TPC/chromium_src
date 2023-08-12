@@ -121,10 +121,14 @@
 #if BUILDFLAG(IS_ANDROID)
 #include "base/android/build_info.h"
 #include "net/android/network_library.h"
-#else  // !BUILDFLAG(IS_ANDROID)
+#elif !BUILDFLAG(IS_OHOS)
 #include <ifaddrs.h>
 #endif  // BUILDFLAG(IS_ANDROID)
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+
+#if defined(OS_OHOS)
+#include "cef/libcef/browser/net_database/cef_dns_data_base.h"
+#endif
 
 namespace net {
 
@@ -253,7 +257,7 @@ bool HaveOnlyLoopbackAddresses() {
   return false;
 #elif BUILDFLAG(IS_ANDROID)
   return android::HaveOnlyLoopbackAddresses();
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#elif (BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_OHOS)) || BUILDFLAG(IS_FUCHSIA)
   struct ifaddrs* interface_addr = NULL;
   int rv = getifaddrs(&interface_addr);
   if (rv != 0) {
@@ -287,6 +291,8 @@ bool HaveOnlyLoopbackAddresses() {
   }
   freeifaddrs(interface_addr);
   return result;
+#else
+  return false;
 #endif  // defined(various platforms)
 }
 
@@ -3006,7 +3012,8 @@ HostResolverManager::HostResolverManager(
 #if BUILDFLAG(IS_WIN)
   EnsureWinsockInit();
 #endif
-#if (BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID)) || \
+#if (BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID) && \
+     !BUILDFLAG(IS_OHOS)) ||                                                  \
     BUILDFLAG(IS_FUCHSIA)
   RunLoopbackProbeJob();
 #endif
@@ -3015,7 +3022,7 @@ HostResolverManager::HostResolverManager(
   if (system_dns_config_notifier_)
     system_dns_config_notifier_->AddObserver(this);
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_OPENBSD) && \
-    !BUILDFLAG(IS_ANDROID)
+    !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
   EnsureDnsReloaderInit();
 #endif
 
@@ -3298,6 +3305,26 @@ int HostResolverManager::Resolve(RequestImpl* request) {
   return ERR_IO_PENDING;
 }
 
+#if defined(OS_OHOS)
+absl::optional<HostCache::Entry> ServeFromPreDns(const std::string& hostname) {
+  TRACE_EVENT1(NetTracingCategory(), "HostResolverManager::ServeFromPreDns", "hostname", hostname);
+  AddressList addr_list = GetAddrList(hostname);
+  if (addr_list.empty()) {
+    return absl::nullopt;
+  }
+ 
+  int net_error = OK;
+  if (ContainsIcannNameCollisionIp(addr_list))
+      net_error = ERR_ICANN_NAME_COLLISION;
+ 
+  return HostCache::Entry(net_error,
+                          net_error == OK
+                             ? AddressList::CopyWithPort(addr_list, 0)
+                             : AddressList(),
+                          HostCache::Entry::SOURCE_UNKNOWN);
+}
+#endif
+
 HostCache::Entry HostResolverManager::ResolveLocally(
     const JobKey& job_key,
     const IPAddress& ip_address,
@@ -3339,6 +3366,11 @@ HostCache::Entry HostResolverManager::ResolveLocally(
     return HostCache::Entry(ERR_NAME_NOT_RESOLVED,
                             HostCache::Entry::SOURCE_UNKNOWN);
   }
+
+#if defined(OS_OHOS)
+ const std::string cache_host_name(GetHostname(job_key.host));
+  CacheHostName(cache_host_name);
+#endif
 
   if (ip_address.IsValid())
     return ResolveAsIP(job_key.query_types, resolve_canonname, ip_address);
@@ -3401,6 +3433,13 @@ HostCache::Entry HostResolverManager::ResolveLocally(
                             [&] { return NetLogResults(resolved.value()); });
     return resolved.value();
   }
+
+#if defined(OS_OHOS)
+  resolved = ServeFromPreDns(cache_host_name);
+  if (resolved) {
+    return resolved.value();
+  }
+#endif
 
   return HostCache::Entry(ERR_DNS_CACHE_MISS, HostCache::Entry::SOURCE_UNKNOWN);
 }
@@ -4062,7 +4101,8 @@ void HostResolverManager::OnIPAddressChanged() {
   // Abandon all ProbeJobs.
   probe_weak_ptr_factory_.InvalidateWeakPtrs();
   InvalidateCaches();
-#if (BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID)) || \
+#if (BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID) && \
+     !BUILDFLAG(IS_OHOS)) ||                                                  \
     BUILDFLAG(IS_FUCHSIA)
   RunLoopbackProbeJob();
 #endif

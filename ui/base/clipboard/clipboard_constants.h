@@ -44,7 +44,8 @@ extern const char kMimeTypeDataTransferEndpoint[];
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Linux-specific MIME type constants (also used in Fuchsia).
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA) || \
+    BUILDFLAG(IS_OHOS)
 COMPONENT_EXPORT(UI_BASE_CLIPBOARD_TYPES)
 extern const char kMimeTypeLinuxUtf8String[];
 COMPONENT_EXPORT(UI_BASE_CLIPBOARD_TYPES)
@@ -86,6 +87,11 @@ extern NSString* const kUTTypeConfidentialData;
 COMPONENT_EXPORT(UI_BASE_CLIPBOARD_TYPES)
 extern const char kMimeTypeImageURI[];
 #endif  // BUILDFLAG(IS_ANDROID)
+
+#if BUILDFLAG(IS_OHOS)
+COMPONENT_EXPORT(UI_BASE_CLIPBOARD_TYPES)
+extern const char kMimeTypeOHOSCustomData[];
+#endif  // BUILDFLAG(IS_OHOS)
 
 }  // namespace ui
 

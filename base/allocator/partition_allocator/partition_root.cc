@@ -203,6 +203,9 @@ static size_t PartitionPurgeSlotSpan(
           internal::SlotSpanMetadata<thread_safe>::ToSlotSpanStart(slot_span);
       uintptr_t committed_data_end = slot_span_start + utilized_slot_size;
       ScopedSyscallTimer timer{root};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+      ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
       DiscardSystemPages(committed_data_end, discardable_bytes);
     }
     return discardable_bytes;
@@ -315,6 +318,9 @@ static size_t PartitionPurgeSlotSpan(
       PA_DCHECK(num_new_entries == num_slots - slot_span->num_allocated_slots);
       // Discard the memory.
       ScopedSyscallTimer timer{root};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+      ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
       DiscardSystemPages(begin_addr, unprovisioned_bytes);
     }
   }
@@ -343,6 +349,9 @@ static size_t PartitionPurgeSlotSpan(
       discardable_bytes += partial_slot_bytes;
       if (discard) {
         ScopedSyscallTimer timer{root};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+        ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
         DiscardSystemPages(begin_addr, partial_slot_bytes);
       }
     }

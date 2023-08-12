@@ -19,8 +19,14 @@
 #include "ui/events/keycodes/keysym_to_unicode.h"
 #include "ui/events/keycodes/xkb_keysym.h"
 #include "ui/gfx/x/keysyms/keysyms.h"
+#if !BUILDFLAG(IS_OHOS)
 #include "ui/gfx/x/xinput.h"
 #include "ui/gfx/x/xproto.h"
+#else
+#include "ui/gfx/x/generated_protos/xinput.h"
+#include "ui/gfx/x/generated_protos/xproto.h"
+#endif
+
 #include "ui/gfx/x/xproto_types.h"
 
 #define VKEY_UNSUPPORTED VKEY_UNKNOWN

@@ -64,7 +64,7 @@ config("tcmalloc_flags") {
     cflags = []
   }
 
-  if (is_linux || is_chromeos || is_android) {
+  if (is_linux || is_chromeos || is_android || is_ohos) {
     # We enable all warnings by default, but upstream disables a few.
     # Keep "-Wno-*" flags in sync with upstream by comparing against:
     # http://code.google.com/p/google-perftools/source/browse/trunk/Makefile.am
@@ -177,7 +177,7 @@ if (use_allocator == "tcmalloc") {
       #"win_allocator.cc",
     ]
 
-    if (is_android) {
+    if (is_android || is_ohos) {
       sources += [ "$tcmalloc_dir/src/config_android.h" ]
     }
 
@@ -245,7 +245,7 @@ if (use_allocator == "tcmalloc") {
       defines += [ "ENABLE_PROFILING=1" ]
     }
 
-    if (is_linux || is_chromeos || is_android) {
+    if (is_linux || is_chromeos || is_android || is_ohos) {
       sources -= [
         "$tcmalloc_dir/src/system-alloc.h",
         "$tcmalloc_dir/src/windows/port.cc",

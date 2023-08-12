@@ -38,13 +38,14 @@
 #include "base/threading/platform_thread.h"
 // Linux/glibc doesn't natively have setproctitle().
 #include "content/common/set_process_title_linux.h"
+#include "content/public/common/content_switches.h"
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
 namespace content {
 
 // TODO(jrg): Find out if setproctitle or equivalent is available on Android.
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_SOLARIS) && \
-    !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_FUCHSIA)
+    !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_FUCHSIA) && !BUILDFLAG(IS_OHOS)
 
 void SetProcessTitleFromCommandLine(const char** main_argv) {
   // Build a single string which consists of all the arguments separated
@@ -92,11 +93,19 @@ void SetProcessTitleFromCommandLine(const char** main_argv) {
 
   const base::CommandLine* command_line =
       base::CommandLine::ForCurrentProcess();
+#if !BUILDFLAG(IS_OHOS)
   for (size_t i = 1; i < command_line->argv().size(); ++i) {
     if (!title.empty())
       title += " ";
     title += command_line->argv()[i];
   }
+#else
+  const std::string& process_type =
+      command_line->GetSwitchValueASCII(switches::kProcessType);
+  if (!process_type.empty()) {
+    title = "webview-" + process_type;
+  }
+#endif
   // Disable prepending argv[0] with '-' if we prepended it ourselves above.
   setproctitle(have_argv0 ? "-%s" : "%s", title.c_str());
 }

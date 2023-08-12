@@ -283,7 +283,7 @@ const base::Feature kPreloadMetadataLazyLoad{"PreloadMetadataLazyLoad",
 // when in background.
 const base::Feature kResumeBackgroundVideo {
   "resume-background-video",
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
       base::FEATURE_ENABLED_BY_DEFAULT
 #else
       base::FEATURE_DISABLED_BY_DEFAULT

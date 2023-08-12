@@ -109,7 +109,7 @@ void MediaInterfaceFactory::CreateCastRenderer(
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 void MediaInterfaceFactory::CreateMediaPlayerRenderer(
     mojo::PendingRemote<media::mojom::MediaPlayerRendererClientExtension>
         client_extension_remote,
@@ -131,7 +131,9 @@ void MediaInterfaceFactory::CreateMediaPlayerRenderer(
       std::move(client_extension_remote), std::move(receiver),
       std::move(renderer_extension_receiver));
 }
+#endif  // defined(OS_ANDROID) || BUILDFLAG(IS_OHOS)
 
+#if defined(OS_ANDROID)
 void MediaInterfaceFactory::CreateFlingingRenderer(
     const std::string& presentation_id,
     mojo::PendingRemote<media::mojom::FlingingRendererClientExtension>

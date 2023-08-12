@@ -65,6 +65,11 @@
 #include "media/cdm/win/media_foundation_cdm.h"
 #endif  // BUILDFLAG(IS_WIN)
 
+#if BUILDFLAG(IS_OHOS)
+#include "content/browser/media/ohos/ohos_media_player_renderer.h"
+#include "media/mojo/services/mojo_renderer_service.h"  // nogncheck
+#endif
+
 #if BUILDFLAG(IS_ANDROID)
 #include "content/browser/media/android/media_player_renderer.h"
 #include "content/browser/media/flinging_renderer.h"
@@ -313,7 +318,9 @@ void MediaInterfaceProxy::CreateFlingingRenderer(
   media::MojoRendererService::Create(nullptr, std::move(flinging_renderer),
                                      std::move(receiver));
 }
+#endif
 
+#if defined(OS_ANDROID) || BUILDFLAG(IS_OHOS)
 void MediaInterfaceProxy::CreateMediaPlayerRenderer(
     mojo::PendingRemote<media::mojom::MediaPlayerRendererClientExtension>
         client_extension_remote,
@@ -324,7 +331,11 @@ void MediaInterfaceProxy::CreateMediaPlayerRenderer(
 
   media::MojoRendererService::Create(
       nullptr,
+#if defined(OS_ANDROID)
       std::make_unique<MediaPlayerRenderer>(
+#else
+      std::make_unique<OHOSMediaPlayerRenderer>(
+#endif
           render_frame_host().GetProcess()->GetID(),
           render_frame_host().GetRoutingID(),
           WebContents::FromRenderFrameHost(&render_frame_host()),

@@ -4,6 +4,7 @@
 
 #include "components/optimization_guide/core/entity_metadata.h"
 
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -67,7 +68,7 @@ bool operator==(const ScoredEntityMetadata& lhs,
                 const ScoredEntityMetadata& rhs) {
   constexpr const double kScoreTolerance = 1e-6;
   return lhs.metadata == rhs.metadata &&
-         abs(lhs.score - rhs.score) <= kScoreTolerance;
+         std::abs(lhs.score - rhs.score) <= kScoreTolerance;
 }
 
 }  // namespace optimization_guide

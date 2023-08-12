@@ -397,7 +397,7 @@ bool CollectGraphicsInfoGL(GPUInfo* gpu_info) {
   gpu_info->max_msaa_samples = base::NumberToString(max_samples);
   base::UmaHistogramSparse("GPU.MaxMSAASampleCount", max_samples);
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   gpu_info->can_support_threaded_texture_mailbox =
       gl::GLSurfaceEGL::HasEGLExtension("EGL_KHR_fence_sync") &&
       gl::GLSurfaceEGL::HasEGLExtension("EGL_KHR_image_base") &&
@@ -558,7 +558,7 @@ void FillGPUInfoFromSystemInfo(GPUInfo* gpu_info,
 
 void CollectGraphicsInfoForTesting(GPUInfo* gpu_info) {
   DCHECK(gpu_info);
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   CollectContextGraphicsInfo(gpu_info);
 #else
   CollectBasicGraphicsInfo(gpu_info);

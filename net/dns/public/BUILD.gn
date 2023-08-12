@@ -37,7 +37,7 @@ source_set("public") {
     "util.h",
   ]
 
-  if (is_posix && !is_android) {
+  if (is_posix && !is_android && !is_ohos) {
     sources += [
       "resolv_reader.cc",
       "resolv_reader.h",

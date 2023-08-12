@@ -413,10 +413,18 @@ base::FilePath ResourceBundle::GetLocaleFilePath(
     return base::FilePath();
 
   base::FilePath locale_file_path;
+#if !BUILDFLAG(IS_OHOS)
   if (base::PathService::Get(ui::DIR_LOCALES, &locale_file_path)) {
     locale_file_path =
         locale_file_path.AppendASCII(app_locale + kPakFileExtension);
   }
+#else
+  if (base::PathService::Get(base::DIR_ASSETS, &locale_file_path)) {
+    locale_file_path =
+        locale_file_path.AppendASCII(std::string("locales/") + app_locale + kPakFileExtension);
+  }
+#endif
+
 
   // Note: The delegate GetPathForLocalePack() override is currently only used
   // by CastResourceDelegate, which does not call this function prior to

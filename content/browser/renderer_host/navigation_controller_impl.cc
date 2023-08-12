@@ -1135,6 +1135,9 @@ base::WeakPtr<NavigationHandle> NavigationControllerImpl::LoadURL(
   params.referrer = referrer;
   params.transition_type = transition;
   params.extra_headers = extra_headers;
+#if BUILDFLAG(IS_OHOS)
+  params.override_user_agent = NavigationController::UA_OVERRIDE_TRUE;
+#endif
   return LoadURLWithParams(params);
 }
 
@@ -4501,4 +4504,17 @@ bool NavigationControllerImpl::ShouldMaintainTrivialSessionHistory(
          frame_tree_node->IsInFencedFrameTree();
 }
 
+#if BUILDFLAG(IS_OHOS)
+const std::string& NavigationControllerImpl::GetOriginalUrl() {
+  int cur_index = GetCurrentEntryIndex();
+  int count = GetEntryCount();
+  if (cur_index >= 0 && cur_index < count) {
+    NavigationEntryImpl* entry = GetEntryAtIndex(cur_index);
+    if (entry) {
+      return entry->GetOriginalRequestURL().spec();
+    }
+  }
+  return base::EmptyString();
+}
+#endif
 }  // namespace content

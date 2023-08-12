@@ -31,6 +31,9 @@
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
 #include "third_party/blink/public/mojom/permissions_policy/permissions_policy_feature.mojom-forward.h"
 #include "ui/gfx/native_widget_types.h"
+#if BUILDFLAG(IS_OHOS)
+#include "base/memory/read_only_shared_memory_region.h"
+#endif
 
 class GURL;
 
@@ -603,6 +606,13 @@ class CONTENT_EXPORT RenderFrameHost : public IPC::Listener,
   // save UI.  Nothing gets done if there is no image at that location (or if
   // the image has a non-data URL).
   virtual void SaveImageAt(int x, int y) = 0;
+
+#if BUILDFLAG(IS_OHOS)
+  using ImageCacheCallback =
+    base::OnceCallback<void(uint32_t, base::ReadOnlySharedMemoryRegion)>;
+  virtual void GetImageFromCache(const std::string& url,
+                                 ImageCacheCallback callback) = 0;
+#endif
 
   // RenderViewHost for this frame.
   virtual RenderViewHost* GetRenderViewHost() = 0;

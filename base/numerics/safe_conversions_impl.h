@@ -10,6 +10,8 @@
 #include <limits>
 #include <type_traits>
 
+#include "base/template_util.h"
+
 #if defined(__GNUC__) || defined(__clang__)
 #define BASE_NUMERICS_LIKELY(x) __builtin_expect(!!(x), 1)
 #define BASE_NUMERICS_UNLIKELY(x) __builtin_expect(!!(x), 0)
@@ -87,7 +89,11 @@ constexpr typename std::make_unsigned<T>::type SafeUnsignedAbs(T value) {
 
 // TODO(jschuh): Switch to std::is_constant_evaluated() once C++20 is supported.
 // Alternately, the usage could be restructured for "consteval if" in C++23.
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+#define IsConstantEvaluated() (is_constant_evaluated())
+#else
 #define IsConstantEvaluated() (__builtin_is_constant_evaluated())
+#endif
 
 // TODO(jschuh): Debug builds don't reliably propagate constants, so we restrict
 // some accelerated runtime paths to release builds until this can be forced

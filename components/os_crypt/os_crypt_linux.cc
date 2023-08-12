@@ -273,6 +273,7 @@ std::string OSCrypt::GetRawEncryptionKey() {
   return key->key();
 }
 
+#if !BUILDFLAG(IS_OHOS)
 // static
 void OSCrypt::ClearCacheForTesting() {
   g_cache.Get().password_v10_cache.reset();
@@ -296,3 +297,4 @@ void OSCrypt::SetEncryptionPasswordForTesting(const std::string& password) {
   g_cache.Get().password_v11_cache = GenerateEncryptionKey(password);
   g_cache.Get().is_password_v11_cached = true;
 }
+#endif

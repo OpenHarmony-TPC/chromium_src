@@ -576,7 +576,7 @@ bool GetTempDir(FilePath* path) {
     return true;
   }
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   return PathService::Get(DIR_CACHE, path);
 #else
   *path = FilePath("/tmp");
@@ -1275,7 +1275,8 @@ bool CopyFileContentsWithSendfile(File& infile,
 
 }  // namespace internal
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX) || \
+    BUILDFLAG(IS_OHOS)
 BASE_EXPORT bool IsPathExecutable(const FilePath& path) {
   bool result = false;
   FilePath tmp_file_path;

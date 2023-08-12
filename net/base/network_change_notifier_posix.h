@@ -5,6 +5,8 @@
 #ifndef NET_BASE_NETWORK_CHANGE_NOTIFIER_POSIX_H_
 #define NET_BASE_NETWORK_CHANGE_NOTIFIER_POSIX_H_
 
+#include <memory>
+
 #include "base/gtest_prod_util.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
@@ -14,6 +16,9 @@
 #include "base/threading/thread_checker.h"
 #include "net/base/net_export.h"
 #include "net/base/network_change_notifier.h"
+#if BUILDFLAG(IS_OHOS)
+#include "ohos_adapter_helper.h"
+#endif
 
 namespace net {
 
@@ -70,6 +75,11 @@ class NET_EXPORT NetworkChangeNotifierPosix : public NetworkChangeNotifier {
   mutable base::Lock lock_;
   NetworkChangeNotifier::ConnectionType
       connection_type_;        // Guarded by |lock_|.
+
+#if BUILDFLAG(IS_OHOS)
+  std::unique_ptr<OHOS::NWeb::NetConnectAdapter> ohos_net_conn_adapter_;
+#endif
+
   double max_bandwidth_mbps_;  // Guarded by |lock_|.
 };
 

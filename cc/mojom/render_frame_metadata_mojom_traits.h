@@ -149,6 +149,13 @@ struct COMPONENT_EXPORT(CC_SHARED_MOJOM_TRAITS)
   }
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+  static const gfx::SizeF& root_layer_size(
+      const cc::RenderFrameMetadata& metadata) {
+    return metadata.root_layer_size;
+  }
+#endif
+
   static bool Read(cc::mojom::RenderFrameMetadataDataView data,
                    cc::RenderFrameMetadata* out);
 };

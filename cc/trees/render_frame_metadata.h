@@ -1,3 +1,4 @@
+// Copyright (c) 2022 Huawei Device Co., Ltd.
 // Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -119,6 +120,9 @@ class CC_EXPORT RenderFrameMetadata {
   // set of VisualProperties arriving. See WidgetBase::UpdateVisualProperties.
   base::TimeDelta visual_properties_update_duration;
 
+#if BUILDFLAG(IS_OHOS)
+  gfx::SizeF root_layer_size;
+#endif
 #if BUILDFLAG(IS_ANDROID)
   // Used to position Android bottom bar, whose position is computed by the
   // renderer compositor.

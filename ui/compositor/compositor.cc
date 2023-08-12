@@ -321,7 +321,11 @@ void Compositor::AddChildFrameSink(const viz::FrameSinkId& frame_sink_id) {
   auto result = child_frame_sinks_.insert(frame_sink_id);
 
   // TODO(crbug.com/1196413): Remove this after some investigation.
+#if BUILDFLAG(IS_OHOS)
+  ALLOW_UNUSED_LOCAL(result);
+#else
   CHECK(result.second);
+#endif
 }
 
 void Compositor::RemoveChildFrameSink(const viz::FrameSinkId& frame_sink_id) {

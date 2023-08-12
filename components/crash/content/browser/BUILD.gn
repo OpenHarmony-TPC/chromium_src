@@ -21,7 +21,7 @@ source_set("browser") {
     "//content/public/common",
   ]
 
-  if (is_linux || is_chromeos || is_android) {
+  if (is_linux || is_chromeos || is_android || is_ohos) {
     # Want this file on both Linux and Android.
     sources += [
       "crash_handler_host_linux.cc",

@@ -36,7 +36,7 @@ declare_args() {
   # Enable usage of OpenH264 within the media library. Used for software based
   # encoding of H264 content.
   media_use_openh264 = true
-  if (is_ios || is_android || !proprietary_codecs) {
+  if (is_ios || is_android || is_ohos || !proprietary_codecs) {
     media_use_openh264 = false
   }
 
@@ -78,7 +78,7 @@ declare_args() {
 
   # Enable browser managed persistent metadata storage for EME persistent
   # session and persistent usage record session.
-  enable_media_drm_storage = is_android || is_chromecast
+  enable_media_drm_storage = is_android || is_chromecast || is_ohos
 
   # Enable HLS manifest parser and demuxer.
   enable_hls_demuxer = false
@@ -127,7 +127,7 @@ declare_args() {
 
   # Alsa should be used on non-Android, non-Mac POSIX systems.
   # Alsa should be used on desktop Chromecast and audio-only Chromecast builds.
-  if (is_posix && !is_android && !is_mac &&
+  if (is_posix && !is_android && !is_mac && !is_ohos &&
       (!is_chromecast || is_cast_desktop_build || is_cast_audio_only)) {
     use_alsa = true
 
@@ -201,7 +201,7 @@ _default_mojo_media_host = ""
 if (is_chromecast) {
   _default_mojo_media_services = cast_mojo_media_services
   _default_mojo_media_host = cast_mojo_media_host
-} else if (is_android) {
+} else if (is_android || is_ohos) {
   _default_mojo_media_services = [
     "cdm",
     "audio_decoder",
@@ -259,7 +259,7 @@ declare_args() {
 declare_args() {
   # Media Remoting RPC is disabled on Android since it's unused but increases
   # the native binary size by ~70Kb.
-  enable_media_remoting_rpc = enable_media_remoting && !is_android
+  enable_media_remoting_rpc = enable_media_remoting && !is_android && !is_ohos
 }
 
 declare_args() {
@@ -295,6 +295,12 @@ if (is_fuchsia) {
     "//media/fuchsia/audio",
     "//media/fuchsia/cdm",
     "//media/fuchsia/common",
+  ]
+}
+
+if (is_ohos) {
+  media_subcomponent_deps += [
+    "//media/base/ohos",
   ]
 }
 

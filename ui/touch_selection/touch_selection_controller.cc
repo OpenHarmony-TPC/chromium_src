@@ -12,6 +12,8 @@
 #include "base/metrics/user_metrics.h"
 #include "base/notreached.h"
 
+#include "base/logging.h"
+
 namespace ui {
 namespace {
 
@@ -114,7 +116,7 @@ void TouchSelectionController::OnSelectionBoundsChanged(
                  (end_selection_handle_->IsActive() &&
                   end.edge_end() == start_.edge_start());
 
-    if (need_swap)
+    if (need_swap) 
       start_selection_handle_.swap(end_selection_handle_);
   }
 
@@ -529,6 +531,9 @@ void TouchSelectionController::OnInsertionChanged() {
   const bool activated = ActivateInsertionIfNecessary();
 
   const TouchHandle::AnimationStyle animation = GetAnimationStyle(!activated);
+#if BUILDFLAG(IS_OHOS)
+  insertion_handle_->SetEdge(start_.edge_start(), start_.edge_end());
+#endif
   insertion_handle_->SetFocus(start_.edge_start(), start_.edge_end());
   insertion_handle_->SetVisible(GetStartVisible(), animation);
 
@@ -544,6 +549,10 @@ void TouchSelectionController::OnSelectionChanged() {
   const bool activated = ActivateSelectionIfNecessary();
 
   const TouchHandle::AnimationStyle animation = GetAnimationStyle(!activated);
+#if BUILDFLAG(IS_OHOS)
+  start_selection_handle_->SetEdge(start_.edge_start(), start_.edge_end());
+  end_selection_handle_->SetEdge(end_.edge_start(), end_.edge_end());
+#endif
 
   start_selection_handle_->SetFocus(start_.edge_start(), start_.edge_end());
   end_selection_handle_->SetFocus(end_.edge_start(), end_.edge_end());

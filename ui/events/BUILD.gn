@@ -169,6 +169,10 @@ component("events_base") {
     deps += [ "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.input3" ]
   }
 
+  if (is_ohos) {
+     public_deps += [ "//ui/events/keycodes:x11" ]
+  }
+
   if (ozone_platform_x11) {
     public_deps += [ "//ui/events/keycodes:x11" ]
 

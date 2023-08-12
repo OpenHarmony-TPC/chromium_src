@@ -2414,6 +2414,10 @@ RenderFrameMetadata LayerTreeHostImpl::MakeRenderFrameMetadata(
       frame->render_passes.back()->has_transparent_background;
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+  metadata.root_layer_size = active_tree_->ScrollableSize();
+#endif
+
   if (last_draw_render_frame_metadata_) {
     const float last_root_scroll_offset_y =
         last_draw_render_frame_metadata_->root_scroll_offset

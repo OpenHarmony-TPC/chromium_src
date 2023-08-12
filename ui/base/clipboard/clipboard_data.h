@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "base/component_export.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -151,6 +152,13 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ClipboardData {
     src_ = std::move(src);
   }
 
+#if BUILDFLAG(IS_OHOS)
+  const std::map<std::string, std::vector<int>>& html_img_src_set() const { return html_img_src_set_; }
+  void set_html_img_src_set(std::map<std::string, std::vector<int>>& src_set) {
+    html_img_src_set_ = std::move(src_set);
+  }
+#endif
+
  private:
   // Plain text in UTF8 format.
   std::string text_;
@@ -192,6 +200,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ClipboardData {
 
   // text/uri-list filenames data.
   std::vector<ui::FileInfo> filenames_;
+
+#if BUILDFLAG(IS_OHOS)
+  std::map<std::string, std::vector<int>> html_img_src_set_;
+#endif
 
   int format_;
 

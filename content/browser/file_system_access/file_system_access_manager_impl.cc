@@ -63,8 +63,8 @@ namespace content {
 
 using blink::mojom::FileSystemAccessStatus;
 using PermissionStatus = FileSystemAccessPermissionGrant::PermissionStatus;
-using SensitiveDirectoryResult =
-    FileSystemAccessPermissionContext::SensitiveDirectoryResult;
+using SensitiveEntryResult =
+    FileSystemAccessPermissionContext::SensitiveEntryResult;
 using storage::FileSystemContext;
 using HandleType = FileSystemAccessPermissionContext::HandleType;
 using PathInfo = FileSystemAccessPermissionContext::PathInfo;
@@ -517,6 +517,16 @@ void FileSystemAccessManagerImpl::SetDefaultPathAndShowPicker(
     suggested_name_path =
         net::GenerateFileName(GURL(), std::string(), std::string(),
                               suggested_name, std::string(), std::string());
+  }
+
+  auto suggested_extension = suggested_name_path.Extension();
+  // Our version of `IsShellIntegratedExtension()` is more stringent than
+  // the version used in `net::GenerateFileName()`. See
+  // `FileSystemChooser::IsShellIntegratedExtension()` for details.
+  if (FileSystemChooser::IsShellIntegratedExtension(suggested_extension)) {
+    suggested_extension = FILE_PATH_LITERAL("download");
+    suggested_name_path =
+        suggested_name_path.ReplaceExtension(suggested_extension);
   }
 
   FileSystemChooser::Options file_system_chooser_options(
@@ -1120,7 +1130,7 @@ void FileSystemAccessManagerImpl::DidChooseEntries(
     DidVerifySensitiveDirectoryAccess(
         binding_context, options, starting_directory_id,
         request_directory_write_access, std::move(callback), std::move(entries),
-        SensitiveDirectoryResult::kAllowed);
+        SensitiveEntryResult::kAllowed);
     return;
   }
 
@@ -1130,9 +1140,9 @@ void FileSystemAccessManagerImpl::DidChooseEntries(
   FileSystemChooser::ResultEntry first_entry = entries.front();
   const bool is_directory =
       options.type() == ui::SelectFileDialog::SELECT_FOLDER;
-  permission_context_->ConfirmSensitiveDirectoryAccess(
+  permission_context_->ConfirmSensitiveEntryAccess(
       binding_context.storage_key.origin(), first_entry.type, first_entry.path,
-      is_directory ? HandleType::kDirectory : HandleType::kFile,
+      is_directory ? HandleType::kDirectory : HandleType::kFile, options.type(),
       binding_context.frame_id,
       base::BindOnce(
           &FileSystemAccessManagerImpl::DidVerifySensitiveDirectoryAccess,
@@ -1148,19 +1158,19 @@ void FileSystemAccessManagerImpl::DidVerifySensitiveDirectoryAccess(
     const bool request_directory_write_access,
     ChooseEntriesCallback callback,
     std::vector<FileSystemChooser::ResultEntry> entries,
-    SensitiveDirectoryResult result) {
+    SensitiveEntryResult result) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   base::UmaHistogramEnumeration(
       "NativeFileSystemAPI.SensitiveDirectoryAccessResult", result);
 
-  if (result == SensitiveDirectoryResult::kAbort) {
+  if (result == SensitiveEntryResult::kAbort) {
     std::move(callback).Run(
         file_system_access_error::FromStatus(
             FileSystemAccessStatus::kOperationAborted),
         std::vector<blink::mojom::FileSystemAccessEntryPtr>());
     return;
   }
-  if (result == SensitiveDirectoryResult::kTryAgain) {
+  if (result == SensitiveEntryResult::kTryAgain) {
     ShowFilePickerOnUIThread(
         binding_context.storage_key.origin(), binding_context.frame_id, options,
         base::BindOnce(&FileSystemAccessManagerImpl::DidChooseEntries,

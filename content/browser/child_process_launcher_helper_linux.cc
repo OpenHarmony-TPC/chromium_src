@@ -2,6 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include "base/base_switches.h"
 #include "base/path_service.h"
 #include "base/posix/global_descriptors.h"
 #include "build/build_config.h"
@@ -99,7 +104,41 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
   }
 
   Process process;
+#if BUILDFLAG(IS_OHOS)
+  bool for_test =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kForTest);
+  if (for_test) {
+    process.process = base::LaunchProcess(*command_line(), options);
+  } else {
+    const std::vector<std::string> argv_str = command_line()->argv();
+    std::stringstream argv_ss;
+    const char separator = '#';
+    for (int i = 0; i < argv_str.size() - 1; ++i) {
+      argv_ss << argv_str[i] << separator;
+    }
+    argv_ss << argv_str[argv_str.size() - 1];
+    constexpr int SHARED_FD_INDEX = 0;
+    constexpr int IPC_FD_INDEX = 1;
+    int32_t shared_fd = options.fds_to_remap[SHARED_FD_INDEX].first;
+    int32_t ipc_fd = options.fds_to_remap[IPC_FD_INDEX].first;
+    pid_t render_pid = 0;
+    if (app_mgr_client_adapter_ == nullptr) {
+      app_mgr_client_adapter_ =
+          OHOS::NWeb::OhosAdapterHelper::GetInstance().CreateAafwkAdapter();
+    }
+    int ret = app_mgr_client_adapter_->StartRenderProcess(
+        argv_ss.str(), ipc_fd, shared_fd, render_pid);
+    if (ret != 0) {
+      LOG(ERROR) << "start render process error, ret=" << ret
+                 << ", render pid=" << render_pid;
+      process.process = base::Process();
+    } else {
+      process.process = base::Process(render_pid);
+    }
+  }
+#else
   process.process = base::LaunchProcess(*command_line(), options);
+#endif
   *launch_result = process.process.IsValid() ? LAUNCH_RESULT_SUCCESS
                                              : LAUNCH_RESULT_FAILURE;
   return process;
@@ -110,6 +149,41 @@ void ChildProcessLauncherHelper::AfterLaunchOnLauncherThread(
     const base::LaunchOptions& options) {
 }
 
+#if BUILDFLAG(IS_OHOS)
+base::TerminationStatus ChildProcessLauncherHelper::GetProcessStatusByExitCode(
+    int status) {
+  if (WIFSIGNALED(status)) {
+    switch (WTERMSIG(status)) {
+      case SIGABRT:
+      case SIGBUS:
+      case SIGFPE:
+      case SIGILL:
+      case SIGSEGV:
+      case SIGTRAP:
+      case SIGSYS:
+        return base::TERMINATION_STATUS_PROCESS_CRASHED;
+      case SIGKILL:
+#if BUILDFLAG(IS_CHROMEOS_ASH) || BUILDFLAG(IS_CHROMEOS_LACROS)
+        // On ChromeOS, only way a process gets kill by SIGKILL
+        // is by oom-killer.
+        return TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM;
+#endif
+      case SIGINT:
+      case SIGTERM:
+        return base::TERMINATION_STATUS_PROCESS_WAS_KILLED;
+      default:
+        break;
+    }
+  }
+
+  if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+    return base::TERMINATION_STATUS_ABNORMAL_TERMINATION;
+  }
+
+  return base::TERMINATION_STATUS_NORMAL_TERMINATION;
+}
+#endif
+
 ChildProcessTerminationInfo ChildProcessLauncherHelper::GetTerminationInfo(
     const ChildProcessLauncherHelper::Process& process,
     bool known_dead) {
@@ -117,6 +191,22 @@ ChildProcessTerminationInfo ChildProcessLauncherHelper::GetTerminationInfo(
   if (process.zygote) {
     info.status = process.zygote->GetTerminationStatus(
         process.process.Handle(), known_dead, &info.exit_code);
+#if BUILDFLAG(IS_OHOS)
+  } else if (app_mgr_client_adapter_) {
+    int exitStatus;
+    int ret = app_mgr_client_adapter_->GetRenderProcessTerminationStatus(
+        process.process.Handle(), exitStatus);
+    if (ret != 0) {
+      LOG(ERROR) << "get render process termination status failed, ret = "
+                 << ret;
+    } else if (exitStatus < 0) {
+      LOG(ERROR)
+          << "get render process termination status success, invalid status = "
+          << exitStatus;
+    } else {
+      info.status = GetProcessStatusByExitCode(exitStatus);
+    }
+#endif
   } else if (known_dead) {
     info.status = base::GetKnownDeadTerminationStatus(process.process.Handle(),
                                                       &info.exit_code);

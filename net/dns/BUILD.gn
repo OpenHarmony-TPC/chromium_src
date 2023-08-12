@@ -413,7 +413,7 @@ source_set("tests") {
     sources += [ "dns_config_service_win_unittest.cc" ]
   }
 
-  if (is_android) {
+  if (is_android || is_ohos) {
     sources += [ "dns_config_service_android_unittest.cc" ]
   } else if (is_linux) {
     sources += [ "dns_config_service_linux_unittest.cc" ]

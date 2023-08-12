@@ -18,7 +18,8 @@ namespace {
 
 class FindTextTestClient : public TestClient {
  public:
-  FindTextTestClient() = default;
+  explicit FindTextTestClient(bool expected_case_sensitive)
+      : expected_case_sensitive_(expected_case_sensitive) {}
   FindTextTestClient(const FindTextTestClient&) = delete;
   FindTextTestClient& operator=(const FindTextTestClient&) = delete;
   ~FindTextTestClient() override = default;
@@ -30,7 +31,7 @@ class FindTextTestClient : public TestClient {
   std::vector<SearchStringResult> SearchString(const char16_t* string,
                                                const char16_t* term,
                                                bool case_sensitive) override {
-    EXPECT_TRUE(case_sensitive);
+    EXPECT_EQ(case_sensitive, expected_case_sensitive_);
     std::u16string haystack = std::u16string(string);
     std::u16string needle = std::u16string(term);
 
@@ -50,6 +51,9 @@ class FindTextTestClient : public TestClient {
     }
     return results;
   }
+
+ private:
+  const bool expected_case_sensitive_;
 };
 
 }  // namespace
@@ -57,7 +61,7 @@ class FindTextTestClient : public TestClient {
 using FindTextTest = PDFiumTestBase;
 
 TEST_F(FindTextTest, FindText) {
-  FindTextTestClient client;
+  FindTextTestClient client(/*expected_case_sensitive=*/true);
   std::unique_ptr<PDFiumEngine> engine =
       InitializeEngine(&client, FILE_PATH_LITERAL("hello_world2.pdf"));
   ASSERT_TRUE(engine);
@@ -76,7 +80,7 @@ TEST_F(FindTextTest, FindText) {
 }
 
 TEST_F(FindTextTest, FindHyphenatedText) {
-  FindTextTestClient client;
+  FindTextTestClient client(/*expected_case_sensitive=*/true);
   std::unique_ptr<PDFiumEngine> engine =
       InitializeEngine(&client, FILE_PATH_LITERAL("spanner.pdf"));
   ASSERT_TRUE(engine);
@@ -95,7 +99,7 @@ TEST_F(FindTextTest, FindHyphenatedText) {
 }
 
 TEST_F(FindTextTest, FindLineBreakText) {
-  FindTextTestClient client;
+  FindTextTestClient client(/*expected_case_sensitive=*/true);
   std::unique_ptr<PDFiumEngine> engine =
       InitializeEngine(&client, FILE_PATH_LITERAL("spanner.pdf"));
   ASSERT_TRUE(engine);
@@ -112,7 +116,7 @@ TEST_F(FindTextTest, FindLineBreakText) {
 }
 
 TEST_F(FindTextTest, FindSimpleQuotationMarkText) {
-  FindTextTestClient client;
+  FindTextTestClient client(/*expected_case_sensitive=*/true);
   std::unique_ptr<PDFiumEngine> engine =
       InitializeEngine(&client, FILE_PATH_LITERAL("bug_142627.pdf"));
   ASSERT_TRUE(engine);
@@ -130,7 +134,7 @@ TEST_F(FindTextTest, FindSimpleQuotationMarkText) {
 }
 
 TEST_F(FindTextTest, FindFancyQuotationMarkText) {
-  FindTextTestClient client;
+  FindTextTestClient client(/*expected_case_sensitive=*/true);
   std::unique_ptr<PDFiumEngine> engine =
       InitializeEngine(&client, FILE_PATH_LITERAL("bug_142627.pdf"));
   ASSERT_TRUE(engine);
@@ -147,6 +151,44 @@ TEST_F(FindTextTest, FindFancyQuotationMarkText) {
   // don't, using right apostrophe instead of a single quotation mark
   std::u16string term = {'d', 'o', 'n', 0x2019, 't'};
   engine->StartFind(base::UTF16ToUTF8(term), /*case_sensitive=*/true);
+}
+
+TEST_F(FindTextTest, SelectFindResultAndSwitchToTwoUpView) {
+  FindTextTestClient client(/*expected_case_sensitive=*/false);
+  std::unique_ptr<PDFiumEngine> engine =
+      InitializeEngine(&client, FILE_PATH_LITERAL("hello_world2.pdf"));
+  ASSERT_TRUE(engine);
+
+  ExpectInitialSearchResults(client, 4);
+  engine->StartFind("world", /*case_sensitive=*/false);
+
+  {
+    InSequence sequence;
+
+    EXPECT_CALL(client, NotifySelectedFindResultChanged(1));
+    EXPECT_CALL(client, NotifySelectedFindResultChanged(2));
+  }
+  ASSERT_TRUE(engine->SelectFindResult(/*forward=*/true));
+  ASSERT_TRUE(engine->SelectFindResult(/*forward=*/true));
+
+  {
+    InSequence sequence;
+
+    for (int i = 0; i < 5; ++i) {
+      EXPECT_CALL(client,
+                  NotifyNumberOfFindResultsChanged(i, /*final_result=*/false));
+    }
+    EXPECT_CALL(client,
+                NotifyNumberOfFindResultsChanged(4, /*final_result=*/true));
+  }
+  engine->SetTwoUpView(true);
+
+  {
+    InSequence sequence;
+
+    EXPECT_CALL(client, NotifySelectedFindResultChanged(2));
+  }
+  ASSERT_TRUE(engine->SelectFindResult(/*forward=*/true));
 }
 
 }  // namespace chrome_pdf

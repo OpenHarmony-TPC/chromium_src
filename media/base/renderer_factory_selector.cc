@@ -33,6 +33,10 @@ std::string GetRendererName(RendererType renderer_type) {
       return "CastStreamingRenderer";
     case RendererType::kContentEmbedderDefined:
       return "EmbedderDefined";
+#if BUILDFLAG(IS_OHOS)
+    case RendererType::kOHOSMediaPlayer:
+      return "OHOSMediaPlayerRenderer";
+#endif
     default:
       NOTREACHED();
       return "RendererType created through invalid static_cast";

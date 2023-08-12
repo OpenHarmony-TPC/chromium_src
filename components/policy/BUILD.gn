@@ -21,7 +21,7 @@ gen_policy_templates_local = false
 # enable these flags (but don't check that in!).
 gen_policy_templates_common = true
 gen_policy_templates_win = is_win
-gen_policy_templates_linux = is_linux || is_chromeos
+gen_policy_templates_linux = is_linux || is_chromeos || is_ohos
 gen_policy_templates_android = is_android
 gen_policy_templates_mac = is_mac
 gen_policy_templates_chromeos = is_chromeos_ash
@@ -141,6 +141,11 @@ action("policy_code_generate") {
         rebase_path(app_restrictions_path, root_build_dir),
     "--risk-tag-header=" + rebase_path(risk_tag_header_path, root_build_dir),
   ]
+
+  if (is_ohos) {
+    args -= [ "--target-platform=" + target_os ]
+    args += [ "--target-platform=linux" ]
+  }
 }
 
 action("full_runtime_code_generate") {
@@ -177,6 +182,11 @@ action("full_runtime_code_generate") {
         rebase_path(policy_common_definitions_full_runtime_proto_path,
                     root_build_dir),
   ]
+
+  if (is_ohos) {
+    args -= [ "--target-platform=" + target_os ]
+    args += [ "--target-platform=linux" ]
+  }
 }
 
 policy_templates_grd_file = "resources/policy_templates.grd"

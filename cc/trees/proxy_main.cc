@@ -457,6 +457,12 @@ void ProxyMain::SetVisible(bool visible) {
                                 base::Unretained(proxy_impl_.get()), visible));
 }
 
+void ProxyMain::SetPinchSmoothMode(bool isEnable) {
+  TRACE_EVENT1("cc", "ProxyMain::SetPinchSmoothMode", "isEnable", isEnable);
+  ImplThreadTaskRunner()->PostTask(
+      FROM_HERE, base::BindOnce(&ProxyImpl::SetPinchSmoothModeOnImpl,
+                                base::Unretained(proxy_impl_.get()), isEnable));
+}
 void ProxyMain::SetNeedsAnimate() {
   DCHECK(IsMainThread());
   if (SendCommitRequestToImplThreadIfNeeded(ANIMATE_PIPELINE_STAGE)) {

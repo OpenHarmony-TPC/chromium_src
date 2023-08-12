@@ -88,6 +88,7 @@
 #include "content/public/renderer/content_renderer_client.h"
 #include "content/public/utility/content_utility_client.h"
 #include "content/renderer/in_process_renderer_thread.h"
+#include "content/renderer/render_remote_proxy.h"
 #include "content/utility/in_process_utility_thread.h"
 #include "gin/v8_initializer.h"
 #include "media/base/media.h"
@@ -726,11 +727,19 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
 
 // On Android, the ipc_fd is passed through the Java service.
 #if !BUILDFLAG(IS_ANDROID)
-  g_fds->Set(kMojoIPCChannel,
-             kMojoIPCChannel + base::GlobalDescriptors::kBaseDescriptor);
-
-  g_fds->Set(kFieldTrialDescriptor,
-             kFieldTrialDescriptor + base::GlobalDescriptors::kBaseDescriptor);
+#if BUILDFLAG(IS_OHOS)
+  const base::CommandLine& cmd_line = *base::CommandLine::ForCurrentProcess();
+  bool is_for_test = cmd_line.HasSwitch(switches::kForTest);
+  if (is_for_test) {
+#endif  // BUILDFLAG(IS_OHOS)
+    g_fds->Set(kMojoIPCChannel,
+               kMojoIPCChannel + base::GlobalDescriptors::kBaseDescriptor);
+    g_fds->Set(
+        kFieldTrialDescriptor,
+        kFieldTrialDescriptor + base::GlobalDescriptors::kBaseDescriptor);
+#if BUILDFLAG(IS_OHOS)
+  }
+#endif  // BUILDFLAG(IS_OHOS)
 #endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OPENBSD)
@@ -972,6 +981,11 @@ int NO_STACK_PROTECTOR ContentMainRunnerImpl::Run() {
     if (process_type != switches::kZygoteProcess) {
       // Zygotes will run this at a later point in time when the command line
       // has been updated.
+#if BUILDFLAG(IS_OHOS)
+      if (!RunRenderRemoteProxy(*command_line)) {
+        return -1;
+      }
+#endif
       InitializeFieldTrialAndFeatureList();
       delegate_->PostFieldTrialInitialization();
 
@@ -1152,6 +1166,22 @@ int ContentMainRunnerImpl::RunBrowser(MainFunctionParams main_params,
   main_params.startup_data = mojo_ipc_support_->CreateBrowserStartupData();
   return RunBrowserProcessMain(std::move(main_params), delegate_);
 }
+
+#if BUILDFLAG(IS_OHOS)
+bool ContentMainRunnerImpl::RunRenderRemoteProxy(
+    const base::CommandLine& command_line) {
+  std::string process_type =
+      command_line.GetSwitchValueASCII(switches::kProcessType);
+  if (process_type != switches::kRendererProcess) {
+    return true;
+  }
+  RenderRemoteProxy::CreateAndRegist(command_line);
+  if (!RenderRemoteProxy::WaitForBrowserFd()) {
+    return false;
+  }
+  return true;
+}
+#endif
 
 void ContentMainRunnerImpl::Shutdown() {
   DCHECK(is_initialized_);

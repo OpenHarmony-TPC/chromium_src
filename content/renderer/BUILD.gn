@@ -19,6 +19,15 @@ if (is_component_build) {
   link_target_type = "static_library"
 }
 
+if (is_ohos) {
+  import("//build/config/ohos/config.gni")
+  config("ohos_system_libs") {
+    libs = [ "nweb_ohos_adapter.z" ]
+    include_dirs = ohos_src_includes
+    lib_dirs = ohos_libs_dir
+  }
+}
+
 target(link_target_type, "renderer") {
   # Only the public target should depend on this. All other targets (even
   # internal content ones) should depend on the public one.
@@ -200,7 +209,19 @@ target(link_target_type, "renderer") {
     ]
   }
 
-  if (is_linux || is_chromeos) {
+  if (is_ohos) {
+    configs += [ ":ohos_system_libs" ]
+    sources += [
+      "media/ohos/ohos_media_player_renderer_client.cc",
+      "media/ohos/ohos_media_player_renderer_client.h",
+      "media/ohos/ohos_media_player_renderer_client_factory.cc",
+      "media/ohos/ohos_media_player_renderer_client_factory.h",
+      "render_remote_proxy.cc",
+      "render_remote_proxy.h",
+    ]
+  }
+
+  if (is_linux || is_chromeos || is_ohos) {
     sources += [ "renderer_main_platform_delegate_linux.cc" ]
   }
 
@@ -541,7 +562,7 @@ target(link_target_type, "renderer") {
     ]
   }
 
-  if (is_linux || is_chromeos || is_android) {
+  if (is_linux || is_chromeos || is_android || is_ohos) {
     deps += [ "//sandbox:sandbox_buildflags" ]
   }
 

@@ -102,7 +102,9 @@ std::unique_ptr<MojoRenderer> MojoRendererFactory::CreateFlingingRenderer(
                                         video_renderer_sink,
                                         std::move(renderer_remote));
 }
+#endif  // BUILDFLAG(IS_ANDROID)
 
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 std::unique_ptr<MojoRenderer> MojoRendererFactory::CreateMediaPlayerRenderer(
     mojo::PendingReceiver<mojom::MediaPlayerRendererExtension>
         renderer_extension_receiver,
@@ -122,6 +124,6 @@ std::unique_ptr<MojoRenderer> MojoRendererFactory::CreateMediaPlayerRenderer(
                                         video_renderer_sink,
                                         std::move(renderer_remote));
 }
-#endif  // BUILDFLAG(IS_ANDROID)
+#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 
 }  // namespace media

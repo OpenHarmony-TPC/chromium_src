@@ -89,6 +89,8 @@ bool GpuMemoryBufferSupport::IsNativeGpuMemoryBufferConfigurationSupported(
   }
   NOTREACHED();
   return false;
+#elif BUILDFLAG(IS_OHOS)
+  return false;
 #elif BUILDFLAG(IS_ANDROID)
   if (!base::AndroidHardwareBufferCompat::IsSupportAvailable()) {
     return false;

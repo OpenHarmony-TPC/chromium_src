@@ -56,6 +56,7 @@
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "net/base/features.h"
@@ -506,6 +507,11 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::Create(
   CookiePrefix prefix = GetCookiePrefix(parsed_cookie.Name());
   bool is_cookie_prefix_valid = IsCookiePrefixValid(prefix, url, parsed_cookie);
   RecordCookiePrefixMetrics(prefix, is_cookie_prefix_valid);
+
+  if (parsed_cookie.Name() == "") {
+    is_cookie_prefix_valid = !HasHiddenPrefixName(parsed_cookie.Value());
+  }
+
   if (!is_cookie_prefix_valid) {
     DVLOG(net::cookie_util::kVlogSetCookies)
         << "Create() failed because the cookie violated prefix rules.";
@@ -1389,6 +1395,9 @@ bool CanonicalCookie::IsCanonicalForFromStorage() const {
       break;
   }
 
+  if (name_ == "" && HasHiddenPrefixName(value_))
+    return false;
+
   if (!IsCookieSamePartyValid(same_party_, secure_, same_site_))
     return false;
 
@@ -1505,6 +1514,40 @@ CookieEffectiveSameSite CanonicalCookie::GetEffectiveSameSite(
     case CookieSameSite::STRICT_MODE:
       return CookieEffectiveSameSite::STRICT_MODE;
   }
+}
+
+// static
+bool CanonicalCookie::HasHiddenPrefixName(
+    const base::StringPiece cookie_value) {
+  // Skip BWS as defined by HTTPSEM as SP or HTAB (0x20 or 0x9).
+  base::StringPiece value_without_BWS =
+      base::TrimString(cookie_value, " \t", base::TRIM_LEADING);
+
+  const base::StringPiece host_prefix = "__Host-";
+
+  // Compare the value to the host_prefix.
+  if (base::StartsWith(value_without_BWS, host_prefix)) {
+    // The prefix matches, now check if the value string contains a subsequent
+    // '='.
+    if (value_without_BWS.find_first_of('=', host_prefix.size()) !=
+        base::StringPiece::npos) {
+      // This value contains a hidden prefix name.
+      return true;
+    }
+    return false;
+  }
+
+  // Do a similar check for the secure prefix
+  const base::StringPiece secure_prefix = "__Secure-";
+
+  if (base::StartsWith(value_without_BWS, secure_prefix)) {
+    if (value_without_BWS.find_first_of('=', secure_prefix.size()) !=
+        base::StringPiece::npos) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool CanonicalCookie::IsRecentlyCreated(base::TimeDelta age_threshold) const {

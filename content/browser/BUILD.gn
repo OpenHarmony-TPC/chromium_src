@@ -2225,6 +2225,23 @@ source_set("browser") {
     ]
   }
 
+  if (is_ohos) {
+    import("//build/config/ohos/config.gni")
+    sources += [
+      "media/ohos/ohos_media_player_renderer.cc",
+      "media/ohos/ohos_media_player_renderer.h",
+      "media/session/audio_focus_delegate_ohos.cc",
+      "media/session/audio_focus_delegate_ohos.h",
+    ]
+
+    libs = [
+      "surface.z",
+      "media_client.z",
+    ]
+    include_dirs = ohos_src_includes
+    lib_dirs = ohos_libs_dir
+  }
+
   if (is_win) {
     sources += [
       "accessibility/accessibility_event_recorder_uia_win.cc",
@@ -2277,6 +2294,23 @@ source_set("browser") {
 
   if (use_ozone) {
     deps += [ "//ui/ozone:buildflags" ]
+  }
+
+  if (is_ohos) {
+    sources += [
+      "child_process_launcher_helper_linux.cc",
+      "memory/swap_metrics_driver_impl_linux.cc",
+      "memory/swap_metrics_driver_impl_linux.h",
+      "sandbox_host_linux.cc",
+      "sandbox_host_linux.h",
+      "sandbox_ipc_linux.cc",
+      "sandbox_ipc_linux.h",
+      "speech/tts_ohos.cc",
+      "zygote_host/zygote_host_impl_linux.cc",
+      "zygote_host/zygote_host_impl_linux.h",
+    ]
+
+    public_deps += [ "//components/services/font/public/mojom" ]
   }
 
   if (is_chromeos_ash) {
@@ -2891,6 +2925,10 @@ source_set("browser") {
       "webauth/virtual_fido_discovery_factory.cc",
       "webauth/virtual_fido_discovery_factory.h",
     ]
+
+    if (is_ohos) {
+      sources -= [ "media/session/audio_focus_delegate_default.cc" ]
+    }
 
     deps += [
       "//components/speech",

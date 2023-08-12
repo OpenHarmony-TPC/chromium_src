@@ -9,6 +9,18 @@ import "mojo/public/mojom/base/time.mojom";
 import "mojo/public/mojom/base/unguessable_token.mojom";
 import "ui/gfx/geometry/mojom/geometry.mojom";
 
+[EnableIf=is_ohos]
+struct OhosSurfaceBufferHandle {
+  uint32 buffer_size;
+  int32 fd_browser;
+  int32 coded_width;
+  int32 coded_height;
+  int32 visible_width;
+  int32 visible_height;
+  int32 format;
+  handle<platform> buffer_fd;
+};
+
 // Extension of the mojo::RendererClient communication layer for HLS and Android
 // software rendering fallback paths.
 // This allows the Browser side to call back into the Renderer side. Concretely,
@@ -19,6 +31,8 @@ interface MediaPlayerRendererClientExtension {
   // metadata changes.
   OnVideoSizeChange(gfx.mojom.Size size);
   OnDurationChange(mojo_base.mojom.TimeDelta duration);
+  [EnableIf=is_ohos]
+  OnFrameUpdate(OhosSurfaceBufferHandle ohosSurfaceBufferHandle);
 };
 
 // Extension of the mojo::Renderer communication layer for HLS and Android
@@ -33,6 +47,9 @@ interface MediaPlayerRendererExtension {
   // StreamTexture's set-up.
   InitiateScopedSurfaceRequest()
       => (mojo_base.mojom.UnguessableToken request_token);
+
+  [EnableIf=is_ohos]
+  FinishPaint(int32 fd);
 };
 
 // Extension of the mojo::RendererClient communication layer for media flinging,

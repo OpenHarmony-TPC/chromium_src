@@ -29,7 +29,7 @@ static_library("renderer_context_menu") {
     "//ui/base",
   ]
 
-  if (toolkit_views) {
+  if (toolkit_views || is_ohos) {
     sources += [
       "views/toolkit_delegate_views.cc",
       "views/toolkit_delegate_views.h",

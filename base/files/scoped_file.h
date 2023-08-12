@@ -26,7 +26,7 @@ struct BASE_EXPORT ScopedFDCloseTraits : public ScopedGenericOwnershipTracking {
   static void Release(const ScopedGeneric<int, ScopedFDCloseTraits>&, int);
 };
 #elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
-#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OHOS)
 // On ChromeOS and Linux we guard FD lifetime with a global table and hook into
 // libc close() to perform checks.
 struct BASE_EXPORT ScopedFDCloseTraits : public ScopedGenericOwnershipTracking {
@@ -37,7 +37,7 @@ struct BASE_EXPORT ScopedFDCloseTraits {
     return -1;
   }
   static void Free(int fd);
-#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OHOS)
   static void Acquire(const ScopedGeneric<int, ScopedFDCloseTraits>&, int);
   static void Release(const ScopedGeneric<int, ScopedFDCloseTraits>&, int);
 #endif
@@ -54,7 +54,7 @@ struct ScopedFILECloser {
 
 }  // namespace internal
 
-#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OHOS)
 namespace subtle {
 
 // Enables or disables enforcement of FD ownership as tracked by ScopedFD
@@ -104,7 +104,7 @@ typedef ScopedGeneric<int, internal::ScopedFDCloseTraits> ScopedFD;
 // Automatically closes |FILE*|s.
 typedef std::unique_ptr<FILE, internal::ScopedFILECloser> ScopedFILE;
 
-#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OHOS)
 // Queries the ownership status of an FD, i.e. whether it is currently owned by
 // a ScopedFD in the calling process.
 bool BASE_EXPORT IsFDOwned(int fd);

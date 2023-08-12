@@ -7,6 +7,7 @@
 #include <ostream>
 
 #include "base/notreached.h"
+#include "build/build_config.h"
 
 namespace net {
 
@@ -23,5 +24,21 @@ const char* GetHttpReasonPhrase(HttpStatusCode code) {
 
   return "";
 }
+
+#if BUILDFLAG(IS_OHOS)
+const char* GetHttpErrorPhrase(HttpStatusCode code) {
+  switch (code) {
+
+#define HTTP_STATUS(label, code, reason) case HTTP_ ## label: return # label;
+#include "net/http/http_status_code_list.h"
+#undef HTTP_STATUS
+
+    default:
+      NOTREACHED() << "unknown HTTP status code " << code;
+  }
+
+  return "";
+}
+#endif
 
 }  // namespace net

@@ -70,7 +70,9 @@ class MojoRendererFactory final : public RendererFactory {
           client_extenion_ptr,
       const scoped_refptr<base::SingleThreadTaskRunner>& media_task_runner,
       VideoRendererSink* video_renderer_sink);
+#endif  // defined (OS_ANDROID)
 
+#if defined(OS_ANDROID) || BUILDFLAG(IS_OHOS)
   std::unique_ptr<MojoRenderer> CreateMediaPlayerRenderer(
       mojo::PendingReceiver<mojom::MediaPlayerRendererExtension>
           renderer_extension_receiver,
@@ -78,7 +80,7 @@ class MojoRendererFactory final : public RendererFactory {
           client_extension_remote,
       const scoped_refptr<base::SingleThreadTaskRunner>& media_task_runner,
       VideoRendererSink* video_renderer_sink);
-#endif  // defined (OS_ANDROID)
+#endif  // defined(OS_ANDROID) || BUILDFLAG(IS_OHOS)
 
  private:
   // InterfaceFactory or InterfaceProvider used to create or connect to remote

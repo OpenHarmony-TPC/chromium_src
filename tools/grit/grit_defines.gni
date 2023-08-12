@@ -85,6 +85,13 @@ if (is_linux || is_chromeos_lacros) {
   ]
 }
 
+if (is_ohos) {
+  grit_defines += [
+    "-D",
+    "is_ohos",
+  ]
+}
+
 if (toolkit_views) {
   grit_defines += [
     "-D",

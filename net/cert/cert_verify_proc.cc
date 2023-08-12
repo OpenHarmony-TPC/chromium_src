@@ -55,6 +55,8 @@
 
 #if BUILDFLAG(IS_ANDROID)
 #include "net/cert/cert_verify_proc_android.h"
+#elif BUILDFLAG(IS_OHOS)
+#include "net/cert/cert_verify_proc_ohos.h"
 #elif BUILDFLAG(IS_IOS)
 #include "net/cert/cert_verify_proc_ios.h"
 #elif BUILDFLAG(IS_MAC)
@@ -476,6 +478,8 @@ scoped_refptr<CertVerifyProc> CertVerifyProc::CreateSystemVerifyProc(
     scoped_refptr<CertNetFetcher> cert_net_fetcher) {
 #if BUILDFLAG(IS_ANDROID)
   return new CertVerifyProcAndroid(std::move(cert_net_fetcher));
+#elif BUILDFLAG(IS_OHOS)
+  return new CertVerifyProcOHOS(std::move(cert_net_fetcher));
 #elif BUILDFLAG(IS_IOS)
   return new CertVerifyProcIOS();
 #elif BUILDFLAG(IS_MAC)
@@ -667,6 +671,7 @@ int CertVerifyProc::Verify(X509Certificate* cert,
 
   net_log.EndEvent(NetLogEventType::CERT_VERIFY_PROC,
                    [&] { return verify_result->NetLogParams(rv); });
+
   return rv;
 }
 

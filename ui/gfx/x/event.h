@@ -11,7 +11,11 @@
 #include "base/component_export.h"
 #include "base/memory/ref_counted_memory.h"
 #include "base/memory/scoped_refptr.h"
+#if !BUILDFLAG(IS_OHOS)
 #include "ui/gfx/x/xproto.h"
+#else
+#include "ui/gfx/x/generated_protos/xproto.h"
+#endif
 
 namespace x11 {
 

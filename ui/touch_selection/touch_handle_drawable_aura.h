@@ -43,6 +43,9 @@ class UI_TOUCH_SELECTION_EXPORT TouchHandleDrawableAura
   void SetOrigin(const gfx::PointF& position) override;
   void SetAlpha(float alpha) override;
   gfx::RectF GetVisibleBounds() const override;
+#if BUILDFLAG(IS_OHOS)
+  void SetEdge(const gfx::PointF& top, const gfx::PointF& bottom) override;
+#endif
   float GetDrawableHorizontalPaddingRatio() const override;
 
   raw_ptr<aura_extra::ImageWindowDelegate> window_delegate_;

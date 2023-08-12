@@ -9,7 +9,7 @@
 
 #if defined(__GNUC__)
 
-#if BUILDFLAG(IS_POSIX)
+#if BUILDFLAG(IS_POSIX) && !defined(__MUSL__)
 #include <sys/cdefs.h>  // for __THROW
 #endif
 

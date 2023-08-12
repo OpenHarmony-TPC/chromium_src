@@ -241,6 +241,22 @@ void RenderViewImpl::Destroy() {
 }
 
 // blink::WebViewClient ------------------------------------------------------
+#if BUILDFLAG(IS_OHOS)
+bool RenderViewImpl::GetNewWindowWebView(RenderFrameImpl* creator_frame, const GURL& target_url,
+    blink::WebNavigationPolicy policy, bool allow_popup)
+{
+  mojom::CreateNewWindowStatus status = mojom::CreateNewWindowStatus::kBlocked;
+  auto* frame_host = creator_frame->GetFrameHost();
+  if (!frame_host) {
+    return false;
+  }
+  if (!frame_host->GetCreateNewWindow(target_url, NavigationPolicyToDisposition(policy), allow_popup, &status) ||
+      status != mojom::CreateNewWindowStatus::kSuccess) {
+    return false;
+  }
+  return true;
+}
+#endif
 
 // TODO(csharrison): Migrate this method to WebLocalFrameClient /
 // RenderFrameImpl, as it is now serviced by a mojo interface scoped to the
@@ -265,6 +281,12 @@ WebView* RenderViewImpl::CreateView(
   params->allow_popup = false;
   if (GetContentClient()->renderer()->AllowPopup())
     params->allow_popup = true;
+#if BUILDFLAG(IS_OHOS)
+  if (GetNewWindowWebView(creator_frame, request.Url(), policy, params->allow_popup)) {
+    LOG(INFO) << "wait user create window.";
+    usleep(100000);
+  }
+#endif
 
   params->window_container_type = WindowFeaturesToContainerType(features);
 

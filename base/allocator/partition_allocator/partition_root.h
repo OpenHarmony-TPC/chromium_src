@@ -1350,6 +1350,9 @@ ALWAYS_INLINE void PartitionRoot<thread_safe>::DecommitSystemPagesForData(
     size_t length,
     PageAccessibilityDisposition accessibility_disposition) {
   internal::ScopedSyscallTimer timer{this};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+  ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
   DecommitSystemPages(address, length, accessibility_disposition);
   DecreaseCommittedPages(length);
 }
@@ -1361,6 +1364,9 @@ ALWAYS_INLINE void PartitionRoot<thread_safe>::RecommitSystemPagesForData(
     size_t length,
     PageAccessibilityDisposition accessibility_disposition) {
   internal::ScopedSyscallTimer timer{this};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+  ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
 
   bool ok = TryRecommitSystemPages(address, length, PageReadWriteTagged,
                                    accessibility_disposition);
@@ -1380,6 +1386,9 @@ ALWAYS_INLINE bool PartitionRoot<thread_safe>::TryRecommitSystemPagesForData(
     size_t length,
     PageAccessibilityDisposition accessibility_disposition) {
   internal::ScopedSyscallTimer timer{this};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+  ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
   bool ok = TryRecommitSystemPages(address, length, PageReadWriteTagged,
                                    accessibility_disposition);
 #if defined(PA_COMMIT_CHARGE_IS_LIMITED)

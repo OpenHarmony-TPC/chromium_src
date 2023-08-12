@@ -1,6 +1,8 @@
 # This file defines which warnings should be ignored while running clang's
 # control flow integrity sanitizer, as run by the cfi_flags build target.
 
+fun:*MemoryBarrier*
+
 [cfi-unrelated-cast|cfi-derived-cast]
 
 # e.g. RolloverProtectedTickClock

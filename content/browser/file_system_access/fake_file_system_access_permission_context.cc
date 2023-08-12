@@ -35,22 +35,24 @@ FakeFileSystemAccessPermissionContext::GetWritePermissionGrant(
       FileSystemAccessPermissionGrant::PermissionStatus::GRANTED, path);
 }
 
-void FakeFileSystemAccessPermissionContext::ConfirmSensitiveDirectoryAccess(
+void FakeFileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     const url::Origin& origin,
     PathType path_type,
     const base::FilePath& path,
     HandleType handle_type,
+    ui::SelectFileDialog::Type dialog_type,
     GlobalRenderFrameHostId frame_id,
-    base::OnceCallback<void(SensitiveDirectoryResult)> callback) {
-  std::move(callback).Run(SensitiveDirectoryResult::kAllowed);
+    base::OnceCallback<void(SensitiveEntryResult)> callback) {
+  std::move(callback).Run(SensitiveEntryResult::kAllowed);
 }
-
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 void FakeFileSystemAccessPermissionContext::PerformAfterWriteChecks(
     std::unique_ptr<FileSystemAccessWriteItem> item,
     GlobalRenderFrameHostId frame_id,
     base::OnceCallback<void(AfterWriteCheckResult)> callback) {
   std::move(callback).Run(AfterWriteCheckResult::kAllow);
 }
+#endif
 
 bool FakeFileSystemAccessPermissionContext::CanObtainReadPermission(
     const url::Origin& origin) {

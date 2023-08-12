@@ -42,7 +42,7 @@ static_library("javascript_dialogs") {
     deps += [ "//ui/aura" ]
   }
 
-  if (toolkit_views) {
+  if (toolkit_views || is_ohos) {
     sources += [
       "views/app_modal_dialog_view_views.cc",
       "views/app_modal_dialog_view_views.h",

@@ -127,6 +127,10 @@
 #include "media/mojo/clients/win/media_foundation_renderer_client_factory.h"
 #endif  // BUILDFLAG(IS_WIN)
 
+#if BUILDFLAG(IS_OHOS)
+#include "content/renderer/media/ohos/ohos_media_player_renderer_client_factory.h"
+#endif
+
 namespace {
 
 // This limit is much higher than it needs to be right now, because the logic
@@ -572,6 +576,14 @@ MediaFactory::CreateRendererFactorySelector(
     factory_selector->AddBaseFactory(RendererType::kContentEmbedderDefined,
                                      std::move(factory));
   }
+
+#if BUILDFLAG(IS_OHOS)
+  auto ohos_media_player_factory =
+      std::make_unique<OHOSMediaPlayerRendererClientFactory>(
+          CreateMojoRendererFactory());
+  factory_selector->AddFactory(RendererType::kOHOSMediaPlayer,
+                               std::move(ohos_media_player_factory));
+#endif
 
 #if BUILDFLAG(IS_ANDROID)
   DCHECK(interface_broker_);

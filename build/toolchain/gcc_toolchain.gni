@@ -27,7 +27,7 @@ declare_args() {
   enable_resource_allowlist_generation =
       is_official_build &&
       # Don't enable for Android-on-Chrome OS.
-      (target_os == "android" || target_os == "win")
+      (target_os == "android" || target_os == "win" || target_os == "ohos")
 
   # Use -MD instead of -MMD for compiler commands. This is useful for tracking
   # the comprehensive set of dependencies.
@@ -36,7 +36,7 @@ declare_args() {
 
 # When the arg is set via args.gn, it applies to all toolchains. In order to not
 # hit the assert in grit_rule.gni, explicitly disable for host toolchains.
-if ((is_linux || is_chromeos) && target_os == "android") {
+if ((is_linux || is_chromeos) && target_os == "android" || target_os == "ohos") {
   enable_resource_allowlist_generation = false
 }
 
@@ -49,7 +49,7 @@ if (enable_resource_allowlist_generation) {
       !is_component_build,
       "enable_resource_allowlist_generation=true requires is_component_build=false")
   assert(
-      target_os == "android" || target_os == "win",
+      target_os == "android" || target_os == "win" || target_os == "ohos",
       "enable_resource_allowlist_generation=true does not work for target_os=$target_os")
 }
 

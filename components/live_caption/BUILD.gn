@@ -28,7 +28,7 @@ if (!is_android) {
       "//ui/native_theme",
     ]
 
-    if (toolkit_views) {
+    if (toolkit_views || is_ohos) {
       sources += [
         "views/caption_bubble.cc",
         "views/caption_bubble.h",

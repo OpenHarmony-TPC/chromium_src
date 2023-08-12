@@ -37,8 +37,10 @@ class ShellMainDelegate : public ContentMainDelegate {
   absl::variant<int, MainFunctionParams> RunProcess(
       const std::string& process_type,
       MainFunctionParams main_function_params) override;
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OHOS)
   void ZygoteForked() override;
+  void ZygoteStarting(std::vector<std::unique_ptr<content::ZygoteForkDelegate>>*
+                          delegates) override;
 #endif
   void PreBrowserMain() override;
   void PostEarlyInitialization(bool is_running_tests) override;

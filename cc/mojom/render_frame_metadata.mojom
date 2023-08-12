@@ -1,3 +1,4 @@
+// Copyright (c) 2022 Huawei Device Co., Ltd.
 // Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -108,7 +109,7 @@ struct RenderFrameMetadata {
   [EnableIf=is_android]
   gfx.mojom.SizeF scrollable_viewport_size;
 
-  [EnableIf=is_android]
+  [EnableIf=is_android_or_ohos]
   gfx.mojom.SizeF root_layer_size;
 
   [EnableIf=is_android]

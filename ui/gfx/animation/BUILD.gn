@@ -45,7 +45,7 @@ component("animation") {
     sources += [ "animation_win.cc" ]
   }
 
-  if (is_linux || is_chromeos_lacros) {
+  if (is_linux || is_chromeos_lacros || is_ohos) {
     sources += [
       "animation_linux.cc",
       "animation_settings_provider_linux.cc",

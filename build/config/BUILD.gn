@@ -19,7 +19,7 @@ import("//build/config/pch.gni")
 import("//build/config/sanitizers/sanitizers.gni")
 import("//build/config/ui.gni")
 import("//build/toolchain/goma.gni")
-if (is_android) {
+if (is_android || is_ohos) {
   import("//build/config/android/abi.gni")
 }
 
@@ -104,6 +104,25 @@ config("feature_flags") {
 }
 
 # Debug/release ----------------------------------------------------------------
+
+#ifdef OHOS_NWEB_EX
+config("ohos_nweb_ex_def_main") {
+  if (defined(ohos_nweb_ex_config_name) && ohos_nweb_ex_config_name != "") {
+    defines = ohos_nweb_ex_defines_main
+  }
+}
+
+config("ohos_nweb_ex_def_blink") {
+  if (defined(ohos_nweb_ex_config_name) && ohos_nweb_ex_config_name != "") {
+    defines = ohos_nweb_ex_defines_blink_core
+  }
+}
+
+config("ohos_nweb_ex_def_other") {
+  if (defined(ohos_nweb_ex_config_name) && ohos_nweb_ex_config_name != "") {
+    defines = ohos_nweb_ex_defines_other
+  }
+}  #endif  // ohos_nweb_ex
 
 config("debug") {
   defines = [
@@ -200,7 +219,7 @@ config("default_libs") {
         "ole32.lib",
       ]
     }
-  } else if (is_android) {
+  } else if (is_android || is_ohos) {
     libs = [
       "dl",
       "m",
@@ -304,7 +323,8 @@ config("executable_config") {
       "//build/config/ios:ios_dynamic_flags",
       "//build/config/ios:ios_executable_flags",
     ]
-  } else if (is_linux || is_chromeos || is_android || current_os == "aix") {
+  } else if (is_linux || is_chromeos || is_android || current_os == "aix" ||
+             is_ohos) {
     configs += [ "//build/config/gcc:executable_config" ]
     if (is_chromecast) {
       configs += [ "//build/config/chromecast:executable_config" ]

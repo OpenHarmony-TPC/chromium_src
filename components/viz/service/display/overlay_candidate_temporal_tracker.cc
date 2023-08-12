@@ -5,6 +5,7 @@
 #include "components/viz/service/display/overlay_candidate_temporal_tracker.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "base/cxx17_backports.h"
 

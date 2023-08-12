@@ -18,7 +18,7 @@ mojom("mojom") {
   if (enable_plugins) {
     enabled_features += [ "enable_plugins" ]
   }
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || is_ohos) {
     enabled_features += [ "has_zygote" ]
   }
   if (enable_cros_libassistant) {

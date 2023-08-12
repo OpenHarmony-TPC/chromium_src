@@ -5,8 +5,8 @@
 #ifndef NET_HTTP_HTTP_STATUS_CODE_H_
 #define NET_HTTP_HTTP_STATUS_CODE_H_
 
+#include "build/build_config.h"
 #include "net/base/net_export.h"
-
 namespace net {
 
 // HTTP status codes.
@@ -27,6 +27,10 @@ enum HttpStatusCode {
 // returns an empty string (or crash in debug build) for status codes which are
 // not yet covered or just invalid. Please extend it when needed.
 NET_EXPORT const char* GetHttpReasonPhrase(HttpStatusCode code);
+
+#if BUILDFLAG(IS_OHOS)
+NET_EXPORT const char* GetHttpErrorPhrase(HttpStatusCode code);
+#endif
 
 }  // namespace net
 

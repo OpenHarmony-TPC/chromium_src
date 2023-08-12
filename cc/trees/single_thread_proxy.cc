@@ -123,6 +123,10 @@ void SingleThreadProxy::SetVisible(bool visible) {
     scheduler_on_impl_thread_->SetVisible(host_impl_->visible());
 }
 
+void SingleThreadProxy::SetPinchSmoothMode(bool isEnable) {
+  return;
+}
+
 void SingleThreadProxy::RequestNewLayerTreeFrameSink() {
   DCHECK(task_runner_provider_->IsMainThread());
   layer_tree_frame_sink_creation_callback_.Cancel();

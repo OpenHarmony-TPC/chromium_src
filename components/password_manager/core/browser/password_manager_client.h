@@ -348,7 +348,7 @@ class PasswordManagerClient {
   virtual safe_browsing::PasswordProtectionService*
   GetPasswordProtectionService() const = 0;
 
-#if defined(ON_FOCUS_PING_ENABLED)
+#if defined(ON_FOCUS_PING_ENABLED) && BUILDFLAG(FULL_SAFE_BROWSING)
   // Checks the safe browsing reputation of the webpage when the
   // user focuses on a username/password field. This is used for reporting
   // only, and won't trigger a warning.

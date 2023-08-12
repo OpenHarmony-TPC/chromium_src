@@ -46,6 +46,15 @@
 # When writing build files, to do something only for the host:
 #   if (current_toolchain == host_toolchain) { ...
 
+#ifdef OHOS_NWEB_EX
+declare_args() {
+  ohos_nweb_ex_config_name = ""
+}
+
+if (ohos_nweb_ex_config_name != "") {
+  import("$ohos_nweb_ex_config_name")
+}  #endif  // OHOS_NWEB_EX
+
 if (target_os == "") {
   target_os = host_os
 }
@@ -154,6 +163,10 @@ declare_args() {
 }
 
 declare_args() {
+  use_musl = false
+}
+
+declare_args() {
   # Debug build. Enabling official builds automatically sets is_debug to false.
   is_debug = !is_official_build
 }
@@ -229,6 +242,8 @@ if (target_os == "android") {
   assert(host_os == "linux" || host_os == "mac",
          "Android builds are only supported on Linux and Mac hosts.")
   _default_toolchain = "//build/toolchain/android:android_clang_$target_cpu"
+} else if (target_os == "ohos") {
+  _default_toolchain = "//build/toolchain/ohos:ohos_clang_$target_cpu"
 } else if (target_os == "chromeos" || target_os == "linux") {
   # See comments in build/toolchain/cros/BUILD.gn about board compiles.
   if (is_clang) {
@@ -300,6 +315,7 @@ is_linux = current_os == "linux"
 is_mac = current_os == "mac"
 is_nacl = current_os == "nacl"
 is_win = current_os == "win" || current_os == "winuwp"
+is_ohos = current_os == "ohos"
 
 is_apple = is_ios || is_mac
 is_posix = !is_win && !is_fuchsia
@@ -370,7 +386,7 @@ if (is_fuchsia) {
   default_compiler_configs += [ "//build/config/gcc:symbol_visibility_hidden" ]
 }
 
-if (is_android) {
+if (is_android || is_ohos) {
   default_compiler_configs +=
       [ "//build/config/android:default_orderfile_instrumentation" ]
 }
@@ -388,6 +404,11 @@ if (is_debug) {
 } else {
   default_compiler_configs += [ "//build/config:release" ]
 }
+
+#ifdef OHOS_NWEB_EX
+if (ohos_nweb_ex_config_name != "") {
+  default_compiler_configs += [ "//build/config:ohos_nweb_ex_def_main" ]
+} #endif //OHOS_NWEB_EX
 
 # Static libraries and source sets use only the compiler ones.
 set_defaults("static_library") {
@@ -515,7 +536,7 @@ foreach(_target_type,
       # On Android, write shared library output file to metadata. We will use
       # this information to, for instance, collect all shared libraries that
       # should be packaged into an APK.
-      if (!defined(invoker.metadata) && is_android &&
+      if (!defined(invoker.metadata) && (is_android || is_ohos) &&
           (_target_type == "shared_library" ||
            _target_type == "loadable_module")) {
         _output_name = _target_name

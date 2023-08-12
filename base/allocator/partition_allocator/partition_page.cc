@@ -79,6 +79,9 @@ ALWAYS_INLINE void PartitionDirectUnmap(
   // while releasing the address space.
   ScopedUnlockGuard unlock{root->lock_};
   ScopedSyscallTimer timer{root};
+#if BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_LINUX)
+  ALLOW_UNUSED_LOCAL(timer);  // Supress compiler warning: unused-variable
+#endif
   UnmapNow(reservation_start, reservation_size, root->ChoosePool());
 }
 

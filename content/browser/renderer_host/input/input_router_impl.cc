@@ -140,7 +140,12 @@ void InputRouterImpl::SendGestureEvent(
   input_stream_validator_.Validate(original_gesture_event.event);
 
   GestureEventWithLatencyInfo gesture_event(original_gesture_event);
-
+#if BUILDFLAG(IS_OHOS)
+  if (gesture_event.event.GetType() ==
+      WebInputEvent::Type::kGestureFlingStart) {
+    client_->GetWidgetInputHandler()->StartFling();
+  }
+#endif
   if (gesture_event_queue_.PassToFlingController(gesture_event)) {
     TRACE_EVENT_INSTANT0("input", "FilteredForFling", TRACE_EVENT_SCOPE_THREAD);
     disposition_handler_->OnGestureEventAck(

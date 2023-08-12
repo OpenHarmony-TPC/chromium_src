@@ -48,7 +48,7 @@ if (is_ios) {
 test("components_unittests") {
   use_xvfb = use_xvfb_in_this_config
 
-  if (is_android || is_linux || is_chromeos || is_mac || is_win || is_fuchsia) {
+  if (is_android || is_linux || is_chromeos || is_mac || is_win || is_fuchsia || is_ohos) {
     data = [ "test/data/" ]
   }
 
@@ -451,7 +451,7 @@ test("components_unittests") {
   }
 
   # Desktop - only deps.
-  if (!is_android && !is_ios) {
+  if (!is_android && !is_ios && !is_ohos) {
     deps += [
       # See comment in components / guest_view / browser / BUILD.gn for why
       # guest_view is currently non - mobile.

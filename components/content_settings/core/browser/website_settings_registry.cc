@@ -92,6 +92,8 @@ const WebsiteSettingsInfo* WebsiteSettingsRegistry::Register(
 #elif BUILDFLAG(IS_FUCHSIA)
   if (!(platform & PLATFORM_FUCHSIA))
     return nullptr;
+#elif BUILDFLAG(IS_OHOS)
+  sync_status = WebsiteSettingsInfo::UNSYNCABLE;
 #else
 #error "Unsupported platform"
 #endif

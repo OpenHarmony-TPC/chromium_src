@@ -12,7 +12,7 @@ import("//testing/test.gni")
 import("//ui/base/ui_features.gni")
 import("//ui/views/features.gni")
 
-assert(toolkit_views)
+assert(toolkit_views || is_ohos)
 
 config("flags") {
   defines = [ "TOOLKIT_VIEWS=1" ]
@@ -555,12 +555,12 @@ component("views") {
     deps += [ "//ui/base/ime/ash" ]
   }
 
-  if (is_linux || is_chromeos || is_fuchsia) {
+  if (is_linux || is_chromeos || is_fuchsia || is_ohos) {
     public += [ "color_chooser/color_chooser_view.h" ]
     sources += [ "color_chooser/color_chooser_view.cc" ]
   }
 
-  if (is_linux || is_chromeos_lacros) {
+  if (is_linux || is_chromeos_lacros || is_ohos) {
     sources -= [ "window/window_button_order_provider.cc" ]
     public_deps += [ "//ui/base/cursor:theme_manager" ]
     deps += [
@@ -826,7 +826,7 @@ component("views") {
         ]
         deps += [ "//ui/base:hit_test" ]
       }
-      if (is_linux || is_chromeos || is_fuchsia) {
+      if (is_linux || is_chromeos || is_fuchsia || is_ohos) {
         public += [
           "widget/desktop_aura/desktop_window_tree_host_platform.h",
           "widget/desktop_aura/window_move_client_platform.h",

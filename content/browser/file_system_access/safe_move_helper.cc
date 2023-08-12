@@ -135,9 +135,13 @@ SafeMoveHelper::SafeMoveHelper(
       source_url_(source_url),
       dest_url_(dest_url),
       options_(options),
-      quarantine_connection_callback_(
-          std::move(quarantine_connection_callback)),
-      has_transient_user_activation_(has_transient_user_activation) {}
+      quarantine_connection_callback_(std::move(quarantine_connection_callback))
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+      ,
+      has_transient_user_activation_(has_transient_user_activation)
+#endif
+{
+}
 
 SafeMoveHelper::~SafeMoveHelper() = default;
 
@@ -150,7 +154,7 @@ void SafeMoveHelper::Start(SafeMoveHelperCallback callback) {
         blink::mojom::FileSystemAccessStatus::kOperationAborted));
     return;
   }
-
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   if (!RequireSecurityChecks() || !manager_->permission_context()) {
     DidAfterWriteCheck(
         FileSystemAccessPermissionContext::AfterWriteCheckResult::kAllow);
@@ -159,6 +163,10 @@ void SafeMoveHelper::Start(SafeMoveHelperCallback callback) {
 
   ComputeHashForSourceFile(base::BindOnce(&SafeMoveHelper::DoAfterWriteCheck,
                                           weak_factory_.GetWeakPtr()));
+#else
+  DidAfterWriteCheck(
+      FileSystemAccessPermissionContext::AfterWriteCheckResult::kAllow);
+#endif
 }
 
 void SafeMoveHelper::ComputeHashForSourceFile(HashCallback callback) {
@@ -178,6 +186,7 @@ void SafeMoveHelper::ComputeHashForSourceFile(HashCallback callback) {
                      std::move(wrapped_callback), source_url()));
 }
 
+#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 void SafeMoveHelper::DoAfterWriteCheck(base::File::Error hash_result,
                                        const std::string& hash,
                                        int64_t size) {
@@ -209,6 +218,7 @@ void SafeMoveHelper::DoAfterWriteCheck(base::File::Error hash_result,
       base::BindOnce(&SafeMoveHelper::DidAfterWriteCheck,
                      weak_factory_.GetWeakPtr()));
 }
+#endif
 
 void SafeMoveHelper::DidAfterWriteCheck(
     FileSystemAccessPermissionContext::AfterWriteCheckResult result) {

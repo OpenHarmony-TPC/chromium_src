@@ -147,7 +147,8 @@ MessagePumpForUI* CurrentUIThread::GetMessagePumpForUI() const {
   return static_cast<MessagePumpForUI*>(current_->GetMessagePump());
 }
 
-#if defined(USE_OZONE) && !BUILDFLAG(IS_FUCHSIA) && !BUILDFLAG(IS_WIN)
+#if defined(USE_OZONE) && !BUILDFLAG(IS_FUCHSIA) && !BUILDFLAG(IS_WIN) && \
+    !BUILDFLAG(IS_OHOS)
 bool CurrentUIThread::WatchFileDescriptor(
     int fd,
     bool persistent,

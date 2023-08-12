@@ -32,7 +32,7 @@ BASE_EXPORT void TerminateBecauseOutOfMemory(size_t size);
 BASE_EXPORT extern size_t g_oom_size;
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID) || \
-    BUILDFLAG(IS_AIX)
+    BUILDFLAG(IS_AIX) || BUILDFLAG(IS_OHOS)
 // The maximum allowed value for the OOM score.
 const int kMaxOomScore = 1000;
 

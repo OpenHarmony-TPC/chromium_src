@@ -100,4 +100,8 @@ void NullVideoSink::PaintSingleFrame(scoped_refptr<VideoFrame> frame,
     new_frame_cb_.Run(std::move(frame));
 }
 
+#if BUILDFLAG(IS_OHOS)
+void NullVideoSink::SetFinishPaintCallback(base::RepeatingClosure callback) {}
+#endif
+
 }  // namespace media

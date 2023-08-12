@@ -17,7 +17,7 @@ scoped_refptr<gl::GLSurface> ImageTransportSurface::CreateNativeSurface(
   DCHECK_NE(surface_handle, kNullSurfaceHandle);
   scoped_refptr<gl::GLSurface> surface;
   bool override_vsync_for_multi_window_swap = false;
-#if defined(USE_OZONE)
+#if defined(USE_OZONE) && !BUILDFLAG(IS_OHOS)
   surface = gl::init::CreateSurfacelessViewGLSurface(surface_handle);
 #endif
   if (!surface) {

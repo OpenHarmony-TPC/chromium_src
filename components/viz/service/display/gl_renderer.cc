@@ -513,11 +513,17 @@ void GLRenderer::ReleaseRenderPassTextures() {
 void GLRenderer::DiscardPixels() {
   if (!use_discard_framebuffer_)
     return;
+#if BUILDFLAG(IS_OHOS)
+  // use GL_COLOR_ATTACHMENT0_EXT directly to avoid INVALID_ENUM ERROR in
+  // GLES2DecoderImpl::InvalidateFramebufferImpl temporarily
+  GLenum attachments[] = {static_cast<GLenum>(GL_COLOR_ATTACHMENT0_EXT)};
+#else
   bool using_default_framebuffer =
       !current_framebuffer_texture_ &&
       output_surface_->capabilities().uses_default_gl_framebuffer;
   GLenum attachments[] = {static_cast<GLenum>(
       using_default_framebuffer ? GL_COLOR_EXT : GL_COLOR_ATTACHMENT0_EXT)};
+#endif
   gl_->DiscardFramebufferEXT(GL_FRAMEBUFFER, base::size(attachments),
                              attachments);
 }

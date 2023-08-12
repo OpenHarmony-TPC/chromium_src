@@ -40,7 +40,7 @@ interface InterfaceFactory {
   CreateCastRenderer(mojo_base.mojom.UnguessableToken overlay_plane_id,
                      pending_receiver<Renderer> renderer);
 
-  [EnableIf=is_android]
+  [EnableIf=is_android_or_ohos]
   // Creates a MediaPlayerRenderer (MediaPlayerRendererClientFactory).
   // - |renderer_extension| is bound in MediaPlayerRenderer, and receives calls
   //   from MediaPlayerRendererClient.

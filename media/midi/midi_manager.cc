@@ -186,7 +186,7 @@ void MidiManager::EndAllSessions() {
 }
 
 void MidiManager::StartInitialization() {
-  CompleteInitialization(Result::NOT_SUPPORTED);
+  CompleteInitialization(Result::OK);
 }
 
 void MidiManager::CompleteInitialization(Result result) {

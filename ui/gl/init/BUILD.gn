@@ -38,6 +38,13 @@ component("init") {
     deps += [ "//third_party/angle:libEGL_static" ]
   }
 
+  if (is_ohos) {
+    sources += [
+      "gl_factory_ohos.cc",
+      "gl_factory_ohos.h",
+    ]
+  }
+
   if (is_android) {
     sources += [
       "gl_factory_android.cc",

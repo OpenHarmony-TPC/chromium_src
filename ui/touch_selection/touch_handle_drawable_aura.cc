@@ -149,6 +149,11 @@ gfx::RectF TouchHandleDrawableAura::GetVisibleBounds() const {
   return bounds;
 }
 
+#if BUILDFLAG(IS_OHOS)
+void TouchHandleDrawableAura::SetEdge(
+    const gfx::PointF& top, const gfx::PointF& bottom) {}
+#endif
+
 float TouchHandleDrawableAura::GetDrawableHorizontalPaddingRatio() const {
   // Aura does not have any transparent padding for its handle drawable.
   return 0.0f;

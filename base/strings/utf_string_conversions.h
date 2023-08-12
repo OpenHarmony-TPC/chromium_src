@@ -74,11 +74,13 @@ std::u16string WideToUTF16(const wchar_t (&str)[N]) {
   return std::u16string();
 }
 
+#if !BUILDFLAG(IS_OHOS)
 template <size_t N>
 std::u16string UTF8ToUTF16(const char (&str)[N]) {
   static_assert(N == 0, "Error: Use the u\"...\" prefix instead.");
   return std::u16string();
 }
+#endif
 
 template <size_t N>
 std::u16string ASCIIToUTF16(const char (&str)[N]) {

@@ -220,6 +220,9 @@ bool MallocDumpProvider::OnMemoryDump(const MemoryDumpArgs& args,
                      &allocated_objects_count);
 #elif BUILDFLAG(IS_FUCHSIA)
 // TODO(fuchsia): Port, see https://crbug.com/706592.
+#elif defined(__MUSL__)
+// TODO(OS_OHOS for musl):
+// same as https://crbug.com/706592, no mallinfo for musl
 #else
 #if defined(__GLIBC__) && defined(__GLIBC_PREREQ)
 #if __GLIBC_PREREQ(2, 33)

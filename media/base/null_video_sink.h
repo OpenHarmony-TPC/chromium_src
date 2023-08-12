@@ -41,6 +41,9 @@ class MEDIA_EXPORT NullVideoSink : public VideoRendererSink {
   void Stop() override;
   void PaintSingleFrame(scoped_refptr<VideoFrame> frame,
                         bool repaint_duplicate_frame) override;
+#if BUILDFLAG(IS_OHOS)
+  void SetFinishPaintCallback(base::RepeatingClosure callback) override;
+#endif
 
   void set_tick_clock_for_testing(const base::TickClock* tick_clock) {
     tick_clock_ = tick_clock;

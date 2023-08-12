@@ -19,6 +19,7 @@
 #include "base/files/dir_reader_posix.h"
 #include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
+#include "base/logging.h"
 #include "base/strings/safe_sprintf.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
@@ -99,6 +100,8 @@ char g_linux_distro[kDistroSize] =
     "CrOS";
 #elif BUILDFLAG(IS_ANDROID)
     "Android";
+#elif BUILDFLAG(IS_OHOS)
+    "OHOS";
 #else
     "Unknown";
 #endif

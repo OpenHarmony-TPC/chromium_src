@@ -152,6 +152,20 @@ class UI_TOUCH_SELECTION_EXPORT TouchSelectionController
   const gfx::SelectionBound& start() const { return start_; }
   const gfx::SelectionBound& end() const { return end_; }
 
+#if BUILDFLAG(IS_OHOS)
+  const std::unique_ptr<TouchHandle>& GetInsertHandle() {
+    return insertion_handle_;
+  }
+
+  const std::unique_ptr<TouchHandle>& GetStartSelectionHandle() {
+    return start_selection_handle_;
+  }
+
+  const std::unique_ptr<TouchHandle>& GetEndSelectionHandle() {
+    return end_selection_handle_;
+  }
+#endif
+
   ActiveStatus active_status() const { return active_status_; }
 
  private:
