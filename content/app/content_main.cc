@@ -225,16 +225,10 @@ ContentMainParams::~ContentMainParams() = default;
 ContentMainParams::ContentMainParams(ContentMainParams&&) = default;
 ContentMainParams& ContentMainParams::operator=(ContentMainParams&&) = default;
 
-// This function must be marked with NO_STACK_PROTECTOR or it may crash on
-// return, see the --change-stack-guard-on-fork command line flag.
-int NO_STACK_PROTECTOR
-RunContentProcess(ContentMainParams params,
-                  ContentMainRunner* content_main_runner) {
+int ContentMainInitialize(ContentMainParams params,
+                          ContentMainRunner* content_main_runner) {
   int exit_code = -1;
   base::debug::GlobalActivityTracker* tracker = nullptr;
-#if BUILDFLAG(IS_MAC)
-  std::unique_ptr<base::mac::ScopedNSAutoreleasePool> autorelease_pool;
-#endif
 
   // A flag to indicate whether Main() has been called before. On Android, we
   // may re-run Main() without restarting the browser process. This flag
@@ -318,12 +312,6 @@ RunContentProcess(ContentMainParams params,
 #endif
 
 #if BUILDFLAG(IS_MAC)
-    // We need this pool for all the objects created before we get to the event
-    // loop, but we don't want to leave them hanging around until the app quits.
-    // Each "main" needs to flush this pool right before it goes into its main
-    // event loop to get rid of the cruft.
-    autorelease_pool = std::make_unique<base::mac::ScopedNSAutoreleasePool>();
-    params.autorelease_pool = autorelease_pool.get();
     InitializeMac();
 #endif
 
@@ -396,8 +384,18 @@ RunContentProcess(ContentMainParams params,
 
   if (IsSubprocess())
     CommonSubprocessInit();
-  exit_code = content_main_runner->Run();
 
+  return exit_code;
+}
+
+// This function must be marked with NO_STACK_PROTECTOR or it may crash on
+// return, see the --change-stack-guard-on-fork command line flag.
+int NO_STACK_PROTECTOR
+ContentMainRun(ContentMainRunner* content_main_runner) {
+  int exit_code = content_main_runner->Run();
+
+  base::debug::GlobalActivityTracker* tracker =
+      base::debug::GlobalActivityTracker::Get();
   if (tracker) {
     if (exit_code == 0) {
       tracker->SetProcessPhaseIfEnabled(
@@ -409,14 +407,41 @@ RunContentProcess(ContentMainParams params,
     }
   }
 
-#if BUILDFLAG(IS_MAC)
-  autorelease_pool.reset();
-#endif
+  return exit_code;
+}
 
+void ContentMainShutdown(ContentMainRunner* content_main_runner) {
 #if !BUILDFLAG(IS_ANDROID)
   content_main_runner->Shutdown();
 #endif
+}
 
+// This function must be marked with NO_STACK_PROTECTOR or it may crash on
+// return, see the --change-stack-guard-on-fork command line flag.
+int NO_STACK_PROTECTOR
+RunContentProcess(ContentMainParams params,
+                  ContentMainRunner* content_main_runner) {
+#if BUILDFLAG(IS_MAC)
+  // We need this pool for all the objects created before we get to the event
+  // loop, but we don't want to leave them hanging around until the app quits.
+  // Each "main" needs to flush this pool right before it goes into its main
+  // event loop to get rid of the cruft.
+  std::unique_ptr<base::mac::ScopedNSAutoreleasePool> autorelease_pool =
+      std::make_unique<base::mac::ScopedNSAutoreleasePool>();
+  params.autorelease_pool = autorelease_pool.get();
+#endif
+
+  int exit_code = ContentMainInitialize(std::move(params), content_main_runner);
+  if (exit_code >= 0)
+    return exit_code;
+  exit_code = ContentMainRun(content_main_runner);
+
+#if BUILDFLAG(IS_MAC)
+  params.autorelease_pool = nullptr;
+  autorelease_pool.reset();
+#endif
+
+  ContentMainShutdown(content_main_runner);
   return exit_code;
 }
 

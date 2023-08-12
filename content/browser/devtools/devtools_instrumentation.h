@@ -97,7 +97,7 @@ bool ApplyUserAgentMetadataOverrides(
     FrameTreeNode* frame_tree_node,
     absl::optional<blink::UserAgentMetadata>* override_out);
 
-bool WillCreateURLLoaderFactory(
+CONTENT_EXPORT bool WillCreateURLLoaderFactory(
     RenderFrameHostImpl* rfh,
     bool is_navigation,
     bool is_download,

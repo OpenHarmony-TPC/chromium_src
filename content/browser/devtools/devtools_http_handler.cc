@@ -576,7 +576,7 @@ void DevToolsHttpHandler::OnJsonRequest(
     version.SetString("Protocol-Version",
                       DevToolsAgentHost::GetProtocolVersion());
     version.SetString("WebKit-Version", GetWebKitVersion());
-    version.SetString("Browser", GetContentClient()->browser()->GetProduct());
+    version.SetString("Browser", GetContentClient()->browser()->GetChromeProduct());
     version.SetString("User-Agent",
                       GetContentClient()->browser()->GetUserAgent());
     version.SetString("V8-Version", V8_VERSION_STRING);

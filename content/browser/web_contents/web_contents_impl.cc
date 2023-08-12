@@ -2992,6 +2992,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
       site_instance.get(), params.renderer_initiated_creation,
       params.main_frame_name, GetOpener(), primary_main_frame_policy);
 
+  if (params.view && params.delegate_view) {
+    view_.reset(params.view);
+    render_view_host_delegate_view_ = params.delegate_view;
+  }
+
+  if (!view_) {
   WebContentsViewDelegate* delegate =
       GetContentClient()->browser()->GetWebContentsViewDelegate(this);
 
@@ -3001,6 +3007,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
   } else {
     view_.reset(CreateWebContentsView(this, delegate,
                                       &render_view_host_delegate_view_));
+  }
   }
   CHECK(render_view_host_delegate_view_);
   CHECK(view_.get());
@@ -3865,6 +3872,15 @@ FrameTree* WebContentsImpl::CreateNewWindow(
   // the opener's process will not given the routing IDs for the new
   // objects.
   create_params.renderer_initiated_creation = !is_new_browsing_instance;
+
+  if (delegate_) {
+    delegate_->GetCustomWebContentsView(this,
+                                        params.target_url,
+                                        render_process_id,
+                                        opener->GetRoutingID(),
+                                        &create_params.view,
+                                        &create_params.delegate_view);
+  }
 
   std::unique_ptr<WebContentsImpl> new_contents;
   if (!is_guest) {
@@ -7660,6 +7676,9 @@ void WebContentsImpl::SetFocusedFrame(FrameTreeNode* node,
     // frames).
     SetFocusedFrameTree(node->frame_tree());
   }
+
+  observers_.NotifyObservers(&WebContentsObserver::OnFrameFocused,
+                             node->current_frame_host());
 }
 
 void WebContentsImpl::DidCallFocus() {

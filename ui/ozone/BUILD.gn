@@ -369,6 +369,8 @@ action("generate_test_support_constructor_list") {
   ]
 
   deps = [ ":generate_ozone_platform_list" ]
+
+  visibility += [ "//cef:*" ]
 }
 
 test("ozone_unittests") {

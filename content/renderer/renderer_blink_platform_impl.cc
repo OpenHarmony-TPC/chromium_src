@@ -1082,6 +1082,15 @@ SkBitmap* RendererBlinkPlatformImpl::GetSadPageBitmap() {
 
 //------------------------------------------------------------------------------
 
+void RendererBlinkPlatformImpl::DevToolsAgentAttached() {
+  GetContentClient()->renderer()->DevToolsAgentAttached();
+}
+void RendererBlinkPlatformImpl::DevToolsAgentDetached() {
+  GetContentClient()->renderer()->DevToolsAgentDetached();
+}
+
+//------------------------------------------------------------------------------
+
 mojo::SharedRemote<blink::mojom::CodeCacheHost>
 RendererBlinkPlatformImpl::GetCodeCacheHost() {
   base::AutoLock lock(code_cache_host_lock_);

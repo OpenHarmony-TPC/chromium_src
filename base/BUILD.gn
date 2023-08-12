@@ -36,6 +36,7 @@ import("//build/nocompile.gni")
 import("//build/rust/mixed_component.gni")
 import("//build/timestamp.gni")
 import("//build_overrides/build.gni")
+import("//cef/libcef/features/features.gni")
 import("//testing/libfuzzer/fuzzer_test.gni")
 import("//testing/test.gni")
 import("//third_party/icu/config.gni")
@@ -1867,7 +1868,11 @@ mixed_component("base") {
     "hash/md5_constexpr_internal.h",
     "hash/sha1.h",
   ]
-  if (is_nacl) {
+  deps += [ "//cef/libcef/features" ]
+  if (enable_cef) {
+    configs += [ "//cef/libcef/features:config" ]
+  }
+  if (is_nacl || is_cef_sandbox_build) {
     sources += [
       "hash/md5_nacl.cc",
       "hash/md5_nacl.h",
@@ -2114,6 +2119,12 @@ mixed_component("base") {
 
     if (com_init_check_hook_disabled) {
       defines += [ "COM_INIT_CHECK_HOOK_DISABLED" ]
+    }
+
+    if (!use_custom_libcxx) {
+      # Enable the VS 2015 Update 2 fix when building with the MSVC standard
+      # library.
+      defines += [ "_ENABLE_ATOMIC_ALIGNMENT_FIX" ]
     }
 
     libs += [

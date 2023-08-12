@@ -337,11 +337,10 @@ void CommandLine::AppendSwitchPath(StringPiece switch_string,
 
 void CommandLine::AppendSwitchNative(StringPiece switch_string,
                                      CommandLine::StringPieceType value) {
-#if BUILDFLAG(IS_WIN)
   const std::string switch_key = ToLowerASCII(switch_string);
+#if BUILDFLAG(IS_WIN)
   StringType combined_switch_string(UTF8ToWide(switch_key));
 #elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
-  StringPiece switch_key = switch_string;
   StringType combined_switch_string(switch_key);
 #endif
   size_t prefix_length = GetSwitchPrefixLength(combined_switch_string);

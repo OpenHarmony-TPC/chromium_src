@@ -665,6 +665,14 @@ NavigationURLLoaderImpl::PrepareForNonInterceptedRequest(
           resource_request_->has_user_gesture, initiating_origin,
           initiator_document_.AsRenderFrameHostIfValid(), &loader_factory);
 
+      if (!handled) {
+        handled = GetContentClient()->browser()->HandleExternalProtocol(
+            web_contents_getter_, frame_tree_node_id_,
+            navigation_ui_data_.get(), request_info_->sandbox_flags,
+            *resource_request_, initiating_origin,
+            initiator_document_.AsRenderFrameHostIfValid(), &loader_factory);
+      }
+
       if (loader_factory) {
         factory = base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
             std::move(loader_factory));
