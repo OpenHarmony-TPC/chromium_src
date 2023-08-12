@@ -15,8 +15,6 @@
 
 #include "ohos_nweb/src/cef_delegate/nweb_preference_delegate.h"
 
-#include <accesstoken_kit.h>
-#include <ipc_skeleton.h>
 #include "base/logging.h"
 #include "cef/include/cef_command_line.h"
 #include "cef/include/internal/cef_string.h"
@@ -29,6 +27,7 @@
 #include "base/feature_list.h"
 #include "content/public/common/content_switches.h"
 #include "net/base/load_flags.h"
+#include "ohos_adapter_helper.h"
 #include "ohos_nweb/src/cef_delegate/nweb_application.h"
 
 namespace OHOS::NWeb {
@@ -51,13 +50,10 @@ int ConvertCacheMode(NWebPreference::CacheModeFlag flag) {
 
 const std::string ACCESS_LOCATION = "ohos.permission.INTERNET";
 NWebPreferenceDelegate::NWebPreferenceDelegate() {
-  uint32_t tokenId = OHOS::IPCSkeleton::GetCallingTokenID();
-  has_internet_permission_ =
-      OHOS::Security::AccessToken::AccessTokenKit::VerifyAccessToken(
-          tokenId, ACCESS_LOCATION) ==
-      OHOS::Security::AccessToken::PERMISSION_GRANTED;
+  has_internet_permission_ = OhosAdapterHelper::GetInstance()
+                                 .GetAccessTokenAdapterInstance()
+                                 .VerifyAccessToken(ACCESS_LOCATION);
   is_network_blocked_ = !has_internet_permission_;
-
   SetBrowserSettingsToNetHelpers();
 }
 
@@ -137,7 +133,7 @@ void NWebPreferenceDelegate::ComputeBrowserSettings(
   //    EnableRawFileAccessFromFileURLs() ? STATE_ENABLED : STATE_DISABLED;
   browser_settings.force_dark_mode_enabled =
       ForceDarkModeEnabled() ? STATE_ENABLED : STATE_DISABLED;
-  browser_settings.dark_prefer_color_scheme_enabled = 
+  browser_settings.dark_prefer_color_scheme_enabled =
       DarkSchemeEnabled() ? STATE_ENABLED : STATE_DISABLED;
   browser_settings.javascript_can_open_windows_automatically =
       IsCreateWindowsByJavaScriptAllowed();
@@ -158,6 +154,14 @@ void NWebPreferenceDelegate::ComputeBrowserSettings(
   browser_settings.hide_vertical_scrollbars =
       !IsVerticalScrollBarAccess() ? STATE_ENABLED : STATE_DISABLED;
   browser_settings.viewport_meta_enabled = true;
+  browser_settings.contextmenu_customization_enabled = false;
+  browser_settings.scrollbar_color = GetScrollBarColor();
+  CefRefPtr<CefCommandLine> command_line =
+      CefCommandLine::GetGlobalCommandLine();
+  if (command_line->HasSwitch(::switches::kForBrowser)) {
+    browser_settings.contextmenu_customization_enabled = true;
+  }
+  browser_settings.background_color = GetBackgroundColor();
 }
 
 void NWebPreferenceDelegate::SetBrowserSettingsToNetHelpers() {
@@ -313,6 +317,9 @@ void NWebPreferenceDelegate::PutUserAgent(std::string ua) {
   } else {
     user_agent_ = ua;
   }
+  if (!browser_) {
+    return;
+  }
   if (old_user_agent != user_agent_) {
     browser_->GetHost()->PutUserAgent(ua);
   }
@@ -386,6 +393,11 @@ void NWebPreferenceDelegate::PutMediaPlayGestureAccess(bool flag) {
 void NWebPreferenceDelegate::PutPinchSmoothMode(bool flag) {
   pinch_smooth_mode_ = flag;
   LOG(INFO) << "Put Pinch Smooth Mode:" << pinch_smooth_mode_;
+  WebPreferencesChanged();
+}
+
+void NWebPreferenceDelegate::PutScrollBarColor(uint32_t colorValue) {
+  scrollbar_color_ = colorValue;
   WebPreferencesChanged();
 }
 
@@ -574,5 +586,25 @@ bool NWebPreferenceDelegate::IsHorizontalScrollBarAccess() {
 
 bool NWebPreferenceDelegate::IsVerticalScrollBarAccess() {
   return vertical_scrollBar_access_;
+}
+
+uint32_t NWebPreferenceDelegate::GetScrollBarColor() {
+  return scrollbar_color_;
+}
+
+void NWebPreferenceDelegate::SetBackgroundColor(int32_t color) {
+  background_color_ = color;
+}
+
+int32_t NWebPreferenceDelegate::GetBackgroundColor() const {
+  return background_color_;
+}
+
+void NWebPreferenceDelegate::SetEnableBlankTargetPopupIntercept(bool enable) {
+  enable_blank_target_popup_intercept_ = enable;
+}
+
+bool NWebPreferenceDelegate::IsBlankTargetPopupInterceptEnabled() {
+  return enable_blank_target_popup_intercept_;
 }
 }  // namespace OHOS::NWeb

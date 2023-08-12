@@ -119,15 +119,18 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
     argv_ss << argv_str[argv_str.size() - 1];
     constexpr int SHARED_FD_INDEX = 0;
     constexpr int IPC_FD_INDEX = 1;
+    constexpr int CRASH_SIGNAL_FD_INDEX = 2;
     int32_t shared_fd = options.fds_to_remap[SHARED_FD_INDEX].first;
     int32_t ipc_fd = options.fds_to_remap[IPC_FD_INDEX].first;
+    int32_t crash_signal_fd = options.fds_to_remap[CRASH_SIGNAL_FD_INDEX].first;
+
     pid_t render_pid = 0;
     if (app_mgr_client_adapter_ == nullptr) {
       app_mgr_client_adapter_ =
           OHOS::NWeb::OhosAdapterHelper::GetInstance().CreateAafwkAdapter();
     }
     int ret = app_mgr_client_adapter_->StartRenderProcess(
-        argv_ss.str(), ipc_fd, shared_fd, render_pid);
+        argv_ss.str(), ipc_fd, shared_fd, crash_signal_fd, render_pid);
     if (ret != 0) {
       LOG(ERROR) << "start render process error, ret=" << ret
                  << ", render pid=" << render_pid;

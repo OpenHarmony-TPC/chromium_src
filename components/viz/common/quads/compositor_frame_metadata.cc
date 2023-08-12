@@ -28,6 +28,9 @@ CompositorFrameMetadata::CompositorFrameMetadata(
       page_scale_factor(other.page_scale_factor),
       scrollable_viewport_size(other.scrollable_viewport_size),
       content_color_usage(other.content_color_usage),
+#if BUILDFLAG(IS_OHOS)
+      is_scrolling(other.is_scrolling),
+#endif
       may_contain_video(other.may_contain_video),
       is_resourceless_software_draw_with_scroll_or_animation(
           other.is_resourceless_software_draw_with_scroll_or_animation),

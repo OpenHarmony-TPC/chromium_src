@@ -123,6 +123,10 @@ class CONTENT_EXPORT DevToolsAgentHostImpl : public DevToolsAgentHost {
   DevToolsRendererChannel* GetRendererChannel() { return &renderer_channel_; }
 
   const std::vector<DevToolsSession*>& sessions() const { return sessions_; }
+  // Returns refptr retaining `this`. All other references may be removed
+  // at this point, so `this` will become invalid as soon as returned refptr
+  // gets destroyed.
+  [[nodiscard]] scoped_refptr<DevToolsAgentHost> ForceDetachAllSessionsImpl();
 
  private:
   friend class DevToolsAgentHost;  // for static methods

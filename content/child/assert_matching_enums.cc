@@ -74,5 +74,9 @@ STATIC_ASSERT_ENUM(blink::kMenuSourceAdjustSelection,
                    ui::MENU_SOURCE_ADJUST_SELECTION);
 STATIC_ASSERT_ENUM(blink::kMenuSourceAdjustSelectionReset,
                    ui::MENU_SOURCE_ADJUST_SELECTION_RESET);
+#if defined(OHOS_NWEB_EX)
+STATIC_ASSERT_ENUM(blink::kMenuSourceSelectAndCopy,
+                   ui::MENU_SOURCE_SELECT_AND_COPY);
+#endif
 
 } // namespace content

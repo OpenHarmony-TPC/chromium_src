@@ -159,7 +159,8 @@ const char kRenderDocumentLevelParameterName[] = "level";
 constexpr base::FeatureParam<RenderDocumentLevel>::Option
     render_document_levels[] = {
         {RenderDocumentLevel::kCrashedFrame, "crashed-frame"},
-        {RenderDocumentLevel::kSubframe, "subframe"}};
+        {RenderDocumentLevel::kSubframe, "subframe"},
+        {RenderDocumentLevel::kAllFrames, "all-frames"}};
 const base::FeatureParam<RenderDocumentLevel> render_document_level{
     &features::kRenderDocument, kRenderDocumentLevelParameterName,
     RenderDocumentLevel::kCrashedFrame, &render_document_levels};
@@ -176,6 +177,10 @@ std::string GetRenderDocumentLevelName(RenderDocumentLevel level) {
 
 bool ShouldCreateNewHostForSameSiteSubframe() {
   return GetRenderDocumentLevel() >= RenderDocumentLevel::kSubframe;
+}
+
+bool ShouldCreateNewHostForAllFrames() {
+  return GetRenderDocumentLevel() >= RenderDocumentLevel::kAllFrames;
 }
 
 bool ShouldSkipEarlyCommitPendingForCrashedFrame() {

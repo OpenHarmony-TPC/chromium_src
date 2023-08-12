@@ -73,13 +73,13 @@ webrtc::DesktopRect ComputeLetterboxRect(
   gfx::Rect result = media::ComputeLetterboxRegion(
       gfx::Rect(0, 0, max_size.width(), max_size.height()),
       gfx::Size(source_size.width(), source_size.height()));
-  return webrtc::DesktopRect::MakeLTRB(
-      result.x(), result.y(), result.right(), result.bottom());
+  return webrtc::DesktopRect::MakeLTRB(result.x(), result.y(), result.right(),
+                                       result.bottom());
 }
 
 bool IsFrameUnpackedOrInverted(webrtc::DesktopFrame* frame) {
   return frame->stride() !=
-      frame->size().width() * webrtc::DesktopFrame::kBytesPerPixel;
+         frame->size().width() * webrtc::DesktopFrame::kBytesPerPixel;
 }
 
 void BindWakeLockProvider(
@@ -135,9 +135,8 @@ class DesktopCaptureDevice::Core : public webrtc::DesktopCapturer::Callback {
  private:
   // webrtc::DesktopCapturer::Callback interface.
   // A side-effect of this method is to schedule the next frame.
-  void OnCaptureResult(
-    webrtc::DesktopCapturer::Result result,
-    std::unique_ptr<webrtc::DesktopFrame> frame) override;
+  void OnCaptureResult(webrtc::DesktopCapturer::Result result,
+                       std::unique_ptr<webrtc::DesktopFrame> frame) override;
 
   // Method that is scheduled on |task_runner_| to be called on regular interval
   // to capture a frame.
@@ -353,6 +352,9 @@ void DesktopCaptureDevice::Core::OnCaptureResult(
   webrtc::DesktopSize output_size(
       resolution_chooser_.capture_size().width() & ~1,
       resolution_chooser_.capture_size().height() & ~1);
+  LOG(DEBUG) << "screen capture output_size: " << output_size.width() << ", "
+             << output_size.height();
+
   if (output_size.is_empty()) {
     // Even RESOLUTION_POLICY_ANY_WITHIN_LIMIT is used, a non-empty size should
     // be guaranteed.
@@ -360,7 +362,7 @@ void DesktopCaptureDevice::Core::OnCaptureResult(
   }
 
   size_t output_bytes = output_size.width() * output_size.height() *
-      webrtc::DesktopFrame::kBytesPerPixel;
+                        webrtc::DesktopFrame::kBytesPerPixel;
   const uint8_t* output_data = nullptr;
 
   if (frame->size().width() <= 1 || frame->size().height() <= 1) {
@@ -450,7 +452,11 @@ void DesktopCaptureDevice::Core::OnCaptureResult(
       output_data, output_bytes,
       media::VideoCaptureFormat(
           gfx::Size(output_size.width(), output_size.height()),
+#if BUILDFLAG(IS_OHOS)
+          requested_frame_rate_, media::PIXEL_FORMAT_ABGR),
+#else
           requested_frame_rate_, media::PIXEL_FORMAT_ARGB),
+#endif
       frame_color_space, 0 /* clockwise_rotation */, false /* flip_y */, now,
       now - first_ref_time_);
 
@@ -574,7 +580,9 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
       break;
     }
 
-    default: { NOTREACHED(); }
+    default: {
+      NOTREACHED();
+    }
   }
 
   if (capturer)

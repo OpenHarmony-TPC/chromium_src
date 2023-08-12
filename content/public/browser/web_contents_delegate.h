@@ -753,6 +753,9 @@ class CONTENT_EXPORT WebContentsDelegate {
   // Whether the WebContents is privileged.
   // It's used to prevent drag and drop between privileged and non-privileged
   // WebContents.
+#ifdef OHOS_ENABLE_DRAG_DROP
+  virtual void ClearContextMenu();
+#endif // OHOS_ENABLE_DRAG_DROP
   virtual bool IsPrivileged();
 
  protected:

@@ -302,7 +302,7 @@ void VideoCaptureController::AddClient(
                 << ", params.requested_format = "
                 << media::VideoCaptureFormat::ToString(params.requested_format);
   EmitLogMessage(string_stream.str(), 1);
-
+  LOG(INFO) << string_stream.str();
   // Check that requested VideoCaptureParams are valid and supported.  If not,
   // report an error immediately and punt.
   if (!params.IsValid() ||
@@ -334,8 +334,12 @@ void VideoCaptureController::AddClient(
   }
 
   // Do nothing if this client has called AddClient before.
-  if (FindClient(id, event_handler, controller_clients_))
+  if (FindClient(id, event_handler, controller_clients_)) {
+#if BUILDFLAG(IS_OHOS)
+    LOG(INFO) << "client is already added";
+#endif
     return;
+  }
 
   // If the device has reported OnStarted event, report it to this client here.
   if (state_ == blink::VIDEO_CAPTURE_STATE_STARTED)
@@ -630,6 +634,9 @@ void VideoCaptureController::OnBufferRetired(int buffer_id) {
 
 void VideoCaptureController::OnError(media::VideoCaptureError error) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+#if BUILDFLAG(IS_OHOS)
+  EmitLogMessage(__func__, 1);
+#endif
   state_ = blink::VIDEO_CAPTURE_STATE_ERROR;
   PerformForClientsWithOpenSession(base::BindRepeating(&CallOnError, error));
 }
@@ -920,6 +927,9 @@ void VideoCaptureController::PerformForClientsWithOpenSession(
 void VideoCaptureController::EmitLogMessage(const std::string& message,
                                             int verbose_log_level) {
   DVLOG(verbose_log_level) << message;
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << message;
+#endif
   emit_log_message_cb_.Run(message);
 }
 

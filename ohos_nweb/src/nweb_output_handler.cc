@@ -24,8 +24,8 @@
 #include <iomanip>
 #include <iostream>
 #include <thread>
-#include <window.h>
 #include "nweb_hilog.h"
+#include "ohos_adapter_helper.h"
 
 namespace OHOS::NWeb {
 namespace {
@@ -112,7 +112,6 @@ void NWebOutputHandler::Resize(uint32_t width, uint32_t height) {
     if (!dump_path_.empty() || dump_buf_ == nullptr) {
       dump_buf_.reset(new char[frame_size_]);
     }
-    NativeWindowHandleOpt(window_, SET_BUFFER_GEOMETRY, width_, height_);
   }
 }
 
@@ -310,9 +309,10 @@ bool NWebOutputHandler::IsSizeValid()
   return (width_ > 0) && (height_ > 0);
 }
 
-NativeWindow* NWebOutputHandler::GetNativeWindowFromSurface(void* surface) {
-  window_ = CreateNativeWindowFromSurface(surface);
-  NativeWindowHandleOpt(window_, SET_BUFFER_GEOMETRY, width_, height_);
+void* NWebOutputHandler::GetNativeWindowFromSurface(void* surface) {
+  window_ = OHOS::NWeb::OhosAdapterHelper::GetInstance()
+                .GetWindowAdapterInstance()
+                .CreateNativeWindowFromSurface(surface);
   return window_;
 }
 }  // namespace OHOS::NWeb

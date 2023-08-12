@@ -41,11 +41,14 @@ void NWebInputHandler::OnDestroy() {
   nweb_delegate_ = nullptr;
 }
 
-void NWebInputHandler::OnTouchPress(int32_t id, double x, double y) {
+void NWebInputHandler::OnTouchPress(int32_t id,
+                                    double x,
+                                    double y,
+                                    bool from_overlay) {
   if (nweb_delegate_ == nullptr) {
     return;
   }
-  nweb_delegate_->OnTouchPress(id, x, y);
+  nweb_delegate_->OnTouchPress(id, x, y, from_overlay);
 
   touch_press_id_map_[id] = true;
   last_touch_start_x_ = x;
@@ -53,7 +56,10 @@ void NWebInputHandler::OnTouchPress(int32_t id, double x, double y) {
   last_y_ = y;
 }
 
-void NWebInputHandler::OnTouchRelease(int32_t id, double x, double y) {
+void NWebInputHandler::OnTouchRelease(int32_t id,
+                                      double x,
+                                      double y,
+                                      bool from_overlay) {
   if (nweb_delegate_ == nullptr) {
     return;
   }
@@ -61,17 +67,20 @@ void NWebInputHandler::OnTouchRelease(int32_t id, double x, double y) {
     x = last_x_;
     y = last_y_;
   }
-  nweb_delegate_->OnTouchRelease(id, x, y);
+  nweb_delegate_->OnTouchRelease(id, x, y, from_overlay);
   CheckSlideNavigation(last_touch_start_x_, x);
   touch_press_id_map_.erase(id);
 }
 
-void NWebInputHandler::OnTouchMove(int32_t id, double x, double y) {
+void NWebInputHandler::OnTouchMove(int32_t id,
+                                   double x,
+                                   double y,
+                                   bool from_overlay) {
   if (nweb_delegate_ == nullptr) {
     return;
   }
 
-  nweb_delegate_->OnTouchMove(id, x, y);
+  nweb_delegate_->OnTouchMove(id, x, y, from_overlay);
   last_x_ = x;
   last_y_ = y;
 }
@@ -101,14 +110,21 @@ bool NWebInputHandler::SendKeyEvent(int32_t keyCode, int32_t keyAction) {
   return nweb_delegate_->SendKeyEvent(keyCode, keyAction);
 }
 
-void NWebInputHandler::SendMouseWheelEvent(double x, double y, double deltaX, double deltaY) {
+void NWebInputHandler::SendMouseWheelEvent(double x,
+                                           double y,
+                                           double deltaX,
+                                           double deltaY) {
   if (nweb_delegate_ == nullptr) {
     return;
   }
   nweb_delegate_->SendMouseWheelEvent(x, y, deltaX, deltaY);
 }
 
-void NWebInputHandler::SendMouseEvent(int x, int y, int button, int action, int count) {
+void NWebInputHandler::SendMouseEvent(int x,
+                                      int y,
+                                      int button,
+                                      int action,
+                                      int count) {
   if (nweb_delegate_ == nullptr) {
     return;
   }

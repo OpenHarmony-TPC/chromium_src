@@ -130,6 +130,21 @@ void PageNodeImpl::SetIsAudible(bool is_audible) {
   is_audible_.SetAndMaybeNotify(this, is_audible);
 }
 
+#if BUILDFLAG(IS_OHOS)
+void PageNodeImpl::SetIsMediaPlaying(bool is_media_playing) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  if (is_media_playing) {
+    media_playing_num_++;
+  } else {
+    media_playing_num_--;
+  }
+  if (media_playing_num_ == 0 ||
+      (is_media_playing && media_playing_num_ == 1)) {
+    is_media_playing_.SetAndMaybeNotify(this, is_media_playing);
+  }
+}
+#endif
+
 void PageNodeImpl::SetUkmSourceId(ukm::SourceId ukm_source_id) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   ukm_source_id_.SetAndMaybeNotify(this, ukm_source_id);
@@ -225,6 +240,13 @@ bool PageNodeImpl::is_audible() const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   return is_audible_.value();
 }
+
+#if BUILDFLAG(IS_OHOS)
+bool PageNodeImpl::is_media_playing() const {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  return is_media_playing_.value();
+}
+#endif
 
 PageNode::LoadingState PageNodeImpl::loading_state() const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -467,6 +489,13 @@ bool PageNodeImpl::IsAudible() const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   return is_audible();
 }
+
+#if BUILDFLAG(IS_OHOS)
+bool PageNodeImpl::IsMediaPlaying() const {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  return is_media_playing();
+}
+#endif
 
 PageNode::LoadingState PageNodeImpl::GetLoadingState() const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);

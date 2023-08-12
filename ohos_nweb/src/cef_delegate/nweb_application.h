@@ -33,11 +33,12 @@ class NWebApplication : public CefApp,
                         public CefBrowserProcessHandler,
                         public CefRenderProcessHandler {
  public:
-  NWebApplication(std::shared_ptr<NWebPreferenceDelegate> preference_delegate,
-                  std::string url,
-                  CefRefPtr<NWebHandlerDelegate> handler_delegate,
-                  void* window);
+  NWebApplication();
   ~NWebApplication();
+
+  static CefRefPtr<OHOS::NWeb::NWebApplication> GetDefault();
+  void InitializeCef(const CefMainArgs& args, const CefSettings& settings);
+  bool HasInitializedCef();
 
   /* CefApp methods begine */
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override;
@@ -48,29 +49,32 @@ class NWebApplication : public CefApp,
   /* CefBrowserProcessHandler methods begin */
   void OnContextInitialized() override;
   CefRefPtr<CefClient> GetDefaultClient() override;
-  void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) override;
-  std::string GetURL();
+  void OnBeforeChildProcessLaunch(
+      CefRefPtr<CefCommandLine> command_line) override;
   /* CefBrowserProcessHandler methods end */
 
   /* CefRenderProcessHandler methods begin */
   void OnWebKitInitialized() override;
   /* CefRenderProcessHandler methods begin */
 
-  void CreateBrowser();
+  void CreateBrowser(
+      std::shared_ptr<NWebPreferenceDelegate> preference_delegate,
+      const std::string& url,
+      CefRefPtr<NWebHandlerDelegate> handler_delegate,
+      void* window);
+
+  void RunAfterContextInitialized(base::OnceCallback<void()> context_callback);
 
  private:
   void PopulateCreateSettings(CefRefPtr<CefCommandLine> command_line,
                               CefBrowserSettings& browser_settings);
 
   void OnContextInitializedInternal();
-  std::vector<std::string> CustomSchemeCmdLineSplit(std::string str, const char split);
-
+  std::vector<std::string> CustomSchemeCmdLineSplit(std::string str,
+                                                    const char split);
   void RunWebInitedCallback(WebRunInitedCallback* callback);
 
-  std::shared_ptr<NWebPreferenceDelegate> preference_delegate_ = nullptr;
-  std::string url_;
-  CefRefPtr<NWebHandlerDelegate> handler_delegate_{nullptr};
-  void* window_ = nullptr;
+  base::OnceCallback<void()> complete_callback_;
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(NWebApplication);
 };  // NWebApplication

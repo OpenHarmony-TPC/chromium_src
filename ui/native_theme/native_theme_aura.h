@@ -60,7 +60,11 @@ class NATIVE_THEME_EXPORT NativeThemeAura : public NativeThemeBase {
                            State state,
                            const gfx::Rect& rect,
                            ScrollbarOverlayColorTheme theme,
-                           ColorScheme color_scheme) const override;
+                           ColorScheme color_scheme
+#if BUILDFLAG(IS_OHOS)                  
+                           ,SkColor scrollbar_color
+#endif 
+                           ) const override;                      
   void PaintScrollbarCorner(cc::PaintCanvas* canvas,
                             State state,
                             const gfx::Rect& rect,

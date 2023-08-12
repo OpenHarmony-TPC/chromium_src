@@ -2,13 +2,13 @@
 #define BASE_MESSAGE_LOOP_MESSAGE_PUMP_OHOS_H_
 
 #include <memory>
-#include <event_handler.h>
 
 #include "base/base_export.h"
 #include "base/callback.h"
 #include "base/compiler_specific.h"
 #include "base/message_loop/message_pump.h"
 #include "base/time/time.h"
+#include "event_handler_adapter.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace base {
@@ -82,8 +82,8 @@ class BASE_EXPORT MessagePumpForUI : public MessagePump {
   // The file descriptor used to signal that delayed work is available.
   int delayed_fd_;
 
-  std::shared_ptr<OHOS::AppExecFwk::EventHandler> ohos_event_handler_;
-  std::shared_ptr<OHOS::AppExecFwk::FileDescriptorListener> ohos_listener;
+  std::unique_ptr<OHOS::NWeb::EventHandlerAdapter> ohos_event_handler_adapter_;
+  std::shared_ptr<OHOS::NWeb::EventHandlerFDListenerAdapter> ohos_listener;
 };
 
 }  // namespace base

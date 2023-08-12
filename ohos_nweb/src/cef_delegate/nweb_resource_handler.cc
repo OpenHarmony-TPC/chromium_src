@@ -16,6 +16,9 @@
 #include "nweb_resource_handler.h"
 #include <unistd.h>
 #include "base/logging.h"
+#include "base/command_line.h"
+#include "content/public/common/content_switches.h"
+#include "ohos_adapter_helper.h"
 
 namespace OHOS::NWeb {
 
@@ -25,13 +28,13 @@ public:
     ~NWebResourceReadyCallbackImpl() = default;
     void Continue() override
     {
-        LOG(INFO) << "intecept NWebResourceReadyCallbackImpl::Continue";
+        LOG(INFO) << "intercept NWebResourceReadyCallbackImpl::Continue";
         callback_->Continue();
     }
   
     void Cancel() override
     {
-        LOG(INFO) << "intecept NWebResourceReadyCallbackImpl::Cancel";
+        LOG(INFO) << "intercept NWebResourceReadyCallbackImpl::Cancel";
         callback_->Cancel();
     }
 private:
@@ -104,6 +107,7 @@ bool NWebResourceHandler::ReadFileData(void* data_out, int bytes_to_read, int& b
   int fd = response_->ResponseFileHandle();
   if (fd <= 0) {
     bytes_read = fd;
+    LOG(ERROR) << "intercept get fd invalid : " << fd;
     return false;
   }
   int ret = read(fd, data_out, bytes_to_read);
@@ -124,6 +128,37 @@ bool NWebResourceHandler::ReadFileData(void* data_out, int bytes_to_read, int& b
   return true;
 }
 
+bool NWebResourceHandler::ReadResourceData(void* data_out, int bytes_to_read, int& bytes_read)
+{
+  bool has_data = false;
+  if (resource_data_len_ == 0) {
+    std::string resourceUrlHead("resource:/RAWFILE");
+    std::string resourceUrl = response_->ResponseResourceUrl();
+    if (resourceUrl.find(resourceUrlHead) == std::string::npos) {
+      LOG(ERROR) << "intercept find resource head fail : " << resourceUrl;
+      return has_data;
+    }
+    resourceUrl.erase(0, resourceUrlHead.length());
+    std::string resourcePath = "resources/rawfile" + resourceUrl;
+    LOG(INFO) << "intercept Read Resource path : " << resourcePath;
+    std::string hapPath = base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(switches::kOhosHapPath);
+    auto resourceInstance = OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter(hapPath);
+    if (!resourceInstance->GetRawFileData(resourcePath, resource_data_len_, resource_data_, false)) {
+        LOG(ERROR) << "intercept Read Resource path fail : " << resourcePath;
+        return has_data;
+    }
+  }
+  unsigned char* dataPtr = reinterpret_cast<unsigned char*>(resource_data_.get());
+  if (resource_data_offset_ < resource_data_len_) {
+    int transfer_size = std::min(bytes_to_read, static_cast<int>(resource_data_len_ - resource_data_offset_));
+    memcpy(data_out, dataPtr + resource_data_offset_, transfer_size);
+    resource_data_offset_ += transfer_size;
+    bytes_read = transfer_size;
+    has_data = true;
+  }
+  return has_data;
+}
+
 bool NWebResourceHandler::Read(void* data_out,
                                int bytes_to_read,
                                int& bytes_read,
@@ -132,18 +167,23 @@ bool NWebResourceHandler::Read(void* data_out,
     bytes_read = -1;
     return false;
   }
-
-  if (response_->ResponseIsFileHandle()) {
-    return ReadFileData(data_out, bytes_to_read, bytes_read);
-  } else {
-    return ReadStringData(data_out, bytes_to_read, bytes_read);
+  switch (response_->ResponseDataType()) {
+    case NWebResponseDataType::NWEB_RESOURCE_URL_TYPE:
+      return ReadResourceData(data_out, bytes_to_read, bytes_read);
+    case NWebResponseDataType::NWEB_FILE_TYPE:
+      return ReadFileData(data_out, bytes_to_read, bytes_read);
+    case NWebResponseDataType::NWEB_STRING_TYPE:
+      return ReadStringData(data_out, bytes_to_read, bytes_read);
+    default:
+      break;
   }
+  return false;
 }
 
 void NWebResourceHandler::GetResponseHeaders(CefRefPtr<CefResponse> response,
                                              int64& response_length,
                                              CefString& redirectUrl) {
-  LOG(INFO) << "NWebResourceHandler::GetResponseHeaders";
+  LOG(INFO) << "intercept NWebResourceHandler::GetResponseHeaders";
   if (response_ && response) {
     response->SetMimeType(response_->ResponseMimeType());
     response->SetStatus(response_->ResponseStatusCode());
@@ -155,10 +195,10 @@ void NWebResourceHandler::GetResponseHeaders(CefRefPtr<CefResponse> response,
     ConvertMapToHeaderMap(cef_request_headers, request_headers);
     response->SetHeaderMap(cef_request_headers);
   }
-  if (response_->ResponseIsFileHandle()) {
-    response_length = -1;
-  } else {
+  if (response_->ResponseDataType() == NWebResponseDataType::NWEB_STRING_TYPE) {
     response_length = data_.length();
+  } else {
+    response_length = -1;
   }
 }
 
@@ -171,6 +211,7 @@ void NWebResourceHandler::Cancel() {
   if (fd <= 0) {
     return;
   }
+  response_->PutResponseFileHandle(-1);
   close(fd);
 }
 /* CefResourceHandler method end */

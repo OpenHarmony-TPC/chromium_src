@@ -33,7 +33,11 @@ namespace media {
 
 namespace {
 
+#if BUILDFLAG(IS_OHOS)
+const int kStreamCloseDelaySeconds = 100000;
+#else
 const int kStreamCloseDelaySeconds = 5;
+#endif
 
 // Default maximum number of output streams that can be open simultaneously
 // for all platforms.
@@ -380,6 +384,15 @@ AudioOutputStream* AudioManagerBase::MakeAudioOutputStreamProxy(
         // Turn off effects that weren't requested.
         output_params.set_effects(params.effects() & output_params.effects());
       }
+      
+#if BUILDFLAG(IS_OHOS)
+      if (params.render_process_id() != output_params.render_process_id()) {
+        output_params.set_render_process_id(params.render_process_id());
+      }
+      if (params.render_frame_id() != output_params.render_frame_id()) {
+        output_params.set_render_frame_id(params.render_frame_id());
+      }
+#endif
 
       uma_stream_format = STREAM_FORMAT_PCM_LOW_LATENCY;
     } else {
@@ -469,6 +482,9 @@ void AudioManagerBase::ReleaseOutputStream(AudioOutputStream* stream) {
   // streams.
   --num_output_streams_;
   delete stream;
+#if BUILDFLAG(IS_OHOS)
+  stream = nullptr;
+#endif
 }
 
 void AudioManagerBase::ReleaseInputStream(AudioInputStream* stream) {
@@ -518,8 +534,12 @@ AudioParameters AudioManagerBase::GetOutputStreamParameters(
 
 AudioParameters AudioManagerBase::GetInputStreamParameters(
     const std::string& device_id) {
+#if BUILDFLAG(IS_OHOS)
+  return GetPreferredInputStreamParameters(device_id);
+#else
   NOTREACHED();
   return AudioParameters();
+#endif
 }
 
 std::string AudioManagerBase::GetAssociatedOutputDeviceID(

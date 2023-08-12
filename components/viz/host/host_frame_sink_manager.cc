@@ -67,7 +67,7 @@ void HostFrameSinkManager::RegisterFrameSinkId(
   DCHECK(client);
 
   FrameSinkData& data = frame_sink_data_map_[frame_sink_id];
-  DCHECK(!data.IsFrameSinkRegistered());
+  CHECK(!data.IsFrameSinkRegistered());
   DCHECK(!data.has_created_compositor_frame_sink);
   data.client = client;
   data.report_activation = report_activation;
@@ -86,7 +86,7 @@ void HostFrameSinkManager::InvalidateFrameSinkId(
   DCHECK(frame_sink_id.is_valid());
 
   FrameSinkData& data = frame_sink_data_map_[frame_sink_id];
-  DCHECK(data.IsFrameSinkRegistered());
+  CHECK(data.IsFrameSinkRegistered());
 
   const bool destroy_synchronously =
       data.has_created_compositor_frame_sink && data.wait_on_destruction;
@@ -226,13 +226,13 @@ bool HostFrameSinkManager::RegisterFrameSinkHierarchy(
     return false;
   }
 
+  FrameSinkData& parent_data = iter->second;
+  CHECK(!base::Contains(parent_data.children, child_frame_sink_id));
+  parent_data.children.push_back(child_frame_sink_id);
+
   // Register and store the parent.
   frame_sink_manager_->RegisterFrameSinkHierarchy(parent_frame_sink_id,
                                                   child_frame_sink_id);
-
-  FrameSinkData& parent_data = iter->second;
-  DCHECK(!base::Contains(parent_data.children, child_frame_sink_id));
-  parent_data.children.push_back(child_frame_sink_id);
 
   return true;
 }
@@ -242,8 +242,9 @@ void HostFrameSinkManager::UnregisterFrameSinkHierarchy(
     const FrameSinkId& child_frame_sink_id) {
   // Unregister and clear the stored parent.
   FrameSinkData& parent_data = frame_sink_data_map_[parent_frame_sink_id];
-  DCHECK(base::Contains(parent_data.children, child_frame_sink_id));
-  base::Erase(parent_data.children, child_frame_sink_id);
+  size_t num_erased = base::Erase(parent_data.children, child_frame_sink_id);
+  CHECK_EQ(num_erased, 1u);
+
   if (parent_data.IsEmpty())
     frame_sink_data_map_.erase(parent_frame_sink_id);
 
@@ -376,6 +377,20 @@ void HostFrameSinkManager::OnAggregatedHitTestRegionListUpdated(
   for (HitTestRegionObserver& observer : observers_)
     observer.OnAggregatedHitTestRegionListUpdated(frame_sink_id, hit_test_data);
 }
+
+#if BUILDFLAG(IS_OHOS)
+void HostFrameSinkManager::OnVsync(uint32_t client_id, uint32_t sink_id) {
+  FrameSinkId id(client_id, sink_id);
+  auto iter = frame_sink_data_map_.find(id);
+  if (iter == frame_sink_data_map_.end())
+    return;
+
+  const FrameSinkData& data = iter->second;
+  if (data.client) {
+    data.client->OnVsync();
+  }
+}
+#endif
 
 uint32_t HostFrameSinkManager::CacheBackBufferForRootSink(
     const FrameSinkId& root_sink_id) {

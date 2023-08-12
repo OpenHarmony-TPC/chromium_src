@@ -126,6 +126,10 @@ class PageNode : public Node {
   // See PageNodeObserver::OnIsAudibleChanged.
   virtual bool IsAudible() const = 0;
 
+#if BUILDFLAG(IS_OHOS)
+  virtual bool IsMediaPlaying() const = 0;
+#endif
+
   // Returns the page's loading state.
   virtual LoadingState GetLoadingState() const = 0;
 
@@ -255,6 +259,10 @@ class PageNodeObserver {
   // Invoked when the IsAudible property changes.
   virtual void OnIsAudibleChanged(const PageNode* page_node) = 0;
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void OnIsMediaPlayingChanged(const PageNode* page_node){};
+#endif
+
   // Invoked when the GetLoadingState property changes.
   virtual void OnLoadingStateChanged(const PageNode* page_node,
                                      PageNode::LoadingState previous_state) = 0;
@@ -329,6 +337,9 @@ class PageNode::ObserverDefaultImpl : public PageNodeObserver {
       EmbeddingType previous_embedding_type) override {}
   void OnIsVisibleChanged(const PageNode* page_node) override {}
   void OnIsAudibleChanged(const PageNode* page_node) override {}
+#if BUILDFLAG(IS_OHOS)
+  void OnIsMediaPlayingChanged(const PageNode* page_node) override{};
+#endif
   void OnLoadingStateChanged(const PageNode* page_node,
                              PageNode::LoadingState previous_state) override {}
   void OnUkmSourceIdChanged(const PageNode* page_node) override {}

@@ -5565,6 +5565,11 @@ void RenderFrameHostImpl::DidChangeBackgroundColor(SkColor background_color,
   GetPage().DidChangeBackgroundColor(background_color, color_adjust);
 }
 
+#if BUILDFLAG(IS_OHOS)
+void RenderFrameHostImpl::NotifyContextMenuWillShow() {
+  delegate_->NotifyContextMenuWillShow();
+}
+#endif
 void RenderFrameHostImpl::SetCommitCallbackInterceptorForTesting(
     CommitCallbackInterceptor* interceptor) {
   // This DCHECK's aims to avoid unexpected replacement of an interceptor.
@@ -6360,7 +6365,6 @@ void RenderFrameHostImpl::ShowContextMenu(
         GetProcess(), bad_message::RFH_NEGATIVE_SELECTION_START_OFFSET);
     return;
   }
-
   delegate_->ShowContextMenu(*this, std::move(context_menu_client),
                              validated_params);
 }
@@ -6633,13 +6637,8 @@ void RenderFrameHostImpl::GetCreateNewWindow(const GURL& target_url, WindowOpenD
     GetCreateNewWindowCallback callback) {
   bool effective_transient_activation_state =
       allow_popup || frame_tree_node_->HasTransientUserActivation();
-  bool can_create_window = GetContentClient()->browser()->CanCreateWindow(
-        this, target_url, disposition, effective_transient_activation_state);
-  if (can_create_window) {
-    std::move(callback).Run(mojom::CreateNewWindowStatus::kSuccess);
-  } else {
-    std::move(callback).Run(mojom::CreateNewWindowStatus::kBlocked);
-  }
+  GetContentClient()->browser()->CanCreateWindow(
+      this, target_url, disposition, effective_transient_activation_state, std::move(callback));
 }
 #endif
 
@@ -12981,4 +12980,11 @@ std::ostream& operator<<(std::ostream& o,
   return o << RenderFrameHostImpl::LifecycleStateImplToString(s);
 }
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+void RenderFrameHostImpl::OnClearContextMenu() {
+  if (IsInactiveAndDisallowActivation(DisallowActivationReasonId::kShowContextMenu))
+    return;
+  delegate_->ClearContextMenu();
+}
+#endif // OHOS_ENABLE_DRAG_DROP
 }  // namespace content

@@ -291,6 +291,10 @@ class VIZ_HOST_EXPORT HostFrameSinkManager
       const FrameSinkId& frame_sink_id,
       const std::vector<AggregatedHitTestRegion>& hit_test_data) override;
 
+#if BUILDFLAG(IS_OHOS)
+  void OnVsync(uint32_t client_id, uint32_t sink_id) override;
+#endif
+
   const bool enable_sync_window_destruction_;
 
   // This will point to |frame_sink_manager_remote_| if using mojo or it may

@@ -1179,6 +1179,8 @@ component("net") {
     sources += [
       "cert/cert_verify_proc_ohos.cc",
       "cert/cert_verify_proc_ohos.h",
+      "proxy_resolution/proxy_config_service_ohos.cc",
+      "proxy_resolution/proxy_config_service_ohos.h",
     ]
   }
 

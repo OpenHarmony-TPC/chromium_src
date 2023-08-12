@@ -18,10 +18,11 @@
 
 #include "cef/include/base/cef_lock.h"
 #include "cef/include/cef_client.h"
+#include "cef/include/cef_dialog_handler.h"
 #include "cef/include/cef_jsdialog_handler.h"
+#include "cef/include/cef_media_handler.h"
 #include "cef/include/cef_permission_request.h"
 #include "cef/include/cef_resource_request_handler.h"
-#include "cef/include/cef_dialog_handler.h"
 
 #include "nweb_event_handler.h"
 #include "nweb_handler.h"
@@ -33,6 +34,7 @@
 #include <list>
 #include <mutex>
 #include <string>
+#include <set>
 #include "capi/nweb_app_client_extension_callback.h"
 #include "nweb_download_callback.h"
 #include "nweb_javascript_result_callback.h"
@@ -59,7 +61,9 @@ class NWebHandlerDelegate : public CefClient,
                             public CefContextMenuHandler,
                             public CefFindHandler,
                             public CefKeyboardHandler,
-                            public CefCookieAccessFilter {
+                            public CefMediaHandler,
+                            public CefCookieAccessFilter,
+                            public CefPrintHandler {
  public:
   static CefRefPtr<NWebHandlerDelegate> Create(
       std::shared_ptr<NWebPreferenceDelegate> preference_delegate,
@@ -109,6 +113,7 @@ class NWebHandlerDelegate : public CefClient,
   CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
   CefRefPtr<CefDialogHandler> GetDialogHandler() override;
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
+  CefRefPtr<CefMediaHandler> GetMediaHandler() override;
   CefRefPtr<CefCookieAccessFilter> GetCookieAccessFilter(
                             CefRefPtr<CefBrowser> browser,
                             CefRefPtr<CefFrame> frame,
@@ -124,6 +129,7 @@ class NWebHandlerDelegate : public CefClient,
                              CefRefPtr<CefListValue> result) override;
   CefRefPtr<CefFindHandler> GetFindHandler() override;
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override;
+  CefRefPtr<CefPrintHandler> GetPrintHandler() override;
   /* CefClient methods end */
 
   /* CefLifeSpanHandler methods begin */
@@ -147,7 +153,8 @@ class NWebHandlerDelegate : public CefClient,
                         CefRefPtr<CefFrame> frame,
                         const CefString& target_url,
                         CefLifeSpanHandler::WindowOpenDisposition target_disposition,
-                        bool user_gesture) override;
+                        bool user_gesture,
+                        CefRefPtr<CefCallback> callback) override;
   /* CefLifeSpanHandler methods end */
 
   /* CefLoadHandler methods begin */
@@ -189,6 +196,9 @@ class NWebHandlerDelegate : public CefClient,
   void OnPageVisible(CefRefPtr<CefBrowser> browser,
                      const CefString& url,
                      bool success) override;
+
+  void OnFirstContentfulPaint(long navigationStartTick,
+                              long firstContentfulPaintMs) override;
 
   void OnDataResubmission(CefRefPtr<CefBrowser> browser,
                           CefRefPtr<CefCallback> callback) override;
@@ -316,6 +326,8 @@ class NWebHandlerDelegate : public CefClient,
   void OnPermissionRequest(CefRefPtr<CefAccessRequest> request) override;
   void OnPermissionRequestCanceled(
       CefRefPtr<CefAccessRequest> request) override;
+
+  void OnScreenCaptureRequest(CefRefPtr<CefScreenCaptureAccessRequest> request) override;
   /* CefPermissionRequest method end */
 
   /* CefJSDialogHandler method begin */
@@ -328,6 +340,7 @@ class NWebHandlerDelegate : public CefClient,
                   bool& suppress_message) override;
 
   bool OnBeforeUnloadDialog(CefRefPtr<CefBrowser> browser,
+                            const CefString& url,
                             const CefString& message_text,
                             bool is_reload,
                             CefRefPtr<CefJSDialogCallback> callback) override;
@@ -351,6 +364,11 @@ class NWebHandlerDelegate : public CefClient,
                          bool right_aligned,
                          bool allow_multiple_selection,
                          CefRefPtr<CefSelectPopupCallback> callback) override;
+  void OnDateTimeChooserPopup(CefRefPtr<CefBrowser> browser,
+                              const CefDateTimeChooser& date_time_chooser,
+                              const std::vector<CefDateTimeSuggestion>& suggestion,
+                              CefRefPtr<CefDateTimeChooserCallback> callback) override;
+  void OnDateTimeChooserClose() override;
   /* CefDialogHandler method end */
 
   /* CefContextMenuHandler method begin */
@@ -408,10 +426,32 @@ class NWebHandlerDelegate : public CefClient,
                             const CefCookie& cookie) override;
   /* CefResourceRequestHandler methods end */
 
+  /* CefMediaHandler methods begin */
+  void OnAudioStateChanged(CefRefPtr<CefBrowser> browser,
+                           bool audible) override;
+  /* CefMediaHandler methods end */
+  /* CefPrintHandler method begin */
+  void OnPrintStart(CefRefPtr<CefBrowser> browser) override;
+  void OnPrintSettings(CefRefPtr<CefBrowser> browser,
+                      CefRefPtr<CefPrintSettings> settings,
+                       bool get_defaults) override;
+  bool OnPrintDialog(CefRefPtr<CefBrowser> browser,
+                     bool has_selection,
+                     CefRefPtr<CefPrintDialogCallback> callback) override;
+  bool OnPrintJob(CefRefPtr<CefBrowser> browser,
+                  const CefString& document_name,
+                  const CefString& pdf_file_path,
+                  CefRefPtr<CefPrintJobCallback> callback) override;
+  void OnPrintReset(CefRefPtr<CefBrowser> browser) override;
+  CefSize GetPdfPaperSize(CefRefPtr<CefBrowser> browser,
+                          int device_units_per_inch) override;
+  /* CefPrintHandler method end */
+
   const std::vector<std::string> GetVisitedHistory();
 
 #if defined(REPORT_SYS_EVENT)
   void SetNWebId(uint32_t nwebId);
+  uint32_t GetNWebId();
 #endif
 
   void SetFavicon(const void* icon_data, size_t width, size_t height,
@@ -422,6 +462,10 @@ class NWebHandlerDelegate : public CefClient,
 
   bool GetFocusState();
   void SetFocusState(bool focusState);
+  bool GetContinueNeedFocus();
+  void SetContinueNeedFocus(bool continueNeedFocus);
+
+  void NotifyPopupWindowResult(bool result);
  private:
   void CopyImageToClipboard(CefRefPtr<CefImage> image);
   // List of existing browser windows. Only accessed on the CEF UI thread.
@@ -448,10 +492,9 @@ class NWebHandlerDelegate : public CefClient,
   std::shared_ptr<NWebAppClientExtensionCallback>
       web_app_client_extension_listener_ = nullptr;
 
-  // lifecycle wrapped by ace WebGeolocationOhos
-  NWebGeolocationCallback* callback_ = nullptr;
+  std::shared_ptr<NWebGeolocationCallback> callback_ = nullptr;
   bool is_enhance_surface_ = false;
-  NativeWindow* window_ = nullptr;
+  void* window_ = nullptr;
 
   CefString image_cache_src_url_;
 
@@ -472,6 +515,7 @@ class NWebHandlerDelegate : public CefClient,
 #endif
 
   static int32_t popIndex_;
+  CefRefPtr<CefCallback> popupWindowCallback_ = nullptr;
 
 #if defined(OHOS_NWEB_EX)
   bool on_load_start_notified_ = false;
@@ -479,6 +523,7 @@ class NWebHandlerDelegate : public CefClient,
 
   float scale_ = 100.0;
   bool focusState_ = false;
+  bool continueNeedFocus_ = false;
 };
 }  // namespace OHOS::NWeb
 

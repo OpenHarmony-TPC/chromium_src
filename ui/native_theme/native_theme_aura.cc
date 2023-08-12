@@ -31,7 +31,6 @@
 #include "ui/native_theme/common_theme.h"
 #include "ui/native_theme/native_theme_features.h"
 #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
-
 namespace ui {
 
 namespace {
@@ -39,9 +38,10 @@ namespace {
 #if BUILDFLAG(IS_OHOS)
 constexpr int kOverlayScrollbarMinimumLength = 48;
 constexpr int kOverlayScrollbarBorderPatchWidth = 0;
-constexpr int kOverlayScrollbarCenterPatchSize = 108;
-constexpr int kOverlayScrollbarHotSize = 72;
-constexpr int kOverlayScrollbarMargin = 12;
+//Scrollbar's width,include hot zone(24) + visible width(8) + marginRight(4)
+constexpr int kOverlayScrollbarCenterPatchSize = 36; 
+constexpr int kOverlayScrollbarHotSize = 24; 
+constexpr int kOverlayScrollbarMargin = 4; 
 #else
 // Constants for painting overlay scrollbars. Other properties needed outside
 // this painting code are defined in overlay_scrollbar_constants_aura.h.
@@ -241,7 +241,11 @@ void NativeThemeAura::PaintScrollbarThumb(cc::PaintCanvas* canvas,
                                           State state,
                                           const gfx::Rect& rect,
                                           ScrollbarOverlayColorTheme theme,
-                                          ColorScheme color_scheme) const {
+                                          ColorScheme color_scheme
+#if BUILDFLAG(IS_OHOS)                  
+                                         ,SkColor scrollbar_color
+#endif  
+                                          ) const {
   // Do not paint if state is disabled.
   if (state == kDisabled)
     return;
@@ -253,24 +257,41 @@ void NativeThemeAura::PaintScrollbarThumb(cc::PaintCanvas* canvas,
   if (use_overlay_scrollbars_) {
     if (state == NativeTheme::kDisabled)
       return;
-    const bool hovered = state != kNormal;
+
     if (color_scheme != ColorScheme::kPlatformHighContrast) {
       // A light system theme uses a dark overlay scrollbar, and vice versa.
       color_scheme = (theme == ScrollbarOverlayColorThemeLight)
                          ? ColorScheme::kDark
                          : ColorScheme::kLight;
     }
+
+#if BUILDFLAG(IS_OHOS)
+    thumb_color = SK_ColorTRANSPARENT; //The hot zone is a transparent rectangle.
+    SkColor aroundColor = SkColorSetA(scrollbar_color, 102);  //The color of the visible thumb, with an opacity of 40%
+    cc::PaintFlags flags;
+    flags.setColor(aroundColor);
+    flags.setAntiAlias(true);
+    gfx::Rect aroundRRect; // Draw rect on aroundRRect's position.
+    int drawThumbThickness = kOverlayScrollbarCenterPatchSize -
+                             kOverlayScrollbarHotSize - kOverlayScrollbarMargin;
+    if (part == kScrollbarHorizontalThumb) {
+      aroundRRect = gfx::Rect(0, kOverlayScrollbarHotSize, thumb_rect.height(),
+                              drawThumbThickness);
+    } else {
+      aroundRRect = gfx::Rect(kOverlayScrollbarHotSize, 0, drawThumbThickness,
+                              thumb_rect.height());
+    }
+
+    SkScalar radius = SkIntToScalar(drawThumbThickness/4*3);
+    gfx::RRectF rounded_rect(gfx::RectF(aroundRRect), radius, radius, radius,
+                             radius, radius, radius, radius, radius);
+    canvas->drawRRect(static_cast<SkRRect>(rounded_rect), flags);
+#else
+    const bool hovered = state != kNormal;
     thumb_color =
         GetSystemColor(hovered ? kColorId_OverlayScrollbarThumbHoveredFill
                                : kColorId_OverlayScrollbarThumbFill,
                        color_scheme);
-#if BUILDFLAG(IS_OHOS)
-    if (part == kScrollbarHorizontalThumb) {
-      thumb_rect.Inset(0, kOverlayScrollbarHotSize, 0, kOverlayScrollbarMargin);
-    } else {
-      thumb_rect.Inset(kOverlayScrollbarHotSize, 0, kOverlayScrollbarMargin, 0);
-    }
-#else
     SkColor stroke_color =
         GetSystemColor(hovered ? kColorId_OverlayScrollbarThumbHoveredStroke
                                : kColorId_OverlayScrollbarThumbStroke,
@@ -298,7 +319,7 @@ void NativeThemeAura::PaintScrollbarThumb(cc::PaintCanvas* canvas,
     // ScrollbarThemeOverlay::paintThumb.
     gfx::Insets fill_insets(kStrokeWidth);
     thumb_rect.Inset(fill_insets + edge_adjust_insets);
-#endif 
+#endif
 
   } else {
     ControlColorId color_id = kScrollbarThumb;
@@ -413,10 +434,25 @@ gfx::Size NativeThemeAura::GetNinePatchCanvasSize(Part part) const {
 
 gfx::Rect NativeThemeAura::GetNinePatchAperture(Part part) const {
   DCHECK(SupportsNinePatch(part));
-
+#if BUILDFLAG(IS_OHOS)  
+  int drawThumbThickness = kOverlayScrollbarCenterPatchSize -
+                           kOverlayScrollbarHotSize - kOverlayScrollbarMargin;
+  if (part == kScrollbarHorizontalThumb) {
+    return gfx::Rect(kOverlayScrollbarBorderPatchWidth + drawThumbThickness,
+                     kOverlayScrollbarBorderPatchWidth,
+                     kOverlayScrollbarCenterPatchSize - drawThumbThickness * 2,
+                     kOverlayScrollbarCenterPatchSize);
+  } else {
+    return gfx::Rect(kOverlayScrollbarBorderPatchWidth,
+                     kOverlayScrollbarBorderPatchWidth + drawThumbThickness,
+                     kOverlayScrollbarCenterPatchSize,
+                     kOverlayScrollbarCenterPatchSize - drawThumbThickness * 2);
+  }
+#else
   return gfx::Rect(
       kOverlayScrollbarBorderPatchWidth, kOverlayScrollbarBorderPatchWidth,
       kOverlayScrollbarCenterPatchSize, kOverlayScrollbarCenterPatchSize);
+#endif
 }
 
 }  // namespace ui

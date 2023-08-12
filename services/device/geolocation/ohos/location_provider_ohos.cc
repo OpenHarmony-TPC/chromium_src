@@ -6,10 +6,6 @@
 
 #include <memory>
 
-#include <common_utils.h>
-#include <constant_definition.h>
-#include <system_ability_definition.h>
-
 #include "base/bind.h"
 #include "base/memory/singleton.h"
 
@@ -17,7 +13,7 @@ namespace device {
 class GeolocationManager;
 // LocationProviderOhos
 LocationProviderOhos::LocationProviderOhos() {
-  locator_callback_ = new LocationProviderCallback();
+  locator_callback_ = std::make_shared<LocationProviderCallback>();
 }
 
 LocationProviderOhos::~LocationProviderOhos() {
@@ -33,6 +29,10 @@ LocationProviderOhos::~LocationProviderOhos() {
 void LocationProviderOhos::SetUpdateCallback(
     const LocationProviderUpdateCallback& callback) {
   callback_ = callback;
+
+  if (!locator_callback_) {
+    return;
+  }
 
   locator_callback_->SetUpdateCallback(base::BindRepeating(
       &LocationProviderOhos::ProviderUpdateCallback, base::Unretained(this)));
@@ -53,9 +53,9 @@ void LocationProviderOhos::StopProvider() {
   if (!is_running_)
     return;
   is_running_ = false;
-  OHOS::sptr<OHOS::Location::ILocatorCallback> locator_call_back =
-      locator_callback_;
-  locator_->StopLocating(locator_call_back);
+  if (!locator_)
+    return;
+  locator_->StopLocating(locator_callback_);
 }
 
 const mojom::Geoposition& LocationProviderOhos::GetPosition() {
@@ -67,7 +67,10 @@ void LocationProviderOhos::OnPermissionGranted() {
 }
 
 void LocationProviderCallback::OnNewLocationAvailable(
-    const std::unique_ptr<OHOS::Location::Location>& location) {
+    const std::unique_ptr<OHOS::NWeb::LocationInfo>& location) {
+  if (!location)
+    return;
+
   mojom::Geoposition position;
   position.latitude = location->GetLatitude();
   position.longitude = location->GetLongitude();
@@ -95,27 +98,25 @@ void LocationProviderOhos::RequestLocationUpdate(bool high_accuracy) {
   LOG(INFO) << "LocationProviderOhos::RequestLocationUpdate";
   is_running_ = true;
   CreateLocationManagerIfNeeded();
-  if (locator_ == nullptr) {
+  if (!locator_) {
     LOG(ERROR) << "Locator is null. Can not get location";
     locator_callback_->OnErrorReport(
         LocationProviderCallback::LOCATION_GET_FAILED);
     return;
   }
 
-  std::unique_ptr<OHOS::Location::RequestConfig> requestConfig =
-      std::make_unique<OHOS::Location::RequestConfig>();
-  SetRequestConfig(requestConfig, high_accuracy);
-  if (locator_->GetSwitchState() != 1) {
+  std::unique_ptr<OHOS::NWeb::LocationRequestConfig> request_config =
+      OHOS::NWeb::LocationInstance::GetInstance().CreateLocationRequestConfig();
+  SetRequestConfig(request_config, high_accuracy);
+  if (!locator_->IsLocationEnabled()) {
     LOG(ERROR) << "geolocation setting is not turned on";
     locator_callback_->OnErrorReport(
         LocationProviderCallback::LOCATION_GET_FAILED);
     return;
   }
-  OHOS::sptr<OHOS::Location::ILocatorCallback> locator_call_back =
-      locator_callback_;
-  int ret = locator_->StartLocating(requestConfig, locator_call_back, "location.ILocator",
-                                    0, 0);
-  if (ret != 0) {
+
+  bool ret = locator_->StartLocating(request_config, locator_callback_);
+  if (!ret) {
     LOG(ERROR) << "StartLocating failed. Can not get location";
     locator_callback_->OnErrorReport(
         LocationProviderCallback::LOCATION_GET_FAILED);
@@ -126,21 +127,24 @@ void LocationProviderOhos::CreateLocationManagerIfNeeded() {
   if (locator_ != nullptr) {
     return;
   }
-  locator_ = std::make_unique<OHOS::Location::LocatorProxy>(
-      OHOS::Location::CommonUtils::GetRemoteObject(
-          OHOS::LOCATION_LOCATOR_SA_ID,
-          OHOS::Location::CommonUtils::InitDeviceId()));
+  locator_ =
+      OHOS::NWeb::LocationInstance::GetInstance().CreateLocationProxyAdapter();
 }
 
 void LocationProviderOhos::SetRequestConfig(
-    std::unique_ptr<OHOS::Location::RequestConfig>& requestConfig,
+    std::unique_ptr<OHOS::NWeb::LocationRequestConfig>& request_config,
     bool high_accuracy) {
-  requestConfig->SetPriority(OHOS::Location::PRIORITY_FAST_FIRST_FIX);
-  requestConfig->SetScenario(OHOS::Location::SCENE_UNSET);
-  requestConfig->SetTimeInterval(1);
-  requestConfig->SetDistanceInterval(0);
-  requestConfig->SetMaxAccuracy(50);
-  requestConfig->SetFixNumber(0);
+  if (!request_config)
+    return;
+
+  request_config->SetPriority(
+      OHOS::NWeb::LocationRequestConfig::Priority::PRIORITY_FAST_FIRST_FIX);
+  request_config->SetScenario(
+      OHOS::NWeb::LocationRequestConfig::Scenario::UNSET);
+  request_config->SetTimeInterval(1);
+  request_config->SetDistanceInterval(0);
+  request_config->SetMaxAccuracy(50);
+  request_config->SetFixNumber(0);
 }
 
 void LocationProviderCallback::NewGeopositionReport(
@@ -150,37 +154,8 @@ void LocationProviderCallback::NewGeopositionReport(
     callback_.Run(position);
 }
 
-int LocationProviderCallback::OnRemoteRequest(uint32_t code,
-                                              OHOS::MessageParcel& data,
-                                              OHOS::MessageParcel& reply,
-                                              OHOS::MessageOption& option) {
-  if (data.ReadInterfaceToken() != GetDescriptor()) {
-    LOG(INFO) << "invalid token.";
-    return -1;
-  }
-  switch (code) {
-    case RECEIVE_LOCATION_INFO_EVENT: {
-      std::unique_ptr<OHOS::Location::Location> location =
-          OHOS::Location::Location::Unmarshalling(data);
-      OnLocationReport(location);
-      break;
-    }
-    case RECEIVE_ERROR_INFO_EVENT: {
-      break;
-    }
-    case RECEIVE_LOCATION_STATUS_EVENT: {
-      OnLocatingStatusChange(0);
-      break;
-    }
-    default: {
-      break;
-    }
-  }
-  return 0;
-}
-
 void LocationProviderCallback::OnLocationReport(
-    const std::unique_ptr<OHOS::Location::Location>& location) {
+    const std::unique_ptr<OHOS::NWeb::LocationInfo>& location) {
   OnNewLocationAvailable(location);
 }
 

@@ -52,6 +52,12 @@ struct StructTraits<viz::mojom::CompositorFrameMetadataDataView,
     return metadata.content_color_usage;
   }
 
+#if BUILDFLAG(IS_OHOS)
+  static bool is_scrolling(const viz::CompositorFrameMetadata& metadata) {
+    return metadata.is_scrolling;
+  }
+#endif
+
   static bool may_contain_video(const viz::CompositorFrameMetadata& metadata) {
     return metadata.may_contain_video;
   }

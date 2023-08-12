@@ -18,10 +18,6 @@ class ClipboardOhosReadData {
  public:
   ClipboardOhosReadData(OHOS::NWeb::PasteRecordList& record_list);
 
-  std::unordered_map<std::string, base::File>& GetFileMap() {
-    return file_map_;
-  }
-
   OHOS::NWeb::PasteRecordList& GetPasteRecordList() { return record_list_; }
   uint32_t GetTokenId() const { return token_id_; }
   bool IsLocalPaste() const { return is_in_app_; }
@@ -31,14 +27,8 @@ class ClipboardOhosReadData {
   ~ClipboardOhosReadData();
 
  private:
-  void ReplaceHTMLImgUriList(std::string& html);
-  void SaveImgFile(const std::string& old_uri,
-                   std::string& new_uri,
-                   uint32_t token_id);
-
   OHOS::NWeb::PasteRecordList record_list_;
   bool has_been_read_html_ = false;
-  FileUrlMap file_map_;
   uint32_t token_id_ = 0;
   bool is_in_app_ = false;
   std::shared_ptr<std::string> html_ = nullptr;

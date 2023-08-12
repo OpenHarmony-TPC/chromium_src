@@ -399,6 +399,9 @@ int TransportClientSocketPool::RequestSocketInternal(const GroupId& group_id,
         return NetLogCreateConnectJobParams(false /* backup_job */, &group_id);
       });
   ConnectJob* connect_job = owned_connect_job.get();
+#if BUILDFLAG(IS_OHOS)
+  connect_job->SetConnectTimeout(timeout_override_);
+#endif
   bool was_group_empty = group->IsEmpty();
   // Need to add the ConnectJob to the group before connecting, to ensure
   // |group| is not empty.  Otherwise, if the ConnectJob calls back into the
@@ -771,6 +774,9 @@ TransportClientSocketPool::TransportClientSocketPool(
 
   if (ssl_client_context_)
     ssl_client_context_->AddObserver(this);
+#if BUILDFLAG(IS_OHOS)
+  timeout_override_ = 0;
+#endif
 }
 
 void TransportClientSocketPool::OnSSLConfigChanged(
@@ -1565,6 +1571,9 @@ void TransportClientSocketPool::Group::OnBackupJobTimerFired(
         return NetLogCreateConnectJobParams(true /* backup_job */, &group_id_);
       });
   ConnectJob* backup_job = owned_backup_job.get();
+#if BUILDFLAG(IS_OHOS)
+  backup_job->SetConnectTimeout(client_socket_pool_->GetConnectTimeout());
+#endif
   AddJob(std::move(owned_backup_job), false);
   client_socket_pool_->connecting_socket_count_++;
   int rv = backup_job->Connect();

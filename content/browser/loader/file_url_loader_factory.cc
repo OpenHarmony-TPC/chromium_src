@@ -365,6 +365,297 @@ class FileURLDirectoryLoader
   bool transfer_in_progress_ = false;
 };
 
+#if BUILDFLAG(IS_OHOS)
+constexpr int32_t APPLICATION_API_10 = 10;
+
+int32_t GetApplicationApiVersion()
+{
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kOhosAppApiVersion)) {
+    LOG(ERROR) << "kOhosAppApiVersion not exist";
+    return -1;
+  }
+  std::string apiVersion = base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+    switches::kOhosAppApiVersion);
+  if (apiVersion.empty()) {
+    return -1;
+  }
+  return std::stoi(apiVersion);
+}
+
+class ResourceURLLoader : public network::mojom::URLLoader {
+ public:
+  static void CreateAndStart(
+      const base::FilePath& profile_path,
+      const network::ResourceRequest& request,
+      network::mojom::FetchResponseType response_type,
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client_remote,
+      std::unique_ptr<FileURLLoaderObserver> observer,
+      scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
+    auto* resource_url_loader = new ResourceURLLoader;
+    resource_url_loader->Start(profile_path, request, response_type,
+                               std::move(loader), std::move(client_remote),
+                               std::move(observer),
+                               std::move(extra_response_headers));
+  }
+
+  ResourceURLLoader(const ResourceURLLoader&) = delete;
+  ResourceURLLoader& operator=(const ResourceURLLoader&) = delete;
+
+  // network::mojom::URLLoader:
+  void FollowRedirect(
+      const std::vector<std::string>& removed_headers,
+      const net::HttpRequestHeaders& modified_headers,
+      const net::HttpRequestHeaders& modified_cors_exempt_headers,
+      const absl::optional<GURL>& new_url) override {}
+  void SetPriority(net::RequestPriority priority,
+                   int32_t intra_priority_value) override {}
+  void PauseReadingBodyFromNet() override {}
+  void ResumeReadingBodyFromNet() override {}
+
+ private:
+  ResourceURLLoader() = default;
+  ~ResourceURLLoader() override = default;
+
+  void Start(const base::FilePath& profile_path,
+             const network::ResourceRequest& request,
+             network::mojom::FetchResponseType response_type,
+             mojo::PendingReceiver<network::mojom::URLLoader> loader,
+             mojo::PendingRemote<network::mojom::URLLoaderClient> client_remote,
+             std::unique_ptr<FileURLLoaderObserver> observer,
+             scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
+    auto head = network::mojom::URLResponseHead::New();
+    head->request_start = base::TimeTicks::Now();
+    head->response_start = base::TimeTicks::Now();
+    head->response_type = response_type;
+    head->headers = extra_response_headers;
+    receiver_.Bind(std::move(loader));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &ResourceURLLoader::OnMojoDisconnect, base::Unretained(this)));
+    client_.Bind(std::move(client_remote));
+
+    if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kOhosHapPath)) {
+      LOG(ERROR) << "kOhosHapPath not exist";
+      OnClientComplete(net::ERR_FAILED, std::move(observer));
+      return;
+    }
+    std::string resourcesPath;
+    if (request.url.SchemeIs(url::kResourcesScheme)) {
+      resourcesPath = "resources/";
+      resourcesPath += request.url.host() + request.url.path();
+    } else if (request.url.SchemeIs(url::kFileScheme)) {
+      base::FilePath path;
+      if (!net::FileURLToFilePath(request.url, &path)) {
+        LOG(ERROR) << "url invalid: " << request.url.spec();
+        OnClientComplete(net::ERR_FAILED, std::move(observer));
+        return;
+      }
+      std::string strPath = path.MaybeAsASCII();
+      size_t nPos = strPath.find("resources/");
+      if (nPos == std::string::npos) {
+        LOG(ERROR) << "is not a file under the resources folder: " << request.url.spec();
+        OnClientComplete(net::ERR_FILE_NOT_FOUND, std::move(observer));
+        return;
+      }
+      resourcesPath = strPath.substr(nPos);
+    } else {
+      LOG(ERROR) << "url scheme error";
+      OnClientComplete(net::ERR_FAILED, std::move(observer));
+      return;
+    }
+    LOG(INFO) << "ResourceURLLoader url: " << request.url.spec()
+              << ", path: " << resourcesPath;
+    std::string hapPath =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            switches::kOhosHapPath);
+    mojo::ScopedDataPipeProducerHandle producer_handle;
+    mojo::ScopedDataPipeConsumerHandle consumer_handle;
+    if (mojo::CreateDataPipe(kDefaultFileUrlPipeSize, producer_handle,
+                             consumer_handle) != MOJO_RESULT_OK) {
+      OnClientComplete(net::ERR_FAILED, std::move(observer));
+      return;
+    }
+    if (observer)
+      observer->OnStart();
+    size_t length = 0;
+    std::unique_ptr<uint8_t[]> data;
+    auto resourceInstance =
+        OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter(
+            hapPath);
+    mojo::DataPipeProducer::DataSource::ReadResult read_result;
+    if (!resourceInstance->GetRawFileData(resourcesPath, length, data, false)) {
+      LOG(ERROR) << "ResourceURLLoader GetRawFileData failed";
+      read_result.result = MOJO_RESULT_NOT_FOUND;
+      if (observer) {
+        observer->OnRead(base::span<char>(), &read_result);
+        observer->OnDone();
+      }
+      client_->OnComplete(network::URLLoaderCompletionStatus(
+          ConvertMojoResultToNetError(read_result.result)));
+      client_.reset();
+      MaybeDeleteSelf();
+      return;
+    }
+    LOG(INFO) << "GetRawFileData length: " << length;
+    read_result.result = MOJO_RESULT_OK;
+    read_result.bytes_read =
+        length > net::kMaxBytesToSniff ? net::kMaxBytesToSniff : length;
+    std::vector<char> initial_read_buffer;
+    char* dataPtr = reinterpret_cast<char*>(data.get());
+    initial_read_buffer.insert(initial_read_buffer.end(), dataPtr,
+                               dataPtr + length);
+    if (observer)
+      observer->OnRead(base::span<char>(initial_read_buffer), &read_result);
+
+    uint64_t initial_read_size = read_result.bytes_read;
+    std::string range_header;
+    net::HttpByteRange byte_range;
+    if (request.headers.GetHeader(net::HttpRequestHeaders::kRange,
+                                  &range_header)) {
+      // Handle a simple Range header for a single range.
+      std::vector<net::HttpByteRange> ranges;
+      bool fail = false;
+      if (net::HttpUtil::ParseRangeHeader(range_header, &ranges) &&
+          ranges.size() == 1) {
+        byte_range = ranges[0];
+        if (!byte_range.ComputeBounds(length)) {
+          fail = true;
+        }
+      } else {
+        fail = true;
+      }
+      if (fail) {
+        OnClientComplete(net::ERR_REQUEST_RANGE_NOT_SATISFIABLE,
+                         std::move(observer));
+        return;
+      }
+    }
+    uint64_t first_byte_to_send = 0;
+    uint64_t total_bytes_to_send = length;
+    if (byte_range.IsValid()) {
+      first_byte_to_send = byte_range.first_byte_position();
+      total_bytes_to_send =
+          byte_range.last_byte_position() - first_byte_to_send + 1;
+    }
+    total_bytes_written_ = total_bytes_to_send;
+    head->content_length = base::saturated_cast<int64_t>(total_bytes_to_send);
+
+    if (first_byte_to_send < initial_read_size) {
+      uint32_t write_size = std::min(
+          static_cast<uint32_t>(initial_read_size - first_byte_to_send),
+          static_cast<uint32_t>(total_bytes_to_send));
+      const uint32_t expected_write_size = write_size;
+      MojoResult result =
+          producer_handle->WriteData(&initial_read_buffer[first_byte_to_send],
+                                     &write_size, MOJO_WRITE_DATA_FLAG_NONE);
+      if (result != MOJO_RESULT_OK || write_size != expected_write_size) {
+        OnFileWritten(std::move(observer), nullptr, result);
+        LOG(ERROR) << "ResourceURLLoader WriteData failed";
+        return;
+      }
+      // Discount the bytes we just sent from the total range.
+      first_byte_to_send = initial_read_size;
+      total_bytes_to_send -= write_size;
+    }
+    const base::FilePath::CharType* resource_file_path =
+        FILE_PATH_LITERAL(resourcesPath.c_str());
+    if (!net::GetMimeTypeFromFile(base::FilePath(resource_file_path),
+                                  &head->mime_type)) {
+      std::string new_type;
+      net::SniffMimeType(
+          base::StringPiece(initial_read_buffer.data(), read_result.bytes_read),
+          request.url, head->mime_type,
+          GetContentClient()->browser()->ForceSniffingFileUrlsForHtml()
+              ? net::ForceSniffFileUrlsForHtml::kEnabled
+              : net::ForceSniffFileUrlsForHtml::kDisabled,
+          &new_type);
+      head->mime_type.assign(new_type);
+      head->did_mime_sniff = true;
+    }
+    if (!head->headers) {
+      head->headers =
+          base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 200 OK");
+    }
+    LOG(INFO) << "ResourceURLLoader AddHeader mime_type " << head->mime_type;
+    head->headers->AddHeader(net::HttpRequestHeaders::kContentType,
+                             head->mime_type);
+    client_->OnReceiveResponse(std::move(head),
+                               mojo::ScopedDataPipeConsumerHandle());
+    client_->OnStartLoadingResponseBody(std::move(consumer_handle));
+    LOG(INFO) << "total_bytes_to_send: " << total_bytes_to_send;
+    if (total_bytes_to_send == 0) {
+      // There's definitely no more data, so we're already done.
+      OnFileWritten(std::move(observer), nullptr, MOJO_RESULT_OK);
+      return;
+    }
+    if (observer)
+      observer->OnSeekComplete(first_byte_to_send);
+    data_producer_ =
+        std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle));
+    base::StringPiece string_piece((char*)data.get() + first_byte_to_send,
+                                   total_bytes_to_send);
+    data_producer_->Write(
+        std::make_unique<mojo::StringDataSource>(
+            string_piece, mojo::StringDataSource::AsyncWritingMode::
+                              STRING_STAYS_VALID_UNTIL_COMPLETION),
+        base::BindOnce(&ResourceURLLoader::OnFileWritten,
+                       base::Unretained(this), nullptr, std::move(data)));
+  }
+
+  void OnMojoDisconnect() {
+    data_producer_.reset();
+    receiver_.reset();
+    client_.reset();
+    MaybeDeleteSelf();
+  }
+
+  void OnClientComplete(net::Error net_error,
+                        std::unique_ptr<FileURLLoaderObserver> observer) {
+    client_->OnComplete(network::URLLoaderCompletionStatus(net_error));
+    client_.reset();
+    if (observer) {
+      if (net_error != net::OK) {
+        mojo::DataPipeProducer::DataSource::ReadResult result;
+        result.result = ConvertNetErrorToMojoResult(net_error);
+        observer->OnRead(base::span<char>(), &result);
+      }
+      observer->OnDone();
+    }
+    MaybeDeleteSelf();
+  }
+
+  void MaybeDeleteSelf() {
+    if (!receiver_.is_bound() && !client_.is_bound())
+      delete this;
+  }
+
+  void OnFileWritten(std::unique_ptr<FileURLLoaderObserver> observer,
+                     std::unique_ptr<uint8_t[]> write_data,
+                     MojoResult result) {
+    data_producer_.reset();
+    if (observer)
+      observer->OnDone();
+
+    if (result == MOJO_RESULT_OK) {
+      network::URLLoaderCompletionStatus status(net::OK);
+      status.encoded_data_length = total_bytes_written_;
+      status.encoded_body_length = total_bytes_written_;
+      status.decoded_body_length = total_bytes_written_;
+      client_->OnComplete(status);
+    } else {
+      client_->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    }
+    client_.reset();
+    MaybeDeleteSelf();
+  }
+
+  std::unique_ptr<mojo::DataPipeProducer> data_producer_;
+  mojo::Receiver<network::mojom::URLLoader> receiver_{this};
+  mojo::Remote<network::mojom::URLLoaderClient> client_;
+
+  uint64_t total_bytes_written_ = 0;
+};
+#endif
 class FileURLLoader : public network::mojom::URLLoader {
  public:
   static void CreateAndStart(
@@ -378,6 +669,19 @@ class FileURLLoader : public network::mojom::URLLoader {
       LinkFollowingPolicy link_following_policy,
       std::unique_ptr<FileURLLoaderObserver> observer,
       scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
+#if BUILDFLAG(IS_OHOS)
+    int32_t apiVersion = GetApplicationApiVersion();
+    if (apiVersion > 0 && apiVersion < APPLICATION_API_10) {
+      LOG(INFO) << "application api version: " << apiVersion;
+      base::FilePath path;
+      base::File::Info info;
+      if (!net::FileURLToFilePath(request.url, &path) || !base::GetFileInfo(path, &info)) {
+        ResourceURLLoader::CreateAndStart(profile_path, request, response_type, std::move(loader),
+            std::move(client_remote), std::move(observer), std::move(extra_response_headers));
+        return;
+      }
+    }
+#endif
     // Owns itself. Will live as long as its URLLoader and URLLoaderClient
     // bindings are alive - essentially until either the client gives up or all
     // file data has been sent to it.
@@ -776,262 +1080,6 @@ class FileURLLoader : public network::mojom::URLLoader {
   // to the URLLoaderClients (eg SimpleURLLoader).
   uint64_t total_bytes_written_ = 0;
 };
-
-#if BUILDFLAG(IS_OHOS)
-class ResourceURLLoader : public network::mojom::URLLoader {
- public:
-  static void CreateAndStart(
-      const base::FilePath& profile_path,
-      const network::ResourceRequest& request,
-      network::mojom::FetchResponseType response_type,
-      mojo::PendingReceiver<network::mojom::URLLoader> loader,
-      mojo::PendingRemote<network::mojom::URLLoaderClient> client_remote,
-      std::unique_ptr<FileURLLoaderObserver> observer,
-      scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
-    auto* resource_url_loader = new ResourceURLLoader;
-    resource_url_loader->Start(profile_path, request, response_type,
-                               std::move(loader), std::move(client_remote),
-                               std::move(observer),
-                               std::move(extra_response_headers));
-  }
-
-  ResourceURLLoader(const ResourceURLLoader&) = delete;
-  ResourceURLLoader& operator=(const ResourceURLLoader&) = delete;
-
-  // network::mojom::URLLoader:
-  void FollowRedirect(
-      const std::vector<std::string>& removed_headers,
-      const net::HttpRequestHeaders& modified_headers,
-      const net::HttpRequestHeaders& modified_cors_exempt_headers,
-      const absl::optional<GURL>& new_url) override {}
-  void SetPriority(net::RequestPriority priority,
-                   int32_t intra_priority_value) override {}
-  void PauseReadingBodyFromNet() override {}
-  void ResumeReadingBodyFromNet() override {}
-
- private:
-  ResourceURLLoader() = default;
-  ~ResourceURLLoader() override = default;
-
-  void Start(const base::FilePath& profile_path,
-             const network::ResourceRequest& request,
-             network::mojom::FetchResponseType response_type,
-             mojo::PendingReceiver<network::mojom::URLLoader> loader,
-             mojo::PendingRemote<network::mojom::URLLoaderClient> client_remote,
-             std::unique_ptr<FileURLLoaderObserver> observer,
-             scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
-    auto head = network::mojom::URLResponseHead::New();
-    head->request_start = base::TimeTicks::Now();
-    head->response_start = base::TimeTicks::Now();
-    head->response_type = response_type;
-    head->headers = extra_response_headers;
-    receiver_.Bind(std::move(loader));
-    receiver_.set_disconnect_handler(base::BindOnce(
-        &ResourceURLLoader::OnMojoDisconnect, base::Unretained(this)));
-    client_.Bind(std::move(client_remote));
-
-    if (!request.url.SchemeIs(url::kResourcesScheme) ||
-        !base::CommandLine::ForCurrentProcess()->HasSwitch(
-            switches::kOhosHapPath)) {
-      LOG(ERROR) << "url scheme error or kOhosHapPath not exist";
-      OnClientComplete(net::ERR_FAILED, std::move(observer));
-      return;
-    }
-    std::string hapPath =
-        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-            switches::kOhosHapPath);
-    std::string resourcesPath = "resources/";
-    resourcesPath = resourcesPath + request.url.host() + request.url.path();
-    LOG(INFO) << "ResourceURLLoader url: " << request.url.spec()
-              << ", path: " << resourcesPath;
-    mojo::ScopedDataPipeProducerHandle producer_handle;
-    mojo::ScopedDataPipeConsumerHandle consumer_handle;
-    if (mojo::CreateDataPipe(kDefaultFileUrlPipeSize, producer_handle,
-                             consumer_handle) != MOJO_RESULT_OK) {
-      OnClientComplete(net::ERR_FAILED, std::move(observer));
-      return;
-    }
-    if (observer)
-      observer->OnStart();
-    size_t length = 0;
-    std::unique_ptr<uint8_t[]> data;
-    auto resourceInstance =
-        OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter(
-            hapPath);
-    mojo::DataPipeProducer::DataSource::ReadResult read_result;
-    if (!resourceInstance->GetRawFileData(resourcesPath, length, data, false)) {
-      LOG(ERROR) << "ResourceURLLoader GetRawFileData failed";
-      read_result.result = MOJO_RESULT_NOT_FOUND;
-      if (observer) {
-        observer->OnRead(base::span<char>(), &read_result);
-        observer->OnDone();
-      }
-      client_->OnComplete(network::URLLoaderCompletionStatus(
-          ConvertMojoResultToNetError(read_result.result)));
-      client_.reset();
-      MaybeDeleteSelf();
-      return;
-    }
-    LOG(INFO) << "GetRawFileData length: " << length;
-    read_result.result = MOJO_RESULT_OK;
-    read_result.bytes_read =
-        length > net::kMaxBytesToSniff ? net::kMaxBytesToSniff : length;
-    std::vector<char> initial_read_buffer;
-    char* dataPtr = reinterpret_cast<char*>(data.get());
-    initial_read_buffer.insert(initial_read_buffer.end(), dataPtr,
-                               dataPtr + length);
-    if (observer)
-      observer->OnRead(base::span<char>(initial_read_buffer), &read_result);
-
-    uint64_t initial_read_size = read_result.bytes_read;
-    std::string range_header;
-    net::HttpByteRange byte_range;
-    if (request.headers.GetHeader(net::HttpRequestHeaders::kRange,
-                                  &range_header)) {
-      // Handle a simple Range header for a single range.
-      std::vector<net::HttpByteRange> ranges;
-      bool fail = false;
-      if (net::HttpUtil::ParseRangeHeader(range_header, &ranges) &&
-          ranges.size() == 1) {
-        byte_range = ranges[0];
-        if (!byte_range.ComputeBounds(length)) {
-          fail = true;
-        }
-      } else {
-        fail = true;
-      }
-      if (fail) {
-        OnClientComplete(net::ERR_REQUEST_RANGE_NOT_SATISFIABLE,
-                         std::move(observer));
-        return;
-      }
-    }
-    uint64_t first_byte_to_send = 0;
-    uint64_t total_bytes_to_send = length;
-    if (byte_range.IsValid()) {
-      first_byte_to_send = byte_range.first_byte_position();
-      total_bytes_to_send =
-          byte_range.last_byte_position() - first_byte_to_send + 1;
-    }
-    total_bytes_written_ = total_bytes_to_send;
-    head->content_length = base::saturated_cast<int64_t>(total_bytes_to_send);
-
-    if (first_byte_to_send < initial_read_size) {
-      uint32_t write_size = std::min(
-          static_cast<uint32_t>(initial_read_size - first_byte_to_send),
-          static_cast<uint32_t>(total_bytes_to_send));
-      const uint32_t expected_write_size = write_size;
-      MojoResult result =
-          producer_handle->WriteData(&initial_read_buffer[first_byte_to_send],
-                                     &write_size, MOJO_WRITE_DATA_FLAG_NONE);
-      if (result != MOJO_RESULT_OK || write_size != expected_write_size) {
-        OnFileWritten(std::move(observer), nullptr, result);
-        LOG(ERROR) << "ResourceURLLoader WriteData failed";
-        return;
-      }
-      // Discount the bytes we just sent from the total range.
-      first_byte_to_send = initial_read_size;
-      total_bytes_to_send -= write_size;
-    }
-    const base::FilePath::CharType* resource_file_path =
-        FILE_PATH_LITERAL(resourcesPath.c_str());
-    if (!net::GetMimeTypeFromFile(base::FilePath(resource_file_path),
-                                  &head->mime_type)) {
-      std::string new_type;
-      net::SniffMimeType(
-          base::StringPiece(initial_read_buffer.data(), read_result.bytes_read),
-          request.url, head->mime_type,
-          GetContentClient()->browser()->ForceSniffingFileUrlsForHtml()
-              ? net::ForceSniffFileUrlsForHtml::kEnabled
-              : net::ForceSniffFileUrlsForHtml::kDisabled,
-          &new_type);
-      head->mime_type.assign(new_type);
-      head->did_mime_sniff = true;
-    }
-    if (!head->headers) {
-      head->headers =
-          base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 200 OK");
-    }
-    LOG(INFO) << "ResourceURLLoader AddHeader mime_type " << head->mime_type;
-    head->headers->AddHeader(net::HttpRequestHeaders::kContentType,
-                             head->mime_type);
-    client_->OnReceiveResponse(std::move(head),
-                               mojo::ScopedDataPipeConsumerHandle());
-    client_->OnStartLoadingResponseBody(std::move(consumer_handle));
-    LOG(INFO) << "total_bytes_to_send: " << total_bytes_to_send;
-    if (total_bytes_to_send == 0) {
-      // There's definitely no more data, so we're already done.
-      OnFileWritten(std::move(observer), nullptr, MOJO_RESULT_OK);
-      return;
-    }
-    if (observer)
-      observer->OnSeekComplete(first_byte_to_send);
-    data_producer_ =
-        std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle));
-    base::StringPiece string_piece((char*)data.get() + first_byte_to_send,
-                                   total_bytes_to_send);
-    data_producer_->Write(
-        std::make_unique<mojo::StringDataSource>(
-            string_piece, mojo::StringDataSource::AsyncWritingMode::
-                              STRING_STAYS_VALID_UNTIL_COMPLETION),
-        base::BindOnce(&ResourceURLLoader::OnFileWritten,
-                       base::Unretained(this), nullptr, std::move(data)));
-  }
-
-  void OnMojoDisconnect() {
-    data_producer_.reset();
-    receiver_.reset();
-    client_.reset();
-    MaybeDeleteSelf();
-  }
-
-  void OnClientComplete(net::Error net_error,
-                        std::unique_ptr<FileURLLoaderObserver> observer) {
-    client_->OnComplete(network::URLLoaderCompletionStatus(net_error));
-    client_.reset();
-    if (observer) {
-      if (net_error != net::OK) {
-        mojo::DataPipeProducer::DataSource::ReadResult result;
-        result.result = ConvertNetErrorToMojoResult(net_error);
-        observer->OnRead(base::span<char>(), &result);
-      }
-      observer->OnDone();
-    }
-    MaybeDeleteSelf();
-  }
-
-  void MaybeDeleteSelf() {
-    if (!receiver_.is_bound() && !client_.is_bound())
-      delete this;
-  }
-
-  void OnFileWritten(std::unique_ptr<FileURLLoaderObserver> observer,
-                     std::unique_ptr<uint8_t[]> write_data,
-                     MojoResult result) {
-    data_producer_.reset();
-    if (observer)
-      observer->OnDone();
-
-    if (result == MOJO_RESULT_OK) {
-      network::URLLoaderCompletionStatus status(net::OK);
-      status.encoded_data_length = total_bytes_written_;
-      status.encoded_body_length = total_bytes_written_;
-      status.decoded_body_length = total_bytes_written_;
-      client_->OnComplete(status);
-    } else {
-      client_->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
-    }
-    client_.reset();
-    MaybeDeleteSelf();
-  }
-
-  std::unique_ptr<mojo::DataPipeProducer> data_producer_;
-  mojo::Receiver<network::mojom::URLLoader> receiver_{this};
-  mojo::Remote<network::mojom::URLLoaderClient> client_;
-
-  uint64_t total_bytes_written_ = 0;
-};
-#endif
 }  // namespace
 
 FileURLLoaderFactory::FileURLLoaderFactory(

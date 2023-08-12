@@ -17,26 +17,29 @@
 #define NWEB_HILOG_H
 
 #if defined(OHOS_NWEB)
-#include "hilog/log.h"
-constexpr OHOS::HiviewDFX::HiLogLabel kLogLabel = {LOG_CORE, 0xD004500, "NWEB"};
+#include "hilog_adapter.h"
+constexpr char logTag[] = "NWEB";
 
 #define FUNC_LINE_FMT " %{public}s<%{public}d>: "
 
+using OHOS::NWeb::HiLogAdapter;
+using OHOS::NWeb::LogLevelAdapter;
+
 #define WVLOG_D(fmt, ...)                                                   \
-  OHOS::HiviewDFX::HiLog::Debug(kLogLabel, FUNC_LINE_FMT fmt, __FUNCTION__, \
-                                __LINE__, ##__VA_ARGS__)
+  HiLogAdapter::PrintLog(LogLevelAdapter::DEBUG, logTag, FUNC_LINE_FMT fmt, \
+                         __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define WVLOG_I(fmt, ...)                                                  \
-  OHOS::HiviewDFX::HiLog::Info(kLogLabel, FUNC_LINE_FMT fmt, __FUNCTION__, \
-                               __LINE__, ##__VA_ARGS__)
+  HiLogAdapter::PrintLog(LogLevelAdapter::INFO, logTag, FUNC_LINE_FMT fmt, \
+                         __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define WVLOG_W(fmt, ...)                                                  \
-  OHOS::HiviewDFX::HiLog::Warn(kLogLabel, FUNC_LINE_FMT fmt, __FUNCTION__, \
-                               __LINE__, ##__VA_ARGS__)
+  HiLogAdapter::PrintLog(LogLevelAdapter::WARN, logTag, FUNC_LINE_FMT fmt, \
+                         __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define WVLOG_E(fmt, ...)                                                   \
-  OHOS::HiviewDFX::HiLog::Error(kLogLabel, FUNC_LINE_FMT fmt, __FUNCTION__, \
-                                __LINE__, ##__VA_ARGS__)
+  HiLogAdapter::PrintLog(LogLevelAdapter::ERROR, logTag, FUNC_LINE_FMT fmt, \
+                         __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define WVLOG_F(fmt, ...)                                                   \
-  OHOS::HiviewDFX::HiLog::Fatal(kLogLabel, FUNC_LINE_FMT fmt, __FUNCTION__, \
-                                __LINE__, ##__VA_ARGS__)
+  HiLogAdapter::PrintLog(LogLevelAdapter::FATAL, logTag, FUNC_LINE_FMT fmt, \
+                         __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 #else  // not OHOS_NWEB
 

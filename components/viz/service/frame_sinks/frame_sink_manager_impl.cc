@@ -277,7 +277,7 @@ void FrameSinkManagerImpl::UnregisterFrameSinkHierarchy(
   }
 
   auto iter = frame_sink_source_map_.find(parent_frame_sink_id);
-  DCHECK(iter != frame_sink_source_map_.end());
+  CHECK(iter != frame_sink_source_map_.end());
 
   // Remove |child_frame_sink_id| from parents list of children.
   auto& mapping = iter->second;
@@ -729,5 +729,13 @@ void FrameSinkManagerImpl::UpdateThrottling() {
 void FrameSinkManagerImpl::ClearThrottling(const FrameSinkId& id) {
   UpdateThrottlingRecursively(id, base::TimeDelta());
 }
+
+#if BUILDFLAG(IS_OHOS)
+void FrameSinkManagerImpl::OnVsync(const FrameSinkId& frame_sink_id) {
+  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+  if (client_)
+    client_->OnVsync(frame_sink_id.client_id(), frame_sink_id.sink_id());
+}
+#endif
 
 }  // namespace viz

@@ -338,6 +338,9 @@ class CONTENT_EXPORT RenderFrameImpl
       mojo::ScopedInterfaceEndpointHandle handle) override;
 
   // RenderFrame implementation:
+#if BUILDFLAG(IS_OHOS)
+  void SetZoomLevel(float magnify_delta, const gfx::Point& anchor) override;
+#endif  // BUILDFLAG(IS_OHOS)
   RenderView* GetRenderView() override;
   RenderFrame* GetMainRenderFrame() override;
   RenderAccessibility* GetRenderAccessibility() override;
@@ -394,6 +397,9 @@ class CONTENT_EXPORT RenderFrameImpl
   float GetDeviceScaleFactor() override;
   blink::scheduler::WebAgentGroupScheduler& GetAgentGroupScheduler() override;
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+  void ClearContextMenu() override;
+#endif
   // blink::mojom::AutoplayConfigurationClient implementation:
   void AddAutoplayFlags(const url::Origin& origin,
                         const int32_t flags) override;

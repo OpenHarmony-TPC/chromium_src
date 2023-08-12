@@ -104,6 +104,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) URLLoaderCompletionStatus {
   // Whether the initiator of this request should be collapsed.
   bool should_collapse_initiator = false;
 
+#if BUILDFLAG(IS_OHOS)
+  bool abort_due_to_cef_browser_destroyed = false;
+#endif
+
   // Write a representation of this struct into a trace.
   void WriteIntoTrace(perfetto::TracedValue context) const;
 };

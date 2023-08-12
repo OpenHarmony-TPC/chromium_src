@@ -80,6 +80,17 @@ absl::optional<base::FilePath> DropData::GetSafeFilenameForImageFileContents()
   return absl::nullopt;
 }
 
+#if BUILDFLAG(IS_OHOS)
+bool DropData::IsImageFileContents() const {
+  std::string mime_type;
+  if (net::GetWellKnownMimeTypeFromExtension(file_contents_filename_extension, &mime_type) &&
+      base::StartsWith(mime_type, "image/", base::CompareCase::INSENSITIVE_ASCII)) {
+    return true;
+  }
+  return false;
+}
+#endif
+
 // static
 void DropData::FileSystemFileInfo::WriteFileSystemFilesToPickle(
     const std::vector<FileSystemFileInfo>& file_system_files,

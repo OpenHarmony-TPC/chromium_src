@@ -145,6 +145,11 @@ class MEDIA_EXPORT AudioManagerBase : public AudioManager {
   virtual AudioParameters GetPreferredOutputStreamParameters(
       const std::string& output_device_id,
       const AudioParameters& input_params) = 0;
+      
+#if BUILDFLAG(IS_OHOS)
+  virtual AudioParameters GetPreferredInputStreamParameters(
+      const std::string& input_device_id) = 0;
+#endif
 
   // Appends a list of available input devices to |device_names|,
   // which must initially be empty.

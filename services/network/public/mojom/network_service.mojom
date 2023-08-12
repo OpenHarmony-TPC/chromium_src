@@ -374,4 +374,10 @@ interface NetworkService {
   // Extensions, etc.
   ParseHeaders(url.mojom.Url url, HttpResponseHeaders headers)
       => (ParsedHeaders parsed_headers);
+
+  // #if BUILDFLAG(IS_OHOS)
+  [EnableIf=is_ohos]
+  SetConnectTimeout(int32 seconds);
+  // #endif
+
 };

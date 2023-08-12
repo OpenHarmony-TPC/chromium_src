@@ -21,6 +21,11 @@ bool SimpleGestureListener::OnSingleTapUp(const MotionEvent& e,
 void SimpleGestureListener::OnLongPress(const MotionEvent& e) {
 }
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+void SimpleGestureListener::OnDragLongPress(const MotionEvent& e) {
+}
+#endif
+
 bool SimpleGestureListener::OnScroll(const MotionEvent& e1,
                                      const MotionEvent& e2,
                                      const MotionEvent& secondary_pointer_down,

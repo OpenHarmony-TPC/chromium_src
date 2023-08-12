@@ -77,6 +77,10 @@
 #include "content/public/browser/posix_file_descriptor_info.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "content/common/frame.mojom.h"
+#endif
+
 namespace net {
 class SiteForCookies;
 class IsolationInfo;
@@ -953,9 +957,8 @@ class CONTENT_EXPORT ContentBrowserClient {
       RenderFrameHost* opener,
       const GURL& target_url,
       WindowOpenDisposition disposition,
-      bool user_gesture) {
-    return false;
-  }
+      bool user_gesture,
+      content::mojom::FrameHost::GetCreateNewWindowCallback callback);
 #endif
   // Allows the embedder to return a delegate for the SpeechRecognitionManager.
   // The delegate will be owned by the manager. It's valid to return nullptr.

@@ -485,4 +485,10 @@ void TransportConnectJob::ChangePriorityInternal(RequestPriority priority) {
   }
 }
 
+#if BUILDFLAG(IS_OHOS)
+void TransportConnectJob::SetConnectTimeout(int timeout_override) {
+  timeout_override_ = base::Seconds(timeout_override);
+}
+#endif
+
 }  // namespace net

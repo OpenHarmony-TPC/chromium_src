@@ -32,6 +32,10 @@ class GraphFeatures {
     return GraphFeatures().EnableDefault();
   }
 
+  static constexpr GraphFeatures WithOHOSDefault() {
+    return GraphFeatures().EnableOHOSDefault();
+  }
+
   // Helper for housing the actual configuration data.
   union Flags {
     uint32_t flags;
@@ -163,6 +167,23 @@ class GraphFeatures {
     EnableProcessHostedContentTypesAggregator();
     EnableProcessNodeImplDescriber();
     EnableSiteDataRecorder();
+    EnableTabPropertiesDecorator();
+    EnableV8ContextTracker();
+    EnableWorkerNodeImplDescriber();
+    return *this;
+  }
+
+  constexpr GraphFeatures& EnableOHOSDefault() {
+    EnableExecutionContextRegistry();
+    EnableFrameNodeImplDescriber();
+    EnableFrameVisibilityDecorator();
+    EnableFreezingVoteDecorator();
+    EnableMetricsCollector();
+    EnablePageLiveStateDecorator();
+    EnablePageLoadTrackerDecorator();
+    EnablePageNodeImplDescriber();
+    EnableProcessHostedContentTypesAggregator();
+    EnableProcessNodeImplDescriber();
     EnableTabPropertiesDecorator();
     EnableV8ContextTracker();
     EnableWorkerNodeImplDescriber();

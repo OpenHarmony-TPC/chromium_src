@@ -232,6 +232,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
   void ReenableSwap();
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+  void SetShouldFrameSubmissionBeforeDraw(bool should);
+#endif
+
   // Sets the compositor's device scale factor and size.
   void SetScaleAndSize(float scale,
                        const gfx::Size& size_in_pixel,
@@ -437,6 +441,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
 
   virtual void SetDelegatedInkPointRenderer(
       mojo::PendingReceiver<gfx::mojom::DelegatedInkPointRenderer> receiver);
+
+#if BUILDFLAG(IS_OHOS)
+  void SetCurrentFrameSinkId(const viz::FrameSinkId& id);
+#endif
 
  private:
   friend class base::RefCounted<Compositor>;

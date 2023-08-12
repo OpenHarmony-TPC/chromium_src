@@ -54,6 +54,10 @@ enum UMAEventType {
   // NOTE: Add new event types only immediately above this line. Make sure to
   // update the UIEventType enum in tools/metrics/histograms/histograms.xml
   // accordingly.
+
+  //#ifdef OHOS_ENABLE_DRAG_DROP
+  UMA_ET_GESTURE_DRAG_LONG_PRESS = 37,
+  //#endif
   UMA_ET_COUNT
 };
 

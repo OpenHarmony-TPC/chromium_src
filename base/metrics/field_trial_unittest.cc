@@ -1423,7 +1423,7 @@ TEST_F(FieldTrialListTest, SerializeSharedMemoryRegionMetadata) {
       FieldTrialList::SerializeSharedMemoryRegionMetadata(shm.region, &options);
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   int shm_fd = shm.region.GetPlatformHandle();
 #else
   int shm_fd = shm.region.GetPlatformHandle().fd;

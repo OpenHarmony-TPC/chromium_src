@@ -140,6 +140,12 @@ class NoStatePrefetchContents : public content::WebContentsObserver,
 
   base::TimeTicks load_start_time() const { return load_start_time_; }
 
+#if BUILDFLAG(IS_OHOS)
+  void SetOhStartPrerenderingExtraHeaders(const std::string& extra_headers) {
+    start_prerendering_extra_headers_ = extra_headers;
+  }
+#endif
+
   // Indicates whether this prerendered page can be used for the provided
   // |url| and |session_storage_namespace|.
   bool Matches(
@@ -306,6 +312,10 @@ class NoStatePrefetchContents : public content::WebContentsObserver,
   // A running tally of the number of bytes this prerender has caused to be
   // transferred over the network for resources.  Updated with AddNetworkBytes.
   int64_t network_bytes_;
+
+#if BUILDFLAG(IS_OHOS)
+  std::string start_prerendering_extra_headers_ = std::string();
+#endif
 
   base::WeakPtrFactory<NoStatePrefetchContents> weak_factory_{this};
 };

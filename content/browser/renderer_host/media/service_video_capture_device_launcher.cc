@@ -81,7 +81,9 @@ void ServiceVideoCaptureDeviceLauncher::LaunchDeviceAsync(
     base::OnceClosure done_cb) {
   DCHECK(sequence_checker_.CalledOnValidSequence());
   DCHECK(state_ == State::READY_TO_LAUNCH);
-
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << "ServiceVideoCaptureDeviceLauncher::LaunchDeviceAsync";
+#endif
   if (stream_type != blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
     // This launcher only supports MediaStreamType::DEVICE_VIDEO_CAPTURE.
     NOTREACHED();

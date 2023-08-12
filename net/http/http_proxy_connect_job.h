@@ -152,6 +152,10 @@ class NET_EXPORT_PRIVATE HttpProxyConnectJob : public ConnectJob,
   // Updates the field trial parameters used in calculating timeouts.
   static void UpdateFieldTrialParametersForTesting();
 
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int timeout_override) override;
+#endif
+
  private:
   enum State {
     STATE_BEGIN_CONNECT,
@@ -249,6 +253,11 @@ class NET_EXPORT_PRIVATE HttpProxyConnectJob : public ConnectJob,
 
   // Time when the connection to the proxy was started.
   base::TimeTicks connect_start_time_;
+
+#if BUILDFLAG(IS_OHOS)
+  // Only for transport_connect_job
+  int timeout_override_for_nested_job_{0};
+#endif
 
   base::WeakPtrFactory<HttpProxyConnectJob> weak_ptr_factory_{this};
 };

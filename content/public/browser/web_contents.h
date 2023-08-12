@@ -598,9 +598,15 @@ class WebContents : public PageNavigator,
 #if BUILDFLAG(IS_OHOS)
   virtual void SetTouchInsertHandleMenuShow(bool show) = 0;
   virtual bool GetTouchInsertHandleMenuShow() = 0;
+  virtual void OpenDateTimeChooser() = 0;
+  virtual void CloseDateTimeChooser() = 0;
 #if defined (OHOS_NWEB_EX)
   virtual void SetForceEnableZoom(bool forceEnableZoom) = 0;
   virtual bool GetForceEnableZoom() = 0;
+  virtual void SelectAndCopy() = 0;
+  virtual bool ShouldShowFreeCopy() = 0;
+  virtual void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) = 0;
+  virtual bool GetEnableBlankTargetPopupIntercept() = 0;
 #endif // OHOS_NWEB_EX
 #endif
 
@@ -1387,6 +1393,10 @@ class WebContents : public PageNavigator,
       const GURL& prerendering_url,
       PrerenderTriggerType trigger_type,
       const std::string& embedder_histogram_suffix) = 0;
+
+ #ifdef OHOS_ENABLE_DRAG_DROP
+  virtual void ClearContextMenu() = 0;
+#endif //OHOS_ENABLE_DRAG_DROP
 
  private:
   // This interface should only be implemented inside content.

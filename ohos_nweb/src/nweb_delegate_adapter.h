@@ -28,7 +28,8 @@ class OHOS_NWEB_EXPORT NWebDelegateAdapter {
       const char* argv[],
       bool is_enhance_surface,
       void* window,
-      bool popup);
+      bool popup,
+      int nweb_id);
 };
 }
 

@@ -17,8 +17,11 @@
 #define NWEB_DELEGATE_H
 
 #include <condition_variable>
+#include <memory>
+#include <set>
 #include <string>
 #include "capi/nweb_app_client_extension_callback.h"
+#include "capi/nweb_download_delegate_callback.h"
 #include "cef/include/cef_command_line.h"
 #include "nweb_application.h"
 #include "nweb_delegate_interface.h"
@@ -30,18 +33,19 @@
 #include "nweb_inputmethod_client.h"
 #include "nweb_render_handler.h"
 #include "ohos_adapter_helper.h"
-#include "nweb_errors.h"
 
 namespace OHOS::NWeb {
 class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
  public:
   NWebDelegate(int argc, const char* argv[]);
   ~NWebDelegate();
-  bool Init(bool is_enhance_surface, void* window, bool popup);
+  bool Init(bool is_enhance_surface,
+            void* window,
+            bool popup,
+            uint32_t nweb_id);
 
   bool IsReady() override;
   void OnDestroy(bool is_close_all) override;
-
   void RegisterWebAppClientExtensionListener(
       std::shared_ptr<NWebAppClientExtensionCallback>
           web_app_client_extension_listener) override;
@@ -50,20 +54,37 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
       std::shared_ptr<NWebDownloadCallback> downloadListener) override;
   void RegisterReleaseSurfaceListener(
       std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) override;
+  void RegisterWebDownloadDelegateListener(
+      std::shared_ptr<NWebDownloadDelegateCallback> downloadDelegateListener)
+      override;
+  void StartDownload(const char* url) override;
+  void ResumeDownload(std::shared_ptr<NWebDownloadItem> web_download) override;
   void RegisterNWebHandler(std::shared_ptr<NWebHandler> handler) override;
   void RegisterRenderCb(
       std::function<void(const char*)> render_update_cb) override;
 
-  void SetInputMethodClient(
-      CefRefPtr<NWebInputMethodClient> client) override;
+  void SetInputMethodClient(CefRefPtr<NWebInputMethodClient> client) override;
+  void SetNWebDelegateInterface(std::shared_ptr<NWebDelegateInterface> client) override;
 
   void Resize(uint32_t width, uint32_t height) override;
-  void OnTouchPress(int32_t id, double x, double y) override;
-  void OnTouchRelease(int32_t id, double x, double y) override;
-  void OnTouchMove(int32_t id, double x, double y) override;
+  void OnTouchPress(int32_t id,
+                    double x,
+                    double y,
+                    bool from_overlay) override;
+  void OnTouchRelease(int32_t id,
+                      double x,
+                      double y,
+                      bool from_overlay) override;
+  void OnTouchMove(int32_t id,
+                   double x,
+                   double y,
+                   bool from_overlay) override;
   void OnTouchCancel() override;
   bool SendKeyEvent(int32_t keyCode, int32_t keyAction) override;
-  void SendMouseWheelEvent(double x, double y, double deltaX, double deltaY) override;
+  void SendMouseWheelEvent(double x,
+                           double y,
+                           double deltaX,
+                           double deltaY) override;
   void SendMouseEvent(int x, int y, int button, int action, int count) override;
   void NotifyScreenInfoChanged(RotationType rotation,
                                OrientationType orientation) override;
@@ -87,7 +108,8 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void ExecuteJavaScript(const std::string& code) const override;
   void ExecuteJavaScript(
       const std::string& code,
-      std::shared_ptr<NWebValueCallback<std::string>> callback) const override;
+      std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback,
+      bool extention) const override;
   void PutBackgroundColor(int color) const override;
   void InitialScale(float scale) const override;
   void OnPause() override;
@@ -95,7 +117,9 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   std::shared_ptr<NWebPreference> GetPreference() const override;
   std::string Title() override;
   void CreateWebMessagePorts(std::vector<std::string>& ports) override;
-  void PostWebMessage(std::string& message, std::vector<std::string>& ports, std::string& targetUri) override;
+  void PostWebMessage(std::string& message,
+                      std::vector<std::string>& ports,
+                      std::string& targetUri) override;
   void ClosePort(std::string& port_handle) override;
   void PostPortMessage(std::string& port_handle, std::shared_ptr<NWebMessage> data) override;
   void SetPortMessageCallback(std::string& port_handle,
@@ -106,13 +130,13 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   int Load(std::string& url,
             std::map<std::string, std::string> additionalHttpHeaders) override;
   int LoadWithDataAndBaseUrl(const std::string& baseUrl,
-                              const std::string& data,
-                              const std::string& mimeType,
-                              const std::string& encoding,
-                              const std::string& historyUrl) override;
+                             const std::string& data,
+                             const std::string& mimeType,
+                             const std::string& encoding,
+                             const std::string& historyUrl) override;
   int LoadWithData(const std::string& data,
-                    const std::string& mimeType,
-                    const std::string& encoding) override;
+                   const std::string& mimeType,
+                   const std::string& encoding) override;
   int ContentHeight() override;
   void RegisterArkJSfunction(
       const std::string& object_name,
@@ -124,7 +148,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
 
   void RegisterNWebJavaScriptCallBack(
       std::shared_ptr<NWebJavaScriptResultCallBack> callback) override;
-  void OnFocus() const override;
+  bool OnFocus(const FocusReason& focusReason = FocusReason::FOCUS_DEFAULT) const override;
   void OnBlur() const override;
 
   void RegisterFindListener(
@@ -152,12 +176,14 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void SetBrowserUserAgentString(const std::string& user_agent) override;
 
   void SendDragEvent(const DelegateDragEvent& dragEvent) const override;
+  std::shared_ptr<NWebDragData> GetOrCreateDragData() override;
   void UpdateLocale(const std::string& language, const std::string& region) override;
 
   CefRefPtr<CefClient> GetCefClient() const override {
     return handler_delegate_;
   }
 
+  void ClearDragData() const;
   void GetImages(std::shared_ptr<NWebValueCallback<bool>> callback) override;
   void RemoveCache(bool include_disk_files) override;
   std::shared_ptr<NWebHistoryList> GetHistoryList() override;
@@ -169,11 +195,22 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   WebState SerializeWebState() override;
   bool RestoreWebState(WebState state) override;
   bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) override;
-
+  void SetAudioMuted(bool muted) override;
+  void SetShouldFrameSubmissionBeforeDraw(bool should) override;
+  void SetAudioResumeInterval(int32_t resumeInterval) override;
+  void SetAudioExclusive(bool audioExclusive) override;
+  void PrefetchPage(
+      std::string& url,
+      std::map<std::string, std::string> additionalHttpHeaders) override;
 #if defined (OHOS_NWEB_EX)
   void SetForceEnableZoom(bool forceEnableZoom) override;
   bool GetForceEnableZoom() override;
+  void SelectAndCopy() override;
+  bool ShouldShowFreeCopy() override;
+  void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) override;
 #endif
+
+  void NotifyPopupWindowResult(bool result) override;
 
  public:
   int argc_;
@@ -181,16 +218,23 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
 
  private:
   void RunMessageLoop();
-  void InitializeCef(std::string url, bool is_enhance_surface, void* window, bool popup);
+  void InitializeCef(std::string url,
+                     bool is_enhance_surface,
+                     void* window,
+                     bool popup,
+                     uint32_t nweb_id);
   const CefRefPtr<CefBrowser> GetBrowser() const;
+  void ConvertNWebMsgToCefValue(std::shared_ptr<NWebMessage> data, CefRefPtr<CefValue> message);
   void RequestVisitedHistory();
   void SetVirtualPixelRatio(float ratio);
   bool GetCertChainDerDataInner(CefRefPtr<CefX509Certificate> cert,
                                 std::vector<std::string>& certChainData, bool isSingleCert);
+  bool HasBackgroundColorWithInit(int32_t& backgroundColor);
+  void OnContextInitializeComplete(const std::string& url, void* windows);
 
  private:
-  float zoom_in_factor_ = 2.0;
-  float zoom_out_factor_ = -2.0;
+  float zoom_in_factor_ = 1.25f;
+  float zoom_out_factor_ = 0.8f;
   float default_virtual_pixel_ratio_ = 2.0;
   float intial_scale_ = 0;
   bool has_requested_visited_history = false;
@@ -200,10 +244,10 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   std::shared_ptr<NWebEventHandler> event_handler_ = nullptr;
   std::shared_ptr<NWebPreferenceDelegate> preference_delegate_ = nullptr;
   std::shared_ptr<NWebFindDelegate> find_delegate_ = nullptr;
-  std::unique_ptr<OHOS::NWeb::DisplayManagerAdapter>
-    display_manager_adapter_ = nullptr;
-  std::shared_ptr<OHOS::NWeb::DisplayScreenListener>
-    display_listener_ = nullptr;
+  std::unique_ptr<OHOS::NWeb::DisplayManagerAdapter> display_manager_adapter_ =
+      nullptr;
+  std::shared_ptr<OHOS::NWeb::DisplayScreenListener> display_listener_ =
+      nullptr;
   // Members only accessed on the main thread.
   bool hidden_ = false;
   uint32_t width_ = 0;
@@ -213,6 +257,8 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
 #endif
   bool is_enhance_surface_ = false;
   bool is_ready_ = false;
+  bool is_onPause_ = false;
+  static std::set<uint32_t> focus_nweb_id_;
 };
 }  // namespace OHOS::NWeb
 #endif

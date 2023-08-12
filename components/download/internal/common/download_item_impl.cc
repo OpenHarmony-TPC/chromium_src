@@ -62,7 +62,6 @@
 #include "net/traffic_annotation/network_traffic_annotation.h"
 #include "net/url_request/referrer_policy.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
-
 #if BUILDFLAG(IS_ANDROID)
 #include "components/download/internal/common/android/download_collection_bridge.h"
 #endif  // BUILDFLAG(IS_ANDROID)
@@ -70,6 +69,10 @@
 namespace download {
 
 namespace {
+
+#if BUILDFLAG(IS_OHOS)
+const char kRequestMethod[] = "request_method";
+#endif  //  BUILDFLAG(IS_OHOS)
 
 void DeleteDownloadedFileDone(base::WeakPtr<DownloadItemImpl> item,
                               base::OnceCallback<void(bool)> callback,
@@ -438,6 +441,9 @@ DownloadItemImpl::DownloadItemImpl(DownloadItemImplDelegate* delegate,
       fetch_error_body_(info.fetch_error_body),
       request_headers_(info.request_headers),
       download_source_(info.download_source) {
+#if BUILDFLAG(IS_OHOS)
+  SetUserData(kRequestMethod, std::make_unique<RequestMethodData>(info.method));
+#endif  //  BUILDFLAG(IS_OHOS)
   delegate_->Attach();
   Init(true /* actively downloading */, TYPE_ACTIVE_DOWNLOAD);
   allow_metered_ |= delegate_->IsActiveNetworkMetered();
@@ -2332,6 +2338,7 @@ void DownloadItemImpl::InterruptWithPartialState(
   DCHECK_EQ(last_reason_, reason);
   TransitionTo(INTERRUPTED_INTERNAL);
   delegate_->DownloadInterrupted(this);
+
   AutoResumeIfValid();
 }
 
@@ -2948,4 +2955,19 @@ std::pair<int64_t, int64_t> DownloadItemImpl::GetRangeRequestOffset() const {
                         request_info_.range_request_to);
 }
 
+#if BUILDFLAG(IS_OHOS)
+
+bool DownloadItemImpl::IsBeforeInProgress() const {
+  switch (state_) {
+    case INITIAL_INTERNAL:
+    case TARGET_PENDING_INTERNAL:
+    case TARGET_RESOLVED_INTERNAL:
+    case INTERRUPTED_TARGET_PENDING_INTERNAL:
+      return true;
+    default:
+      return false;
+  }
+}
+
+#endif  //  BUILDFLAG(IS_OHOS)
 }  // namespace download

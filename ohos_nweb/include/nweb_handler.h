@@ -27,6 +27,8 @@
 #include "nweb_context_menu_params.h"
 #include "nweb_controller_handler.h"
 #include "nweb_data_resubmission_callback.h"
+#include "nweb_date_time_chooser.h"
+#include "nweb_drag_data.h"
 #include "nweb_file_selector_params.h"
 #include "nweb_full_screen_exit_handler.h"
 #include "nweb_geolocation_callback_interface.h"
@@ -145,6 +147,11 @@ struct NWebCursorInfo {
     std::unique_ptr<uint8_t[]> buff = nullptr;
 };
 
+struct TouchHandleHotZone {
+    double width = 0.0;
+    double height = 0.0;
+};
+
 using FileSelectorCallback = NWebValueCallback<std::vector<std::string>&>;
 
 class OHOS_NWEB_EXPORT NWebHandler {
@@ -196,7 +203,7 @@ public:
      * @param url The url to be loaded.
      * @return true to cancel the loading, false to continue the loading.
      */
-    virtual bool OnHandleInterceptUrlLoading(const std::string& url) {
+    virtual bool OnHandleInterceptUrlLoading(std::shared_ptr<OHOS::NWeb::NWebUrlResourceRequest> request) {
         return false;
     }
 
@@ -310,7 +317,7 @@ public:
      * geolocation
      */
     virtual void OnGeolocationShow(const std::string& origin,
-                                   NWebGeolocationCallbackInterface* callback) {}
+                                   std::shared_ptr<NWebGeolocationCallbackInterface> callback) {}
 
     /**
      * @brief Notify the host application that the web page wants to display a
@@ -544,6 +551,56 @@ public:
 
     virtual void OnSelectPopupMenu(std::shared_ptr<NWebSelectPopupMenuParam> params,
                                    std::shared_ptr<NWebSelectPopupMenuCallback> callback) {}
+
+    /**
+     * @brief Called when the audio playing state on web page changed.
+     * @param playing Whether the audio is playing or not.
+     */
+    virtual void OnAudioStateChanged(bool playing) {}
+    
+    /**
+     * @brief Called when the first content rendering of web page.
+     * @param navigationStartTick Absolute navigation start time, as TimeTicks.
+     * @param firstContentfulPaintMs Time to first contentful paint from
+     * navigation start.
+     */
+    virtual void OnFirstContentfulPaint(long navigationStartTick,
+                                        long firstContentfulPaintMs) {}
+    
+    /**
+     * @brief Called when swap buffer completed with new size.
+     */
+    virtual void OnCompleteSwapWithNewSize() {}
+
+    /**
+     * @brief Called when resize not work.
+     */
+    virtual void OnResizeNotWork() {}
+
+    virtual void OnGetTouchHandleHotZone(TouchHandleHotZone& hotZone) {}
+
+    virtual void OnDateTimeChooserPopup(
+        const DateTimeChooser& chooser,
+        const std::vector<DateTimeSuggestion>& suggestions,
+        std::shared_ptr<NWebDateTimeChooserCallback> callback) {}
+
+    virtual void OnDateTimeChooserClose() {}
+
+    virtual bool OnDragAndDropDataUdmf(std::shared_ptr<NWebDragData> dragData) {
+        return false;
+    }
+
+    virtual void UpdateDragCursor(NWebDragData::DragOperation op) {}
+
+    virtual void OnOverScroll(float xOffset, float yOffset) {}
+
+    /**
+     * @brief Ask for the screen capture permission.
+     *
+     * @param request std::shared_ptr<NWebScreenCaptureAccessRequest>: A request to ask for the
+     * screen capture permission.
+     */
+    virtual void OnScreenCaptureRequest(std::shared_ptr<NWebScreenCaptureAccessRequest> request) {}
 };
 }  // namespace OHOS::NWeb
 

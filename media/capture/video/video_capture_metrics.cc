@@ -155,11 +155,13 @@ void LogCaptureDeviceMetrics(
     base::flat_set<media::VideoPixelFormat> supported_pixel_formats;
     base::flat_set<gfx::Size, FrameSizeCompare> resolutions;
     for (const auto& format : device.supported_formats) {
-      VLOG(2) << "Device supports "
+#if BUILDFLAG(IS_OHOS)
+      LOG(DEBUG) << "Device supports "
               << media::VideoPixelFormatToString(format.pixel_format) << " at "
               << format.frame_size.ToString() << " ("
               << static_cast<int>(ResolutionNameFromSize(format.frame_size))
               << ")";
+#endif
       media::VideoPixelFormat pixel_format = format.pixel_format;
       bool inserted = supported_pixel_formats.insert(pixel_format).second;
       if (inserted) {

@@ -7,21 +7,14 @@
 
 #include <memory>
 
-#include <i_locator_callback.h>
-#include <iremote_stub.h>
-#include <location.h>
-#include <locator_proxy.h>
-#include <message_parcel.h>
-#include <request_config.h>
-
+#include <location_adapter.h>
 #include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_checker.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/device/public/mojom/geoposition.mojom.h"
 
 namespace device {
-class LocationProviderCallback
-    : public OHOS::IRemoteStub<OHOS::Location::ILocatorCallback> {
+class LocationProviderCallback : public OHOS::NWeb::LocationCallbackAdapter {
  public:
   LocationProviderCallback() {}
   ~LocationProviderCallback() = default;
@@ -36,17 +29,13 @@ class LocationProviderCallback
       UpdateCallback;
 
   // ILocatorCallback implementation.
-  virtual int OnRemoteRequest(uint32_t code,
-                              OHOS::MessageParcel& data,
-                              OHOS::MessageParcel& reply,
-                              OHOS::MessageOption& option) override;
   void OnLocationReport(
-      const std::unique_ptr<OHOS::Location::Location>& location) override;
+      const std::unique_ptr<OHOS::NWeb::LocationInfo>& location) override;
   void OnLocatingStatusChange(const int status) override;
   void OnErrorReport(const int errorCode) override;
 
   void OnNewLocationAvailable(
-      const std::unique_ptr<OHOS::Location::Location>& location);
+      const std::unique_ptr<OHOS::NWeb::LocationInfo>& location);
   void OnNewErrorAvailable(std::string message);
   void SetUpdateCallback(const UpdateCallback& callback) {
     callback_ = callback;
@@ -81,15 +70,15 @@ class LocationProviderOhos : public LocationProvider {
   void RequestLocationUpdate(bool high_accuracy);
   void CreateLocationManagerIfNeeded();
   void SetRequestConfig(
-      std::unique_ptr<OHOS::Location::RequestConfig>& requestConfig,
+      std::unique_ptr<OHOS::NWeb::LocationRequestConfig>& requestConfig,
       bool high_accuracy);
 
-  std::unique_ptr<OHOS::Location::LocatorProxy> locator_;
+  std::unique_ptr<OHOS::NWeb::LocationProxyAdapter> locator_;
 
   LocationProviderUpdateCallback callback_;
 
   bool is_running_ = false;
-  OHOS::sptr<LocationProviderCallback> locator_callback_ = nullptr;
+  std::shared_ptr<LocationProviderCallback> locator_callback_ = nullptr;
 };
 
 }  // namespace device

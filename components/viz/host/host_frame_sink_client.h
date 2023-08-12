@@ -23,6 +23,10 @@ class HostFrameSinkClient {
   virtual void OnFrameTokenChanged(uint32_t frame_token,
                                    base::TimeTicks activation_time) = 0;
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void OnVsync() {}
+#endif
+
  protected:
   virtual ~HostFrameSinkClient() {}
 };

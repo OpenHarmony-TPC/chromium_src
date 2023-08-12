@@ -24,6 +24,10 @@ void NWebGeolocationCallback::GeolocationCallbackInvoke(
     const std::string& origin,
     bool allow,
     bool retain) {
+  if (!browser_) {
+    LOG(ERROR) << "GeolocationCallbackInvoke browser_ is nullptr";
+    return;
+  }
   if (retain) {
     if (allow) {
       browser_->GetGeolocationPermissions()->Enabled(origin);

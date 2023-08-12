@@ -432,4 +432,11 @@ void HttpNetworkSession::OnMemoryPressure(
   }
 }
 
+#if BUILDFLAG(IS_OHOS)
+void HttpNetworkSession::SetConnectTimeout(int seconds) {
+  normal_socket_pool_manager_->SetConnectTimeout(seconds);
+  websocket_socket_pool_manager_->SetConnectTimeout(seconds);
+}
+#endif
+
 }  // namespace net

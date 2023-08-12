@@ -30,6 +30,9 @@ std::unique_ptr<GestureDetector> CreateGestureDetector(
   std::unique_ptr<ui::GestureDetector> detector(
       new ui::GestureDetector(config, listener, null_double_tap_listener));
   detector->set_longpress_enabled(false);
+#ifdef OHOS_ENABLE_DRAG_DROP
+  detector->set_draglongpress_enabled(false);
+#endif
   detector->set_showpress_enabled(false);
 
   return detector;

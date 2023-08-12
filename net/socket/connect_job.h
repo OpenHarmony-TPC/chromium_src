@@ -238,6 +238,10 @@ class NET_EXPORT_PRIVATE ConnectJob {
 
   const NetLogWithSource& net_log() const { return net_log_; }
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void SetConnectTimeout(int timeout_override) = 0;
+#endif
+
  protected:
   const SocketTag& socket_tag() const { return socket_tag_; }
   ClientSocketFactory* client_socket_factory() {
@@ -284,6 +288,10 @@ class NET_EXPORT_PRIVATE ConnectJob {
   // Connection establishment timing information.
   // TODO(mmenke): This should be private.
   LoadTimingInfo::ConnectTiming connect_timing_;
+
+#if BUILDFLAG(IS_OHOS)
+  base::TimeDelta timeout_override_ = base::TimeDelta();
+#endif
 
  private:
   virtual int ConnectInternal() = 0;

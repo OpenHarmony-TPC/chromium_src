@@ -4314,7 +4314,13 @@ void NavigationRequest::CommitErrorPage(
     }
   }
 
+  base::WeakPtr<NavigationRequest> weak_self(weak_factory_.GetWeakPtr());
   ReadyToCommitNavigation(true /* is_error */);
+  // The caller above might result in the deletion of `this`. Return immediately
+  // if so.
+  if (!weak_self) {
+    return;
+  }
 
   // Use a separate cache shard, and no cookies, for error pages.
   isolation_info_for_subresources_ = net::IsolationInfo::CreateTransient();

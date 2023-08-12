@@ -69,6 +69,10 @@ class GESTURE_DETECTION_EXPORT GestureProvider {
   // be handled.
   bool OnTouchEvent(const MotionEvent& event);
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+  void ResetDetection(bool is_lost_focus);
+#endif
+
   // Reset any active gesture detection, including detection of timeout-based
   // events (e.g., double-tap or delayed tap) for which the pointer has already
   // been released.

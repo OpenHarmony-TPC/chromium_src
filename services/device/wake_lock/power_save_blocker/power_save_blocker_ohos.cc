@@ -6,9 +6,8 @@
 
 #include "base/memory/ref_counted.h"
 #include "base/logging.h"
-#include "ohos_adapter_helper.h"
+#include "nweb_screen_lock_tracker.h"
 
-using namespace OHOS::NWeb;
 namespace device {
 
 class PowerSaveBlocker::Delegate
@@ -25,30 +24,16 @@ class PowerSaveBlocker::Delegate
  private:
   friend class base::RefCountedThreadSafe<Delegate>;
   virtual ~Delegate() {}
-
-  std::unique_ptr<PowerMgrClientAdapter> power_mgr_client_ = nullptr;
-  std::shared_ptr<RunningLockAdapter> lock_ = nullptr;
 };
 
-PowerSaveBlocker::Delegate::Delegate() {
-  power_mgr_client_ =
-    OHOS::NWeb::OhosAdapterHelper::GetInstance().CreatePowerMgrClientAdapter();
-  if (power_mgr_client_ != nullptr) {
-    lock_ = power_mgr_client_->CreateRunningLock(
-      "nweb_lock", RunningLockAdapterType::SCREEN);
-  }
-}
+PowerSaveBlocker::Delegate::Delegate() {}
 
 void PowerSaveBlocker::Delegate::ApplyBlock() {
-  if (lock_ != nullptr) {
-    lock_->Lock(0);
-  }
+  NWebScreenLockTracker::Instance().Lock();
 }
 
 void PowerSaveBlocker::Delegate::RemoveBlock() {
-  if (lock_ != nullptr) {
-    lock_->UnLock();
-  }
+  NWebScreenLockTracker::Instance().UnLock();
 }
 
 PowerSaveBlocker::PowerSaveBlocker(

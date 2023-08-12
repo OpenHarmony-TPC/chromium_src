@@ -4,8 +4,10 @@
 
 #include "media/audio/ohos/ohos_audio_manager.h"
 
+#include <stdlib.h>
 #include "audio_system_manager_adapter.h"
 #include "base/command_line.h"
+#include "base/logging.h"
 #include "media/base/media_switches.h"
 #include "ohos_adapter_helper.h"
 
@@ -13,7 +15,8 @@ namespace media {
 
 constexpr int kDefaultSampleRate = 48000;
 constexpr int kDefaultChannelCount = 2;
-constexpr int kMinimumOutputBufferSize = 512;
+constexpr int kMinimumOutputBufferSize = 2048;
+constexpr int kMinimumInputBufferSize = 2048;
 static const char* AUDIO_MANAGER_NAME = "OHOS";
 
 std::unique_ptr<AudioManager> CreateAudioManager(
@@ -48,7 +51,32 @@ void OHOSAudioManager::GetAudioOutputDeviceNames(
           switches::kDisableAudioOutput)) {
     return;
   }
-  *device_names = {AudioDeviceName::CreateDefault()};
+  auto audioDeviceList =
+      OhosAdapterHelper::GetInstance().GetAudioSystemManager().GetDevices(
+          AdapterDeviceFlag::OUTPUT_DEVICES_FLAG);
+  for (auto audioDevice : audioDeviceList) {
+    AudioDeviceName device;
+    device.unique_id = std::to_string(audioDevice.deviceId);
+    device.device_name = audioDevice.deviceName;
+    device_names->push_back(device);
+  }
+}
+
+void OHOSAudioManager::GetAudioInputDeviceNames(
+    AudioDeviceNames* device_names) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kDisableAudioInput)) {
+    return;
+  }
+  auto audioDeviceList =
+      OhosAdapterHelper::GetInstance().GetAudioSystemManager().GetDevices(
+          AdapterDeviceFlag::INPUT_DEVICES_FLAG);
+  for (auto audioDevice : audioDeviceList) {
+    AudioDeviceName device;
+    device.unique_id = std::to_string(audioDevice.deviceId);
+    device.device_name = audioDevice.deviceName;
+    device_names->push_back(device);
+  }
 }
 
 const char* OHOSAudioManager::GetName() {
@@ -67,7 +95,9 @@ AudioOutputStream* OHOSAudioManager::MakeLowLatencyOutputStream(
     const AudioParameters& params,
     const std::string& device_id,
     const LogCallback& log_callback) {
-  return new OHOSAudioOutputStream(this, params);
+  LOG(INFO) << "OHOSAudioManager::MakeLowLatencyOutputStream";
+  SelectAudioDevice(device_id, false);
+  return new OHOSAudioOutputStream(this, params, isCommunication_);
 }
 
 AudioInputStream* OHOSAudioManager::MakeLinearInputStream(
@@ -82,16 +112,51 @@ AudioInputStream* OHOSAudioManager::MakeLowLatencyInputStream(
     const AudioParameters& params,
     const std::string& device_id,
     const LogCallback& log_callback) {
-  NOTREACHED();
-  return nullptr;
+  LOG(INFO) << "OHOSAudioManager::MakeLowLatencyInputStream";
+  isCommunication_ = true;
+  SelectAudioDevice(device_id, true);
+  return new OHOSAudioInputStream(this, params);
 }
 
 AudioParameters OHOSAudioManager::GetPreferredOutputStreamParameters(
     const std::string& output_device_id,
     const AudioParameters& input_params) {
+  LOG(INFO) << "OHOSAudioManager::GetPreferredOutputStreamParameters";
+  SelectAudioDevice(output_device_id, false);
   return AudioParameters(AudioParameters::AUDIO_PCM_LOW_LATENCY,
                          GuessChannelLayout(kDefaultChannelCount),
                          kDefaultSampleRate, kMinimumOutputBufferSize);
+}
+
+AudioParameters OHOSAudioManager::GetPreferredInputStreamParameters(
+    const std::string& input_device_id) {
+  LOG(INFO) << "OHOSAudioManager::GetPreferredInputStreamParameters";
+  AudioParameters params =
+      AudioParameters(AudioParameters::AUDIO_PCM_LOW_LATENCY,
+                      GuessChannelLayout(kDefaultChannelCount),
+                      kDefaultSampleRate, kMinimumInputBufferSize);
+  params.set_effects(AudioParameters::ECHO_CANCELLER |
+                     AudioParameters::NOISE_SUPPRESSION |
+                     AudioParameters::AUTOMATIC_GAIN_CONTROL);
+  return params;
+}
+
+void OHOSAudioManager::ReleaseInputStream(AudioInputStream* stream) {
+  AudioManagerBase::ReleaseInputStream(stream);
+  isCommunication_ = false;
+}
+
+void OHOSAudioManager::SelectAudioDevice(const std::string& device_id,
+                                         bool isInput) {
+  LOG(INFO) << "OHOSAudioManager::SelectAudioDevice";
+  AudioAdapterDeviceDesc desc;
+  desc.deviceId = atoi(device_id.c_str());
+  desc.deviceName = std::string();
+  int32_t ret = OhosAdapterHelper::GetInstance()
+                    .GetAudioSystemManager()
+                    .SelectAudioDevice(desc, isInput);
+  if (ret != 0)
+    LOG(ERROR) << "OHOSAudioManager::SelectAudioDevice failed. ret: " << ret;
 }
 
 }  // namespace media

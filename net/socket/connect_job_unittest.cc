@@ -79,6 +79,10 @@ class TestConnectJob : public ConnectJob {
     last_seen_priority_ = priority;
   }
 
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int timeout_override) override {}
+#endif
+
   using ConnectJob::ResetTimer;
 
   // The priority seen during the most recent call to ChangePriorityInternal().

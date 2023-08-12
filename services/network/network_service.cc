@@ -93,6 +93,9 @@
 #include "services/network/sct_auditing/sct_auditing_cache.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "net/socket/client_socket_pool.h"
+#endif
 namespace network {
 
 namespace {
@@ -397,6 +400,15 @@ std::unique_ptr<NetworkService> NetworkService::CreateForTesting() {
 
 void NetworkService::RegisterNetworkContext(NetworkContext* network_context) {
   DCHECK_EQ(0u, network_contexts_.count(network_context));
+#if BUILDFLAG(IS_OHOS)
+  net::URLRequestContext* url_request_context =
+      network_context->url_request_context();
+  if (url_request_context) {
+    LOG(INFO) << "Register network context and set network timeout "
+              << timeout_override_ << " second(s)";
+    url_request_context->SetConnectTimeout(timeout_override_);
+  }
+#endif
   network_contexts_.insert(network_context);
   if (quic_disabled_)
     network_context->DisableQuic();
@@ -843,4 +855,17 @@ NetworkService* NetworkService::GetNetworkServiceForTesting() {
   return g_network_service;
 }
 
+#if BUILDFLAG(IS_OHOS)
+void NetworkService::SetConnectTimeout(int seconds) {
+  LOG(INFO) << "Network service set network timeout " << seconds << " second(s)";
+  timeout_override_ = seconds;
+  for (auto* network_context : network_contexts_) {
+    net::URLRequestContext* url_request_context =
+        network_context->url_request_context();
+    if (url_request_context) {
+      url_request_context->SetConnectTimeout(seconds);
+    }
+  }
+}
+#endif
 }  // namespace network

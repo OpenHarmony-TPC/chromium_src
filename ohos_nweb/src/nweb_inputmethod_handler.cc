@@ -55,15 +55,16 @@ class OnTextChangedListenerImpl : public IMFTextListenerAdapter {
     LOG(INFO) << "NWebInputMethodHandler::SendKeyEventFromInputMethod";
   }
 
-  void SendKeyboardInfo(const IMFAdapterKeyboardInfo& info) override {
-    auto status = info.keyboardStatus;
+  void SendKeyboardStatus(const IMFAdapterKeyboardStatus& status) override {
     if (status == IMFAdapterKeyboardStatus::SHOW) {
       handler_->SetIMEStatus(true);
     } else if (status == IMFAdapterKeyboardStatus::HIDE) {
       handler_->SetIMEStatus(false);
-    } else if (status == IMFAdapterKeyboardStatus::NONE) {
-      handler_->SendEnterKeyEvent();
     }
+  }
+
+  void SendFunctionKey(const IMFAdapterFunctionKey& functionKey) override {
+    handler_->SendEnterKeyEvent();
   }
 
   void SetKeyboardStatus(bool status) override {
@@ -78,9 +79,21 @@ class OnTextChangedListenerImpl : public IMFTextListenerAdapter {
     handler_->MoveCursor(direction);
   }
 
-  void HandleSetSelection(int32_t start, int32_t end) override {};
-  void HandleExtendAction(int32_t action) override {};
-  void HandleSelect(int32_t keyCode, int32_t cursorMoveSkip) override {};
+  void HandleSetSelection(int32_t start, int32_t end) override{};
+  void HandleExtendAction(int32_t action) override{};
+  void HandleSelect(int32_t keyCode, int32_t cursorMoveSkip) override{};
+
+  int32_t GetTextIndexAtCursor() override {
+    return handler_->GetTextIndexAtCursor();
+  }
+
+  std::u16string GetLeftTextOfCursor(int32_t number) override {
+    return handler_->GetLeftTextOfCursor(number);
+  }
+
+  std::u16string GetRightTextOfCursor(int32_t number) override {
+    return handler_->GetRightTextOfCursor(number);
+  }
 
  private:
   NWebInputMethodHandler* handler_;
@@ -88,14 +101,15 @@ class OnTextChangedListenerImpl : public IMFTextListenerAdapter {
 
 class InputMethodTask : public CefTask {
  public:
-  explicit InputMethodTask(base::OnceClosure closure) : closure_(std::move(closure)) {}
+  explicit InputMethodTask(base::OnceClosure closure)
+      : closure_(std::move(closure)) {}
 
   InputMethodTask(const InputMethodTask&) = delete;
   InputMethodTask& operator=(const InputMethodTask&) = delete;
 
   virtual void Execute() override {
     std::move(closure_).Run();
-    //closure_.Reset();
+    // closure_.Reset();
   }
 
  private:
@@ -114,9 +128,15 @@ NWebInputMethodHandler::NWebInputMethodHandler()
 
 NWebInputMethodHandler::~NWebInputMethodHandler() {}
 
+uint32_t NWebInputMethodHandler::lastAttachNWebId_ = 0;
+
 void NWebInputMethodHandler::Attach(CefRefPtr<CefBrowser> browser,
                                     bool show_keyboard,
                                     cef_text_input_mode_t input_mode) {
+  show_keyboard_ = show_keyboard;
+  input_mode_ = input_mode == CEF_TEXT_INPUT_MODE_NUMERIC
+                    ? IMFAdapterTextInputType::NUMBER
+                    : IMFAdapterTextInputType::TEXT;
   composing_text_.clear();
   browser_ = browser;
   if (inputmethod_adapter_ == nullptr) {
@@ -126,23 +146,124 @@ void NWebInputMethodHandler::Attach(CefRefPtr<CefBrowser> browser,
   if (inputmethod_listener_ == nullptr) {
     inputmethod_listener_ = std::make_shared<OnTextChangedListenerImpl>(this);
   }
-  if (input_mode == CEF_TEXT_INPUT_MODE_NUMERIC) {
-    inputmethod_adapter_->Attach(inputmethod_listener_, show_keyboard, IMFAdapterTextInputType::NUMBER);
-  } else {
-    inputmethod_adapter_->Attach(inputmethod_listener_, show_keyboard, IMFAdapterTextInputType::TEXT);
+  if (!inputmethod_adapter_->Attach(inputmethod_listener_, false)) {
+    LOG(ERROR) << "inputmethod_adapter_ attach failed";
+    return;
   }
+  isAttached_ = true;
+  lastAttachNWebId_ = nweb_Id_;
+  if (show_keyboard) {
+    inputmethod_adapter_->ShowCurrentInput(input_mode_);
+  }
+
+  if (focus_status_ && focus_rect_status_) {
+    IMFAdapterCursorInfo cursorInfo{
+        .left = (focus_rect_.x + focus_rect_.width) * device_pixel_ratio_ +
+                offset_x_,
+        .top = focus_rect_.y * device_pixel_ratio_ + offset_y_,
+        .width = focus_rect_.width * device_pixel_ratio_,
+        .height = focus_rect_.height * device_pixel_ratio_};
+    LOG(DEBUG) << "NWebInputMethodHandler::Attach cursorInfo.left = "
+                << cursorInfo.left << ", cursorInfo.top = " << cursorInfo.top
+                << ", cursorInfo.width = " << cursorInfo.width
+                << ", cursorInfo.height = " << cursorInfo.height;
+    if (inputmethod_adapter_) {
+      inputmethod_adapter_->OnCursorUpdate(cursorInfo);
+    }
+  }
+}
+
+bool NWebInputMethodHandler::Reattach(uint32_t nwebId, ReattachType type) {
+  nweb_Id_ = nwebId;
+  if (type == ReattachType::FROM_CONTINUE) {
+    if (!isNeedReattachOncontinue_) {
+      LOG(INFO) << "don't need reattach input method";
+      return false;
+    }
+    isNeedReattachOncontinue_ = false;
+  }
+
+  if (type == ReattachType::FROM_ONFOCUS) {
+    if (!isNeedReattachOnfocus_) {
+      LOG(INFO) << "ReAttchOnfocus, don't need reattach input method";
+      return false;
+    }
+    isNeedReattachOnfocus_ = false;
+  }
+
+  LOG(INFO) << "need to reattach input method, show_keyboard_ = "
+            << show_keyboard_ << ", \
+    reattach type = "
+            << static_cast<int>(type);
+  composing_text_.clear();
+  if (inputmethod_listener_ == nullptr) {
+    inputmethod_listener_ = std::make_shared<OnTextChangedListenerImpl>(this);
+  }
+
+  if (!show_keyboard_ && !isAttached_) {
+    inputmethod_adapter_->HideTextInput();
+    inputmethod_adapter_->Close();
+    return false;
+  }
+  if (!inputmethod_adapter_->Attach(inputmethod_listener_, false)) {
+    LOG(ERROR) << "inputmethod_adapter_ attach failed";
+    return false;
+  }
+  isAttached_ = true;
+  lastAttachNWebId_ = nwebId;
+  if (show_keyboard_) {
+    inputmethod_adapter_->ShowCurrentInput(input_mode_);
+    return true;
+  }
+  return false;
 }
 
 void NWebInputMethodHandler::ShowTextInput() {
   LOG(INFO) << "NWebInputMethodHandler::ShowTextInput";
 }
 
-void NWebInputMethodHandler::HideTextInput() {
+void NWebInputMethodHandler::HideTextInput(uint32_t nwebId, HideTextinputType hideType) {
   if (inputmethod_adapter_ == nullptr) {
     LOG(ERROR) << "inputmethod_adapter_ is nullptr";
     return;
   }
-  inputmethod_adapter_->HideTextInput();
+  if (!isAttached_) {
+    LOG(INFO) << "keyboard is not attach";
+    if (hideType != HideTextinputType::FROM_ONPAUSE) {
+      LOG(INFO) << "not from switch front and background, ingnore";
+      return;
+    }
+    auto nowTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> diff =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            nowTime - lastCloseInputMethodTime_);
+    // 100: received another hide textinput event in 100ms, we set
+    // isNeedReattachOncontinue_ flag.
+    if (diff.count() < 100) {
+      isNeedReattachOncontinue_ = true;
+      LOG(INFO) << "set isNeedReattachOncontinue_ flag, diff = " << diff.count()
+                << "ms";
+    }
+    return;
+  }
+
+  if (lastAttachNWebId_ == 0 || lastAttachNWebId_ == nwebId ||
+      hideType == HideTextinputType::FROM_KERNEL) {
+    LOG(INFO) << "need to hide text input, hidetype = "
+      << static_cast<int>(hideType);
+    inputmethod_adapter_->HideTextInput();
+    inputmethod_adapter_->Close();
+  }
+
+  lastCloseInputMethodTime_ = std::chrono::high_resolution_clock::now();
+  isAttached_ = false;
+  if (hideType == HideTextinputType::FROM_ONPAUSE) {
+    isNeedReattachOncontinue_ = true;
+  }
+
+  if (hideType == HideTextinputType::FROM_ONBLUR) {
+    isNeedReattachOnfocus_ = true;
+  }
 }
 
 void NWebInputMethodHandler::OnTextSelectionChanged(
@@ -159,6 +280,49 @@ void NWebInputMethodHandler::OnTextSelectionChanged(
   selected_to_ = selected_range.to;
   ime_text_composing_ = false;
   composing_text_.clear();
+}
+
+void NWebInputMethodHandler::OnCursorUpdate(const CefRect& rect) {
+  focus_rect_ = rect;
+  focus_rect_status_ = true;
+  if (focus_status_) {
+    IMFAdapterCursorInfo cursorInfo{
+        .left = (rect.x + rect.width) * device_pixel_ratio_ + offset_x_,
+        .top = rect.y * device_pixel_ratio_ + offset_y_,
+        .width = rect.width * device_pixel_ratio_,
+        .height = rect.height * device_pixel_ratio_};
+    LOG(DEBUG) << "NWebInputMethodHandler::OnCursorUpdate cursorInfo.left = "
+               << cursorInfo.left << ", cursorInfo.top = " << cursorInfo.top
+               << ", cursorInfo.width = " << cursorInfo.width
+               << ", cursorInfo.height = " << cursorInfo.height;
+    if (inputmethod_adapter_) {
+      inputmethod_adapter_->OnCursorUpdate(cursorInfo);
+    }
+  }
+}
+
+void NWebInputMethodHandler::OnSelectionChanged(
+    CefRefPtr<CefBrowser> browser,
+    const CefString& text,
+    const CefRange& selected_range) {
+  whole_text_ = text;
+  if (inputmethod_adapter_) {
+    inputmethod_adapter_->OnSelectionChange(
+        text.ToString16(), selected_range.from, selected_range.to);
+  }
+  {
+    std::unique_lock<std::mutex> lock(textCursorMutex_);
+    if (textCursorReady_ > 0) {
+      textCursorReady_--;
+    } else {
+      LOG(INFO) << "OnSelectionChanged do not need notify_all";
+      return;
+    }
+    if (textCursorReady_ == 0) {
+      LOG(INFO) << "OnSelectionChanged notify_all";
+      textCursorCv_.notify_all();
+    }
+  }
 }
 
 void NWebInputMethodHandler::SetIMEStatus(bool status) {
@@ -212,6 +376,10 @@ void NWebInputMethodHandler::InsertTextHandlerOnUI(const std::u16string& text) {
     LOG(ERROR) << "insert text empty!";
     return;
   }
+  {
+    std::unique_lock<std::mutex> lock(textCursorMutex_);
+    textCursorReady_++;
+  }
 
   CefKeyEvent keyEvent;
   keyEvent.windows_key_code = ui::VKEY_PROCESSKEY;
@@ -226,7 +394,7 @@ void NWebInputMethodHandler::InsertTextHandlerOnUI(const std::u16string& text) {
   }
   composing_text_.append(text);
   browser_->GetHost()->ImeCommitText(composing_text_,
-    CefRange(UINT32_MAX, UINT32_MAX), 0);
+                                     CefRange(UINT32_MAX, UINT32_MAX), 0);
 
   // no selection
   ime_text_composing_ = false;
@@ -250,7 +418,18 @@ void NWebInputMethodHandler::DeleteForwardHandlerOnUI(int32_t length) {
     LOG(ERROR) << "delete backward browser get failed";
     return;
   }
-
+  is_need_notify_all_ = false;
+  selected_from_ = selected_from_ >= whole_text_.size() ?  whole_text_.size() : selected_from_;
+  if (whole_text_.substr(selected_from_).size() <= length) {
+    length = whole_text_.substr(selected_from_).size();
+    if (selected_from_ == 0) {
+      is_need_notify_all_ = true;
+    }
+  }
+  {
+    std::unique_lock<std::mutex> lock(textCursorMutex_);
+    textCursorReady_ += length;
+  }
   for (int32_t i = 0; i < length; i++) {
     keyEvent.type = KEYEVENT_RAWKEYDOWN;
     browser_->GetHost()->SendKeyEvent(keyEvent);
@@ -273,7 +452,13 @@ void NWebInputMethodHandler::DeleteBackwardHandlerOnUI(int32_t length) {
     LOG(ERROR) << "delete forward browser get failed";
     return;
   }
-
+  if (selected_from_ <= length) {
+    length = selected_from_;
+  }
+  {
+    std::unique_lock<std::mutex> lock(textCursorMutex_);
+    textCursorReady_ += length;
+  }
   for (int32_t i = 0; i < length; i++) {
     keyEvent.type = KEYEVENT_RAWKEYDOWN;
     browser_->GetHost()->SendKeyEvent(keyEvent);
@@ -338,7 +523,10 @@ void NWebInputMethodHandler::MoveCursor(const IMFAdapterDirection direction) {
       return;
     }
   }
-
+  {
+    std::unique_lock<std::mutex> lock(textCursorMutex_);
+    textCursorReady_++;
+  }
   keyEvent.type = KEYEVENT_KEYDOWN;
   keyEvent.modifiers = 0;
   keyEvent.is_system_key = false;
@@ -350,5 +538,134 @@ void NWebInputMethodHandler::MoveCursor(const IMFAdapterDirection direction) {
   if (browser_ && browser_->GetHost()) {
     browser_->GetHost()->SendKeyEvent(keyEvent);
   }
+}
+
+void NWebInputMethodHandler::SetScreenOffSet(double x, double y) {
+  if (focus_status_) {
+    if (focus_rect_status_ && (offset_x_ != x || offset_y_ != y)) {
+      IMFAdapterCursorInfo cursorInfo{
+          .left = (focus_rect_.x + focus_rect_.width) * device_pixel_ratio_ + x,
+          .top = focus_rect_.y * device_pixel_ratio_ + y,
+          .width = focus_rect_.width * device_pixel_ratio_,
+          .height = focus_rect_.height * device_pixel_ratio_};
+      LOG(DEBUG) << "NWebInputMethodHandler::SetScreenOffSet cursorInfo.left = "
+                 << cursorInfo.left << ", cursorInfo.top = " << cursorInfo.top
+                 << ", cursorInfo.width = " << cursorInfo.width
+                 << ", cursorInfo.height = " << cursorInfo.height;
+      if (inputmethod_adapter_) {
+        inputmethod_adapter_->OnCursorUpdate(cursorInfo);
+      }
+    }
+  }
+  offset_x_ = x;
+  offset_y_ = y;
+}
+
+void NWebInputMethodHandler::SetVirtualDeviceRatio(float device_pixel_ratio) {
+  device_pixel_ratio_ = device_pixel_ratio;
+}
+
+void NWebInputMethodHandler::SetFocusStatus(bool focus_status) {
+  if (focus_status && focus_rect_status_) {
+    IMFAdapterCursorInfo cursorInfo{
+        .left = (focus_rect_.x + focus_rect_.width) * device_pixel_ratio_ +
+                offset_x_,
+        .top = focus_rect_.y * device_pixel_ratio_ + offset_y_,
+        .width = focus_rect_.width * device_pixel_ratio_,
+        .height = focus_rect_.height * device_pixel_ratio_};
+    LOG(DEBUG) << "NWebInputMethodHandler::SetFocusStatus cursorInfo.left = "
+                << cursorInfo.left << ", cursorInfo.top = " << cursorInfo.top
+                << ", cursorInfo.width = " << cursorInfo.width
+                << ", cursorInfo.height = " << cursorInfo.height;
+    if (inputmethod_adapter_) {
+      inputmethod_adapter_->OnCursorUpdate(cursorInfo);
+    }
+  }
+  focus_status_ = focus_status;
+}
+
+int32_t NWebInputMethodHandler::GetTextIndexAtCursor() {
+  std::unique_lock<std::mutex> lock(textCursorMutex_);
+  bool istextCursorReady = textCursorCv_.wait_for(
+      lock, std::chrono::seconds(1), [this] { return textCursorReady_ == 0; });
+  textCursorReady_ = 0;
+  if (!istextCursorReady) {
+    LOG(ERROR) << "GetTextIndexAtCursor wait_for timeout";
+    if (ResetTextSelectiondata()) {
+      return 0;
+    }
+  }
+  return selected_to_;
+}
+
+std::u16string NWebInputMethodHandler::GetLeftTextOfCursor(int32_t number) {
+  std::unique_lock<std::mutex> lock(textCursorMutex_);
+  bool istextCursorReady = textCursorCv_.wait_for(
+      lock, std::chrono::seconds(1), [this] { return textCursorReady_ == 0; });
+  textCursorReady_ = 0;
+  if (!istextCursorReady) {
+    LOG(ERROR) << "GetLeftTextOfCursor wait_for timeout";
+    if (ResetTextSelectiondata()) {
+      return u"";
+    }
+  }
+  int32_t selectBegin = selected_from_;
+  int32_t selectEnd = selected_to_;
+  if (!IsCorrectParam(number, selectBegin, selectEnd)) {
+    return u"";
+  }
+
+  int32_t startPos = (number <= selectBegin ? (selectBegin - number) : 0);
+  int32_t length = (number <= selectBegin ? number : selectBegin);
+  return whole_text_.substr(startPos, length);
+}
+
+std::u16string NWebInputMethodHandler::GetRightTextOfCursor(int32_t number) {
+  std::unique_lock<std::mutex> lock(textCursorMutex_);
+
+  bool istextCursorReady = textCursorCv_.wait_for(
+      lock, std::chrono::seconds(1), [this] { return textCursorReady_ == 0; });
+  textCursorReady_ = 0;
+  if (!istextCursorReady) {
+    LOG(ERROR) << "GetRightTextOfCursor wait_for timeout";
+    if (ResetTextSelectiondata()) {
+      return u"";
+    }
+  }
+  int32_t selectBegin = selected_from_;
+  int32_t selectEnd = selected_to_;
+  if (!IsCorrectParam(number, selectBegin, selectEnd)) {
+    return u"";
+  }
+  return whole_text_.substr(selectEnd, number);
+}
+
+bool NWebInputMethodHandler::IsCorrectParam(int32_t number, int32_t& selectBegin, int32_t& selectEnd) {
+  if (number < 0 || selectBegin < 0 || selectEnd < 0) {
+      LOG(ERROR) << "param error, number:" << number << ", selectBegin:" << selectBegin << ", selectEnd:" << selectEnd;
+      return false;
+  }
+
+  if (selectBegin > selectEnd) {
+    std::swap(selectBegin, selectEnd);
+  }
+  if (selectEnd > whole_text_.size()) {
+    LOG(ERROR) << "param error, end:" << selectEnd;
+    return false;
+  }
+  return true;
+}
+
+bool NWebInputMethodHandler::ResetTextSelectiondata()
+{
+  if (is_need_notify_all_) {
+    whole_text_ = u"";
+    selected_from_ = 0;
+    selected_to_ = 0;
+    textCursorReady_ = 0;
+    is_need_notify_all_ = false;
+    return true;
+  }
+  return false;
 }
 }  // namespace OHOS::NWeb

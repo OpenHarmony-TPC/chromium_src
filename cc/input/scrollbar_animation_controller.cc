@@ -73,7 +73,11 @@ ScrollbarAnimationController::ScrollbarAnimationController(
       animation_change_(AnimationChange::NONE),
       scroll_element_id_(scroll_element_id),
       opacity_(initial_opacity),
+#if BUILDFLAG(IS_OHOS)
+      show_scrollbars_on_scroll_gesture_(false),
+#else
       show_scrollbars_on_scroll_gesture_(true),
+#endif  
       need_thinning_animation_(true),
       is_mouse_down_(false),
       tickmarks_showing_(false) {
@@ -172,7 +176,7 @@ void ScrollbarAnimationController::RunAnimationFrame(float progress) {
   } else {
     opacity = std::min(1.f - progress, opacity_);
   }
-
+  TRACE_EVENT2("base", "RunAnimationFrameScroollbar", "opacity", opacity, "progress", progress);
   ApplyOpacityToScrollbars(opacity);
   if (progress == 1.f)
     StopAnimation();
@@ -300,7 +304,11 @@ void ScrollbarAnimationController::DidMouseMove(
     // scrollbar.
     if (is_mouse_down_)
       return;
+#if BUILDFLAG(IS_OHOS)
+    need_trigger_scrollbar_fade_in_ = MouseIsNearScrollbar(ScrollbarOrientation::HORIZONTAL);
+#else
     need_trigger_scrollbar_fade_in_ = MouseIsNearAnyScrollbar();
+#endif
     if (need_trigger_scrollbar_fade_in_before !=
         need_trigger_scrollbar_fade_in_) {
       if (need_trigger_scrollbar_fade_in_) {

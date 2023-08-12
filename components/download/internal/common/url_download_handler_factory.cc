@@ -25,6 +25,9 @@ UrlDownloadHandlerFactory::Create(
     const scoped_refptr<base::SingleThreadTaskRunner>& task_runner) {
   std::unique_ptr<network::ResourceRequest> request =
       CreateResourceRequest(params.get());
+#if BUILDFLAG(IS_OHOS)
+  request->is_download_request = true;
+#endif  //  BUILDFLAG(IS_OHOS)
   return UrlDownloadHandler::UniqueUrlDownloadHandlerPtr(
       download::ResourceDownloader::BeginDownload(
           delegate, std::move(params), std::move(request),

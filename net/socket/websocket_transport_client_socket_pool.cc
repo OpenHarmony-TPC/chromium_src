@@ -42,6 +42,9 @@ WebSocketTransportClientSocketPool::WebSocketTransportClientSocketPool(
       handed_out_socket_count_(0),
       flushing_(false) {
   DCHECK(common_connect_job_params->websocket_endpoint_lock_manager);
+#if BUILDFLAG(IS_OHOS)
+  timeout_override_ = 0;
+#endif
 }
 
 WebSocketTransportClientSocketPool::~WebSocketTransportClientSocketPool() {
@@ -109,7 +112,9 @@ int WebSocketTransportClientSocketPool::RequestSocket(
   std::unique_ptr<ConnectJob> connect_job =
       CreateConnectJob(group_id, params, proxy_server_, proxy_annotation_tag,
                        priority, SocketTag(), connect_job_delegate.get());
-
+#if BUILDFLAG(IS_OHOS)
+  connect_job->SetConnectTimeout(timeout_override_);
+#endif
   int result = connect_job_delegate->Connect(std::move(connect_job));
 
   // Regardless of the outcome of |connect_job|, it will always be bound to

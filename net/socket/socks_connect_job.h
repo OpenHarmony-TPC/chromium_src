@@ -104,6 +104,10 @@ class NET_EXPORT_PRIVATE SOCKSConnectJob : public ConnectJob,
   // Returns the handshake timeout used by SOCKSConnectJobs.
   static base::TimeDelta HandshakeTimeoutForTesting();
 
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int timeout_override) override;
+#endif
+
  private:
   enum State {
     STATE_TRANSPORT_CONNECT,
@@ -145,6 +149,10 @@ class NET_EXPORT_PRIVATE SOCKSConnectJob : public ConnectJob,
   raw_ptr<SOCKSClientSocket> socks_socket_ptr_;
 
   ResolveErrorInfo resolve_error_info_;
+#if BUILDFLAG(IS_OHOS)
+  // Only for transport_connect_job
+  int timeout_override_for_nested_job_{0};
+#endif
 };
 
 }  // namespace net

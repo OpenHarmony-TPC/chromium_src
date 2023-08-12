@@ -13,6 +13,9 @@
 #include "base/system/sys_info.h"
 #include "build/build_config.h"
 #include "build/util/chromium_git_revision.h"
+#if BUILDFLAG(IS_OHOS)
+#include "ohos_adapter_helper.h"
+#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
@@ -33,6 +36,8 @@ std::string GetUserAgentPlatform() {
   return "";
 #elif BUILDFLAG(IS_MAC)
   return "Macintosh; ";
+#elif BUILDFLAG(IS_OHOS)
+  return "";
 #elif defined(USE_OZONE)
   return "X11; ";  // strange, but that's what Firefox uses
 #elif BUILDFLAG(IS_ANDROID)
@@ -76,6 +81,8 @@ std::string BuildCpuInfo() {
 
 #if BUILDFLAG(IS_MAC)
   cpuinfo = "Intel";
+#elif BUILDFLAG(IS_OHOS)
+  cpuinfo = "";
 #elif BUILDFLAG(IS_WIN)
   base::win::OSInfo* os_info = base::win::OSInfo::GetInstance();
   if (os_info->IsWowX86OnAMD64()) {
@@ -182,6 +189,18 @@ std::string GetOSVersion(IncludeAndroidBuildNumber include_android_build_number,
 
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+  auto& system_properties_adapter = OHOS::NWeb::OhosAdapterHelper::GetInstance()
+                                        .GetSystemPropertiesInstance();
+  std::string ohos_product_model =
+      system_properties_adapter.GetDeviceInfoProductModel();
+  int32_t ohos_major_version =
+      system_properties_adapter.GetDeviceInfoMajorVersion();
+  std::string ohos_version_str;
+  base::StringAppendF(&ohos_version_str, "OpenHarmony %d", ohos_major_version);
+  std::string ohos_info_str;
+  base::StringAppendF(&ohos_info_str, "; %s", ohos_product_model.c_str());
+#endif
 #if BUILDFLAG(IS_ANDROID)
   std::string android_version_str = base::SysInfo::OperatingSystemVersion();
   std::string android_info_str =
@@ -200,6 +219,8 @@ std::string GetOSVersion(IncludeAndroidBuildNumber include_android_build_number,
 #elif BUILDFLAG(IS_ANDROID)
                       "%s%s", android_version_str.c_str(),
                       android_info_str.c_str()
+#elif BUILDFLAG(IS_OHOS)
+                      "%s%s", ohos_version_str.c_str(), ohos_info_str.c_str()
 #else
                       ""
 #endif
@@ -244,6 +265,10 @@ std::string BuildOSCpuInfoFromOSVersionAndCpuType(const std::string& os_version,
                       "Android %s", os_version.c_str()
 #elif BUILDFLAG(IS_FUCHSIA)
                       "Fuchsia"
+#elif BUILDFLAG(IS_OHOS)
+                      "%s%s",
+                      os_version.c_str(),  // e.g. 4
+                      cpu_type.c_str()     // e.g. ""
 #elif BUILDFLAG(IS_POSIX)
                       "%s %s",
                       unixinfo.sysname,  // e.g. Linux

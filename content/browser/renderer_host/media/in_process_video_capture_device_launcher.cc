@@ -110,7 +110,9 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
     base::OnceClosure done_cb) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   DCHECK(state_ == State::READY_TO_LAUNCH);
-
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << "InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync";
+#endif
   if (receiver_on_io_thread) {
     std::ostringstream string_stream;
     string_stream
@@ -267,7 +269,9 @@ InProcessVideoCaptureDeviceLauncher::CreateDeviceClient(
   scoped_refptr<media::VideoCaptureBufferPool> buffer_pool =
       new media::VideoCaptureBufferPoolImpl(requested_buffer_type,
                                             buffer_pool_max_buffer_count);
-
+#if BUILDFLAG(IS_OHOS)
+  LOG(ERROR) << "CreateDeviceClient ";
+#endif
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   return std::make_unique<media::VideoCaptureDeviceClient>(
       requested_buffer_type, std::move(receiver), std::move(buffer_pool),
@@ -337,7 +341,9 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDeviceCaptureOnDeviceThread(
   DCHECK(video_capture_system_);
 
   auto device_status = video_capture_system_->CreateDevice(device_id);
-
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << "InProcessVideoCaptureDeviceLauncher::DoStartDeviceCaptureOnDeviceThread";
+#endif
   if (device_status.ok()) {
     std::unique_ptr<media::VideoCaptureDevice> video_capture_device =
         device_status.ReleaseDevice();

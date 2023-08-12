@@ -19,12 +19,11 @@
 #include <unordered_map>
 #include <vector>
 #include "cef/include/internal/cef_types.h"
-#include "key_event.h"
 #include "nweb_inputevent_handler.h"
 #include "ui/events/keycodes/keyboard_codes_posix.h"
 
 namespace OHOS::NWeb {
-enum MouseAction { PRESS = 1, RELEASE = 2, MOVE = 3 };
+enum MouseAction { PRESS = 1, RELEASE = 2, MOVE = 3, HOVER_EXIT = 9 };
 
 class NWebInputDelegate {
  public:
@@ -45,6 +44,9 @@ class NWebInputDelegate {
   static inline bool IsMouseMove(int action) {
     return action == MouseAction::MOVE;
   }
+  static inline bool IsMouseLeave(int action) {
+    return action == HOVER_EXIT;
+  }
   void SetMouseWheelRatio(float ratio) { mouseWheelRatio_ = ratio; }
   float GetMouseWheelRatio() { return mouseWheelRatio_; }
 
@@ -52,7 +54,7 @@ class NWebInputDelegate {
   static bool KeyValueConvert(const std::string keyValue,
                               std::unordered_map<int, int>& map);
   static NWebInputEventHandle<int, int> keyEventHandle_;
-  float mouseWheelRatio_ = -5.0;
+  float mouseWheelRatio_ = -12.5;
 };
 }  // namespace OHOS::NWeb
 

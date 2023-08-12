@@ -18,6 +18,10 @@
 #include "ui/events/devices/touch_device_transform.h"
 #include "ui/events/devices/touchscreen_device.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "ohos_adapter_helper.h"
+#endif
+
 namespace ui {
 
 class DeviceDataManagerTest;
@@ -76,6 +80,13 @@ class EVENTS_DEVICES_EXPORT DeviceDataManager
   // and is hard to replace for tests that require a fresh one.
   void ResetDeviceListsForTest();
 
+#if BUILDFLAG(IS_OHOS)
+  void AddKeyboardDevice(const InputDevice& device);
+  void AddMouseDevice(const InputDevice& device);
+  void AddTouchpadDevice(const InputDevice& device);
+  void DeleteDevice(const InputDevice& devices);
+#endif
+
  protected:
   DeviceDataManager();
 
@@ -128,6 +139,12 @@ class EVENTS_DEVICES_EXPORT DeviceDataManager
 
   // Contains touchscreen device info for each device mapped by device ID.
   base::flat_map<int, TouchDeviceTransform> touch_map_;
+
+#if BUILDFLAG(IS_OHOS)
+  std::unique_ptr<OHOS::NWeb::MMIAdapter> mmi_adapter_ = nullptr;
+  std::shared_ptr<OHOS::NWeb::MMIListenerAdapter> dev_listener_ = nullptr;
+#endif
+
 };
 
 }  // namespace ui

@@ -106,7 +106,12 @@ void ConnectJob::ChangePriority(RequestPriority priority) {
 }
 
 int ConnectJob::Connect() {
-  if (!timeout_duration_.is_zero())
+#if BUILDFLAG(IS_OHOS)
+  if (!timeout_override_.is_zero())
+    timer_.Start(FROM_HERE, timeout_override_, this, &ConnectJob::OnTimeout);
+  else
+#endif
+      if (!timeout_duration_.is_zero())
     timer_.Start(FROM_HERE, timeout_duration_, this, &ConnectJob::OnTimeout);
 
   LogConnectStart();

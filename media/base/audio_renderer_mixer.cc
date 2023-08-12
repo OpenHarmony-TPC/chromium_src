@@ -13,9 +13,17 @@
 #include "media/base/audio_renderer_mixer_input.h"
 #include "media/base/audio_timestamp_helper.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/logging.h"
+#endif
+
 namespace media {
 
+#if BUILDFLAG(IS_OHOS)
+constexpr base::TimeDelta kPauseDelay = base::Seconds(0);
+#else
 constexpr base::TimeDelta kPauseDelay = base::Seconds(10);
+#endif
 
 AudioRendererMixer::AudioRendererMixer(const AudioParameters& output_params,
                                        scoped_refptr<AudioRendererSink> sink)
@@ -129,6 +137,9 @@ int AudioRendererMixer::Render(base::TimeDelta delay,
   if (!aggregate_converter_.empty()) {
     last_play_time_ = now;
   } else if (now - last_play_time_ >= pause_delay_ && playing_) {
+#if BUILDFLAG(IS_OHOS)
+    LOG(DEBUG) << "AudioRendererMixer::Render Time to pause the sink to avoid wasting resources";
+#endif
     audio_sink_->Pause();
     playing_ = false;
   }

@@ -220,6 +220,7 @@ bool StructTraits<
   out->obey_origin_policy = data.obey_origin_policy();
   out->original_destination = data.original_destination();
   out->target_ip_address_space = data.target_ip_address_space();
+  out->is_download_request = data.is_download_request();
   return true;
 }
 

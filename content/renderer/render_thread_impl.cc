@@ -689,7 +689,7 @@ void RenderThreadImpl::Init() {
   } else if (command_line.HasSwitch(switches::kEnableLCDText)) {
     is_lcd_text_enabled_ = true;
   } else {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
     is_lcd_text_enabled_ = false;
 #elif BUILDFLAG(IS_MAC)
     is_lcd_text_enabled_ = IsSubpixelAntialiasingAvailable();

@@ -34,6 +34,12 @@
 #include "base/android/scoped_java_ref.h"
 #endif  // BUILDFLAG(IS_ANDROID)
 
+#if BUILDFLAG(IS_OHOS)
+namespace media {
+  class OHOSAudioOutputStream;
+}
+#endif
+
 namespace media_session {
 struct MediaMetadata;
 }  // namespace media_session
@@ -320,6 +326,14 @@ class MediaSessionImpl : public MediaSession,
 
   // Returns the Audio Focus request ID associated with this media session.
   const base::UnguessableToken& GetRequestId() const;
+
+#if BUILDFLAG(IS_OHOS)
+public:
+  std::unordered_set<media::OHOSAudioOutputStream*> activeAudioStream_;
+  int audioResumeInterval_ = 0;
+  bool audioExclusive_ = true;
+  bool isStreamSuspended_ = false;
+#endif
 
  private:
   friend class content::WebContentsUserData<MediaSessionImpl>;

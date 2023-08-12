@@ -151,8 +151,17 @@ bool BlobURLStoreImpl::BlobUrlIsValid(const GURL& url,
   bool valid_origin = true;
   if (url_origin.scheme() == url::kFileScheme) {
     valid_origin = origin_.scheme() == url::kFileScheme;
-  } else if (url_origin.opaque()) {
+  }
+#if BUILDFLAG(IS_OHOS)
+  else if (url_origin.scheme() == url::kResourcesScheme) {
+    valid_origin = origin_.scheme() == url::kResourcesScheme;
+  }
+#endif
+  else if (url_origin.opaque()) {
     valid_origin = origin_.opaque() || origin_.scheme() == url::kFileScheme;
+#if BUILDFLAG(IS_OHOS)
+    valid_origin = valid_origin || origin_.scheme() == url::kResourcesScheme;
+#endif
   } else {
     valid_origin = origin_ == url_origin;
   }

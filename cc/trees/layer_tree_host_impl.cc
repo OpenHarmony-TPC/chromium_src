@@ -157,6 +157,10 @@ static_assert(kContainsSrgbCacheSize ==
                   gfx::DisplayColorSpaces::kConfigCount / 2,
               "sRGB cache must match the size of DisplayColorSpaces");
 
+#if BUILDFLAG(IS_OHOS)
+static bool g_frameIsScrolling = false;
+#endif
+
 bool IsMobileOptimized(LayerTreeImpl* active_tree) {
   return util::IsMobileOptimized(active_tree->min_page_scale_factor(),
                                  active_tree->max_page_scale_factor(),
@@ -2605,6 +2609,12 @@ viz::CompositorFrame LayerTreeHostImpl::GenerateCompositorFrame(
                        TRACE_EVENT_SCOPE_THREAD, "x",
                        scroll_accumulated_this_frame_.x(), "y",
                        scroll_accumulated_this_frame_.y());
+
+#if BUILDFLAG(IS_OHOS)
+  g_frameIsScrolling = scroll_accumulated_this_frame_.x() != 0 ||
+                       scroll_accumulated_this_frame_.y() != 0;
+#endif
+
   scroll_accumulated_this_frame_ = gfx::Vector2dF();
 
   bool is_new_trace;
@@ -2641,6 +2651,10 @@ viz::CompositorFrame LayerTreeHostImpl::GenerateCompositorFrame(
   }
 
   viz::CompositorFrameMetadata metadata = MakeCompositorFrameMetadata();
+
+#if BUILDFLAG(IS_OHOS)
+  metadata.is_scrolling = g_frameIsScrolling;
+#endif
 
   std::map<DocumentTransitionSharedElementId,
            DocumentTransitionRequest::SharedElementInfo>

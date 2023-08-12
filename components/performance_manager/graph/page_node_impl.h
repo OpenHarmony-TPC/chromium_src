@@ -61,6 +61,9 @@ class PageNodeImpl
 
   void SetIsVisible(bool is_visible);
   void SetIsAudible(bool is_audible);
+#if BUILDFLAG(IS_OHOS)
+  void SetIsMediaPlaying(bool is_media_playing);
+#endif
   void SetLoadingState(LoadingState loading_state);
   void SetUkmSourceId(ukm::SourceId ukm_source_id);
   void OnFaviconUpdated();
@@ -92,6 +95,9 @@ class PageNodeImpl
   EmbeddingType embedding_type() const;
   bool is_visible() const;
   bool is_audible() const;
+#if BUILDFLAG(IS_OHOS)
+  bool is_media_playing() const;
+#endif
   LoadingState loading_state() const;
   ukm::SourceId ukm_source_id() const;
   LifecycleState lifecycle_state() const;
@@ -203,6 +209,9 @@ class PageNodeImpl
   bool IsVisible() const override;
   base::TimeDelta GetTimeSinceLastVisibilityChange() const override;
   bool IsAudible() const override;
+#if BUILDFLAG(IS_OHOS)
+  bool IsMediaPlaying() const override;
+#endif
   LoadingState GetLoadingState() const override;
   ukm::SourceId GetUkmSourceID() const override;
   LifecycleState GetLifecycleState() const override;
@@ -303,6 +312,14 @@ class PageNodeImpl
   ObservedProperty::NotifiesOnlyOnChanges<bool,
                                           &PageNodeObserver::OnIsAudibleChanged>
       is_audible_ GUARDED_BY_CONTEXT(sequence_checker_){false};
+
+#if BUILDFLAG(IS_OHOS)
+  int32_t media_playing_num_ = 0;
+  ObservedProperty::
+      NotifiesOnlyOnChanges<bool, &PageNodeObserver::OnIsMediaPlayingChanged>
+          is_media_playing_ GUARDED_BY_CONTEXT(sequence_checker_){false};
+#endif
+
   // The loading state. This is driven by instrumentation in the browser
   // process.
   ObservedProperty::NotifiesOnlyOnChangesWithPreviousValue<

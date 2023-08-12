@@ -21,8 +21,6 @@
 #include <memory>
 #include <mutex>
 
-struct NativeWindow;
-
 namespace OHOS::NWeb {
 class NWebOutputHandler
     : public std::enable_shared_from_this<NWebOutputHandler> {
@@ -47,7 +45,7 @@ class NWebOutputHandler
   void SetNWebId(uint32_t id);
   bool IsSizeValid();
 
-  NativeWindow* GetNativeWindowFromSurface(void* surface);
+  void* GetNativeWindowFromSurface(void* surface);
 
  private:
   class BmpDumpHelper {
@@ -73,7 +71,7 @@ class NWebOutputHandler
   uint32_t height_ = 0;
   uint32_t frame_size_ = 0;
 
-  NativeWindow* window_ = nullptr;
+  void* window_ = nullptr;
 
   std::function<bool(const char*, uint32_t, uint32_t)> output_frame_cb_;
 

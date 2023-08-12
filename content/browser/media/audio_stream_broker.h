@@ -16,6 +16,10 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "third_party/blink/public/mojom/media/renderer_audio_input_stream_factory.mojom.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "content/public/browser/web_contents.h"
+#endif
+
 namespace base {
 class UnguessableToken;
 }

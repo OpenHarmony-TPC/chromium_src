@@ -22,6 +22,10 @@
 #include "ui/gfx/android/android_surface_control_compat.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "content/public/common/content_switches.h"
+#endif
+
 namespace features {
 namespace {
 
@@ -338,6 +342,11 @@ bool IsDrDcEnabled() {
     return false;
 
   return base::FeatureList::IsEnabled(kEnableDrDc);
+#elif BUILDFLAG(IS_OHOS)
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line)
+    return command_line->HasSwitch(::switches::kOhosEnableDrDc);
+  return false;
 #else
   return false;
 #endif

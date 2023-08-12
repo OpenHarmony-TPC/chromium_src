@@ -2020,6 +2020,10 @@ class CONTENT_EXPORT RenderFrameHostImpl
   void DidChangeThemeColor(absl::optional<SkColor> theme_color) override;
   void DidChangeBackgroundColor(SkColor background_color,
                                 bool color_adjust) override;
+#if BUILDFLAG(IS_OHOS)
+  void NotifyContextMenuWillShow() override;
+#endif
+
   void DidFailLoadWithError(const GURL& url, int32_t error_code) override;
   void DidFocusFrame() override;
   void DidCallFocus() override;
@@ -2699,6 +2703,10 @@ class CONTENT_EXPORT RenderFrameHostImpl
   void UpdateState(const blink::PageState& state) override;
   void OpenURL(blink::mojom::OpenURLParamsPtr params) override;
   void DidStopLoading() override;
+
+#ifdef OHOS_ENABLE_DRAG_DROP
+  void OnClearContextMenu() override;
+#endif //OHOS_ENABLE_DRAG_DROP
 
   friend class RenderAccessibilityHost;
   void HandleAXEvents(const ui::AXTreeID& tree_id,

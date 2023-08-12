@@ -135,7 +135,7 @@ bool ContentBrowserClient::IsExplicitNavigation(ui::PageTransition transition) {
 }
 
 bool ContentBrowserClient::ShouldUseMobileFlingCurve() {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   return true;
 #else
   return false;
@@ -579,6 +579,18 @@ bool ContentBrowserClient::CanCreateWindow(
   *no_javascript_access = false;
   return true;
 }
+
+#if BUILDFLAG(IS_OHOS)
+bool ContentBrowserClient::CanCreateWindow(
+      RenderFrameHost* opener,
+      const GURL& target_url,
+      WindowOpenDisposition disposition,
+      bool user_gesture,
+      content::mojom::FrameHost::GetCreateNewWindowCallback callback) {
+  std::move(callback).Run(mojom::CreateNewWindowStatus::kBlocked);
+  return false;
+}
+#endif
 
 SpeechRecognitionManagerDelegate*
 ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {

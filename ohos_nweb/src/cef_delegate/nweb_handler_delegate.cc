@@ -14,20 +14,22 @@
  */
 
 #include "nweb_handler_delegate.h"
+#include <string.h>
 
-#include <window.h>
 #include <thread>
 
 #include "base/bind.h"
 #include "base/callback.h"
 #include "cef/include/cef_app.h"
 #include "cef/include/cef_cookie.h"
+#include "cef/include/cef_download_handler.h"
 #include "cef/include/cef_parser.h"
 #include "cef/include/wrapper/cef_closure_task.h"
 #include "cef/include/wrapper/cef_helpers.h"
 #include "nweb_access_request_delegate.h"
 #include "nweb_context_menu_params_impl.h"
 #include "nweb_controller_handler_impl.h"
+#include "nweb_download_handler_delegate.h"
 #include "nweb_file_selector_params_impl.h"
 #include "nweb_find_delegate.h"
 #include "nweb_impl.h"
@@ -50,6 +52,8 @@
 #include "nweb_value_callback.h"
 
 #include "ohos_adapter_helper.h"
+#include "ohos_nweb/src/capi/nweb_download_delegate_callback.h"
+#include "third_party/blink/renderer/platform/wtf/date_math.h"
 
 #if defined(REPORT_SYS_EVENT)
 #include "event_reporter.h"
@@ -57,6 +61,9 @@
 
 namespace OHOS::NWeb {
 namespace {
+const int kEpochBeginYear = 1970;
+const int kMonthPerYear = 12;
+
 ImageColorType TransformColorType(cef_color_type_t color_type) {
   switch (color_type) {
     case CEF_COLOR_TYPE_RGBA_8888:
@@ -172,6 +179,56 @@ NWebFileSelectorParams::FileSelectorMode ConvertFileSelectorMode(
   return result_mode;
 }
 
+DateTimeChooserType ConvertDateTimeChooserType(cef_text_input_type_t type) {
+  switch (type) {
+    case CEF_TEXT_INPUT_TYPE_DATE:
+      return DTC_DATE;
+    case CEF_TEXT_INPUT_TYPE_DATE_TIME:
+      return DTC_DATETIME;
+    case CEF_TEXT_INPUT_TYPE_DATE_TIME_LOCAL:
+      return DTC_DATETIME_LOCAL;
+    case CEF_TEXT_INPUT_TYPE_MONTH:
+      return DTC_MONTH;
+    case CEF_TEXT_INPUT_TYPE_TIME:
+      return DTC_TIME;
+    case CEF_TEXT_INPUT_TYPE_WEEK:
+      return DTC_WEEK;
+    default:
+      return DTC_UNKNOWN;
+  }
+}
+
+double ConvertDateTimeToMs(const DateTime& datetime) {
+  double result = WTF::DateToDaysFrom1970(
+    datetime.year, datetime.month, datetime.day) * WTF::kMsPerDay;
+  result += WTF::kMsPerHour * datetime.hour;
+  result += WTF::kMsPerMinute * datetime.minute;
+  return result;
+}
+
+DateTime ConvertMsToDateTime(double ms) {
+  int year = WTF::MsToYear(ms);
+  int year_day = WTF::DayInYear(ms, year);
+  int month = WTF::MonthFromDayInYear(year_day, IsLeapYear(year));
+  int day = WTF::DayInMonthFromDayInYear(year_day, IsLeapYear(year));
+  double value = std::floor(fmod(ms, WTF::kMsPerDay) / WTF::kMsPerSecond);
+  int second = static_cast<int>(fmod(value, WTF::kSecondsPerMinute));
+  value = std::floor(value / WTF::kSecondsPerMinute);
+  int minute = static_cast<int>(fmod(value, WTF::kMinutesPerHour));
+  int hour = static_cast<int>(value / WTF::kMinutesPerHour);
+  return {year, month, day, hour, minute, second};
+}
+
+double ConvertDateTimeToMonth(const DateTime& datetime) {
+  return (datetime.year - kEpochBeginYear) * kMonthPerYear + datetime.month; 
+}
+
+DateTime ConvertMonthToDateTime(double month) {
+  int month_value = static_cast<int>(month);
+  return {.year = month_value / kMonthPerYear + kEpochBeginYear,
+          .month = month_value % kMonthPerYear};
+}
+
 char* CopyCefStringToChar(const CefString& str) {
   if (str.empty()) {
     return nullptr;
@@ -184,6 +241,34 @@ char* CopyCefStringToChar(const CefString& str) {
 
 const char kOffScreenFrameRate[] = "off-screen-frame-rate";
 }  // namespace
+
+class NWebDateTimeChooserCallbackImpl : public NWebDateTimeChooserCallback {
+ public:
+  NWebDateTimeChooserCallbackImpl() = default;
+  NWebDateTimeChooserCallbackImpl(
+      DateTimeChooserType type,
+      CefRefPtr<CefDateTimeChooserCallback> callback)
+      : type_(type), callback_(callback) {}
+  ~NWebDateTimeChooserCallbackImpl() = default;
+  void Continue(bool success, const DateTime& value) override {
+    if (!callback_ || is_executed) {
+      return;
+    }
+    if (!success) {
+      callback_->Continue(false, 0);
+    } else {
+      double result = (type_ == DateTimeChooserType::DTC_MONTH) ?
+        ConvertDateTimeToMonth(value) : ConvertDateTimeToMs(value);
+      callback_->Continue(true, result);
+    }
+    is_executed = true;
+  };
+
+ private:
+  bool is_executed = false;
+  DateTimeChooserType type_;
+  CefRefPtr<CefDateTimeChooserCallback> callback_ = nullptr;
+};
 
 // static
 CefRefPtr<NWebHandlerDelegate> NWebHandlerDelegate::Create(
@@ -215,14 +300,14 @@ NWebHandlerDelegate::NWebHandlerDelegate(
       render_handler_(render_handler),
       event_handler_(event_handler),
       find_delegate_(find_delegate),
-      is_enhance_surface_(is_enhance_surface){
+      is_enhance_surface_(is_enhance_surface) {
 #if defined(REPORT_SYS_EVENT)
   access_sum_count_ = 0;
   access_success_count_ = 0;
   access_fail_count_ = 0;
 #endif
   if (!is_enhance_surface_) {
-    window_ = reinterpret_cast<NativeWindow*>(window);
+    window_ = window;
   }
 }
 
@@ -282,8 +367,8 @@ void NWebHandlerDelegate::CloseAllBrowsers(bool force_close) {
   LOG(INFO) << "NWebHandlerDelegate::CloseAllBrowsers";
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the UI thread.
-    CefPostTask(TID_UI, base::BindOnce(&NWebHandlerDelegate::CloseAllBrowsers, this,
-                                   force_close));
+    CefPostTask(TID_UI, base::BindOnce(&NWebHandlerDelegate::CloseAllBrowsers,
+                                       this, force_close));
     return;
   }
 
@@ -342,6 +427,10 @@ CefRefPtr<CefContextMenuHandler> NWebHandlerDelegate::GetContextMenuHandler() {
   return this;
 }
 
+CefRefPtr<CefMediaHandler> NWebHandlerDelegate::GetMediaHandler() {
+  return this;
+}
+
 CefRefPtr<CefCookieAccessFilter> NWebHandlerDelegate::GetCookieAccessFilter(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
@@ -380,6 +469,10 @@ CefRefPtr<CefFindHandler> NWebHandlerDelegate::GetFindHandler() {
 CefRefPtr<CefKeyboardHandler> NWebHandlerDelegate::GetKeyboardHandler() {
   return this;
 }
+
+CefRefPtr<CefPrintHandler> NWebHandlerDelegate::GetPrintHandler() {
+  return this;
+}
 /* CefClient methods end */
 
 /* CefLifeSpanHandler methods begin */
@@ -388,6 +481,11 @@ void NWebHandlerDelegate::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
   if (!main_browser_ && browser->IsPopup()) {
     main_browser_ = browser;
+
+    bool enable_blank_target_popup_intercept =
+        preference_delegate_->IsBlankTargetPopupInterceptEnabled();
+    main_browser_->SetEnableBlankTargetPopupIntercept(enable_blank_target_popup_intercept);
+
     if (preference_delegate_.get()) {
       preference_delegate_->SetBrowser(main_browser_);
       preference_delegate_->WebPreferencesChanged();
@@ -396,7 +494,11 @@ void NWebHandlerDelegate::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
       event_handler_->SetBrowser(main_browser_);
     }
     if (main_browser_ && main_browser_->GetHost()) {
-      main_browser_->GetHost()->SetNativeWindow((void *)window_);
+      if (preference_delegate_.get()) {
+        main_browser_->GetHost()->PutUserAgent(preference_delegate_->UserAgent());
+        main_browser_->GetHost()->SetBackgroundColor(preference_delegate_->GetBackgroundColor());
+      }
+      main_browser_->GetHost()->SetNativeWindow(window_);
     }
     return;
   }
@@ -447,10 +549,11 @@ void NWebHandlerDelegate::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
       releaseSurfaceListener_->ReleaseSurface();
     }
   } else {
-    DestoryNativeWindow(window_);
+    OHOS::NWeb::OhosAdapterHelper::GetInstance()
+        .GetWindowAdapterInstance()
+        .DestroyNativeWindow(window_);
     window_ = nullptr;
   }
-
 
   // Remove from the list of existing browsers.
   BrowserList::iterator bit = browser_list_.begin();
@@ -462,11 +565,25 @@ void NWebHandlerDelegate::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   }
 }
 
+void NWebHandlerDelegate::NotifyPopupWindowResult(bool result) {
+  LOG(INFO) << "NWebHandlerDelegate::NotifyPopupWindowResult result: " << result;
+  if (!popupWindowCallback_) {
+    return;
+  }
+  if (result) {
+    popupWindowCallback_->Continue();
+  } else {
+    popupWindowCallback_->Cancel();
+  }
+  popupWindowCallback_ = nullptr;
+}
+
 bool NWebHandlerDelegate::OnPreBeforePopup(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       const CefString& target_url,
                       CefLifeSpanHandler::WindowOpenDisposition target_disposition,
-                      bool user_gesture) {
+                      bool user_gesture,
+                      CefRefPtr<CefCallback> callback) {
   LOG(INFO) << "NWebHandlerDelegate::OnPreBeforePopup";
   CEF_REQUIRE_UI_THREAD();
   if (!preference_delegate_.get() || !preference_delegate_->IsMultiWindowAccess()) {
@@ -475,11 +592,11 @@ bool NWebHandlerDelegate::OnPreBeforePopup(CefRefPtr<CefBrowser> browser,
   if (nweb_handler_ == nullptr) {
     return true;
   }
-
   switch (target_disposition) {
     case WOD_NEW_WINDOW:
     case WOD_NEW_POPUP: {
       popIndex_++;
+      popupWindowCallback_ = callback;
       std::shared_ptr<NWebControllerHandler> handler = std::make_shared<NWebControllerHandlerImpl>(popIndex_, true);
       nweb_handler_->OnWindowNewByJS(target_url, true, user_gesture, handler);
       return false;
@@ -487,6 +604,7 @@ bool NWebHandlerDelegate::OnPreBeforePopup(CefRefPtr<CefBrowser> browser,
     case WOD_NEW_BACKGROUND_TAB:
     case WOD_NEW_FOREGROUND_TAB: {
       popIndex_++;
+      popupWindowCallback_ = callback;
       std::shared_ptr<NWebControllerHandler> handler = std::make_shared<NWebControllerHandlerImpl>(popIndex_, true);
       nweb_handler_->OnWindowNewByJS(target_url, false, user_gesture, handler);
       return false;
@@ -513,6 +631,7 @@ bool NWebHandlerDelegate::OnBeforePopup(
   LOG(INFO) << "NWebHandlerDelegate::OnBeforePopup";
   CEF_REQUIRE_UI_THREAD();
   if (!preference_delegate_.get()) {
+    LOG(ERROR) << "NWebHandlerDelegate::OnBeforePopup preference_delegate is null";
     return true;
   }
   if (preference_delegate_->IsMultiWindowAccess()) {
@@ -522,20 +641,26 @@ bool NWebHandlerDelegate::OnBeforePopup(
       case WOD_NEW_BACKGROUND_TAB:
       case WOD_NEW_FOREGROUND_TAB: {
         if (nweb_handler_ == nullptr) {
+          LOG(ERROR) << "NWebHandlerDelegate::OnBeforePopup nweb_handler is null";
           return true;
         }
         std::shared_ptr<NWebControllerHandler> handler =
             std::make_shared<NWebControllerHandlerImpl>(popIndex_, false);
         nweb_handler_->OnWindowNewByJS(target_url, true, user_gesture, handler);
+        if (extra_info) {
+          extra_info->SetInt("nweb_id", handler->GetNWebHandlerId());
+        }
         NWebImpl* nweb = NWebImpl::FromID(handler->GetNWebHandlerId());
         if (!nweb) {
+          LOG(ERROR) << "NWebHandlerDelegate::OnBeforePopup nweb is null";
           return true;
         }
         client = nweb->GetCefClient();
         if (!client) {
+          LOG(ERROR) << "NWebHandlerDelegate::OnBeforePopup client is null";
           return true;
         }
-        auto preference = nweb->GetPreference();;
+        auto preference = nweb->GetPreference();
         if (preference) {
           CefRefPtr<CefCommandLine> command_line =
             CefCommandLine::GetGlobalCommandLine();
@@ -545,7 +670,6 @@ bool NWebHandlerDelegate::OnBeforePopup(
                         .ToString()
                         .c_str());
           }
-          settings.background_color = 0xffffffff;
           static_cast<NWebPreferenceDelegate *>(preference.get())->ComputeBrowserSettings(settings);
         } else {
           preference_delegate_->ComputeBrowserSettings(settings);
@@ -631,6 +755,15 @@ void NWebHandlerDelegate::OnPageVisible(CefRefPtr<CefBrowser> browser,
   }
 }
 
+void NWebHandlerDelegate::OnFirstContentfulPaint(long navigationStartTick,
+                                                 long firstContentfulPaintMs) {
+  LOG(INFO) << "NWebHandlerDelegate::OnFirstContentfulPaint";
+  if (nweb_handler_ != nullptr) {
+    nweb_handler_->OnFirstContentfulPaint(navigationStartTick,
+                                          firstContentfulPaintMs);
+  }
+}
+
 void NWebHandlerDelegate::OnDataResubmission(CefRefPtr<CefBrowser> browser,
                                              CefRefPtr<CefCallback> callback) {
   LOG(INFO) << "NWebHandlerDelegate::OnDataResubmission";
@@ -690,6 +823,10 @@ void NWebHandlerDelegate::OnLoadErrorWithRequest(CefRefPtr<CefRequest> request,
                                                  bool has_user_gesture,
                                                  int error_code,
                                                  const CefString& error_text) {
+  if (error_code == ERR_ABORTED) {
+    LOG(WARNING) << "ignoring the error";
+    return;
+  }
   CefRequest::HeaderMap cef_request_headers;
   request->GetHeaderMap(cef_request_headers);
   std::map<std::string, std::string> request_headers;
@@ -763,6 +900,12 @@ void NWebHandlerDelegate::OnRefreshAccessedHistory(
   nweb_handler_->OnRefreshAccessedHistory(url.ToString(), isReload);
 }
 
+void NWebHandlerDelegate::OnAudioStateChanged(CefRefPtr<CefBrowser> browser,
+                                              bool audible) {
+  if (nweb_handler_ != nullptr) {
+    nweb_handler_->OnAudioStateChanged(audible);
+  }
+}
 /* CefLoadHandler methods end */
 
 /* CefRequestHandler methods begin */
@@ -773,13 +916,22 @@ bool NWebHandlerDelegate::OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                                          bool is_redirect) {
   LOG(INFO) << "NWebHandlerDelegate::OnBeforeBrowse";
   (void)(browser);
-  (void)(frame);
-  (void)(user_gesture);
-  (void)(is_redirect);
 
+  if (!request) {
+    LOG(ERROR) << "NWebHandlerDelegate::OnBeforeBrowse request is null";
+    return false;
+  }
+
+  CefRequest::HeaderMap cef_request_headers;
+  request->GetHeaderMap(cef_request_headers);
+  std::map<std::string, std::string> request_headers;
+  ConvertMapToHeaderMap(cef_request_headers, request_headers);
+  std::shared_ptr<NWebUrlResourceRequest> nweb_request =
+      std::make_shared<NWebUrlResourceRequestImpl>(
+          request->GetMethod().ToString(), request_headers,
+          request->GetURL().ToString(), user_gesture, frame->IsMain(), is_redirect);
   if (nweb_handler_ != nullptr) {
-    return nweb_handler_->OnHandleInterceptUrlLoading(
-        request->GetURL().ToString());
+    return nweb_handler_->OnHandleInterceptUrlLoading(nweb_request);
   }
   return false;
 }
@@ -942,19 +1094,12 @@ void NWebHandlerDelegate::OnBeforeDownload(
     CefRefPtr<CefDownloadItem> download_item,
     const CefString& suggested_name,
     CefRefPtr<CefBeforeDownloadCallback> callback) {
-  (void)suggested_name;
   LOG(INFO) << "NWebHandlerDelegate::OnBeforeDownload";
   if (download_item->IsValid() == false) {
     LOG(ERROR) << "NWebHandlerDelegate::OnBeforeDownload error, not invalid";
     return;
   }
-  if (download_item->IsCanceled() == true) {
-    LOG(ERROR)
-        << "NWebHandlerDelegate::OnBeforeDownload error, download cancel";
-    return;
-  }
-  callback->Continue("", false);
-  LOG(INFO) << "NWebHandlerDelegate::OnBeforeDownload continue...";
+
   if (download_listener_ != nullptr) {
     download_listener_->OnDownloadStart(
         download_item->GetURL().ToString(),
@@ -1044,7 +1189,7 @@ CefRefPtr<CefResourceHandler> NWebHandlerDelegate::GetResourceHandler(
   std::shared_ptr<NWebUrlResourceRequest> NWeb_request =
       std::make_shared<NWebUrlResourceRequestImpl>(
           request->GetMethod().ToString(), request_headers,
-          request->GetURL().ToString(), false, frame->IsMain());
+          request->GetURL().ToString(), false, request->IsMainFrame());
   std::shared_ptr<NWebUrlResourceResponse> response;
   if (nweb_handler_ != nullptr) {
     response = nweb_handler_->OnHandleInterceptRequest(NWeb_request);
@@ -1057,6 +1202,46 @@ CefRefPtr<CefResourceHandler> NWebHandlerDelegate::GetResourceHandler(
   }
 }
 /* CefResourceRequestHandler method end */
+
+/* CefPrintHandler method begin */
+void NWebHandlerDelegate::OnPrintStart(CefRefPtr<CefBrowser> browser) {
+  LOG(INFO) << "NWebHandlerDelegate::OnPrintStart";
+  if (main_browser_ && main_browser_->GetHost()) {
+    main_browser_->GetHost()->Print();
+  }
+}
+
+void NWebHandlerDelegate::OnPrintSettings(CefRefPtr<CefBrowser> browser,
+                                        CefRefPtr<CefPrintSettings> settings,
+                                        bool get_defaults) {
+  LOG(INFO) << "NWebHandlerDelegate::OnPrintSettings";
+}
+
+bool NWebHandlerDelegate::OnPrintDialog(CefRefPtr<CefBrowser> browser,
+                                      bool has_selection,
+                                      CefRefPtr<CefPrintDialogCallback> callback) {
+  LOG(INFO) << "NWebHandlerDelegate::OnPrintDialog";
+  return false;
+}
+
+bool NWebHandlerDelegate::OnPrintJob(CefRefPtr<CefBrowser> browser,
+                                  const CefString& document_name,
+                                  const CefString& pdf_file_path,
+                                  CefRefPtr<CefPrintJobCallback> callback) {
+  LOG(INFO) << "NWebHandlerDelegate::OnPrintJob";
+  return false;
+}
+
+void NWebHandlerDelegate::OnPrintReset(CefRefPtr<CefBrowser> browser) {
+  LOG(INFO) << "NWebHandlerDelegate::OnPrintReset";
+}
+
+CefSize NWebHandlerDelegate::GetPdfPaperSize(CefRefPtr<CefBrowser> browser,
+                                          int device_units_per_inch) {
+  LOG(INFO) << "NWebHandlerDelegate::GetPdfPaperSize";
+  return CefSize();
+}
+/* CefPrintHandler method end */
 
 /* CefDisplayHandler method begin */
 void NWebHandlerDelegate::OnTitleChange(CefRefPtr<CefBrowser> browser,
@@ -1249,6 +1434,9 @@ bool NWebHandlerDelegate::OnSetFocus(CefRefPtr<CefBrowser> browser,
   if (event_handler_ != nullptr) {
     event_handler_->SetIsFocus(true);
   }
+  if (render_handler_ != nullptr) {
+    render_handler_->SetFocusStatus(true);
+  }
   return false;
 }
 /* CefFocusHandler method end */
@@ -1256,9 +1444,8 @@ bool NWebHandlerDelegate::OnSetFocus(CefRefPtr<CefBrowser> browser,
 /* CefPermissionRequest method begin */
 void NWebHandlerDelegate::OnGeolocationShow(const CefString& origin) {
   if (nweb_handler_ != nullptr) {
-    // lifecycle wrapped by ace WebGeolocationOhos
     if (callback_ == nullptr) {
-      callback_ = new NWebGeolocationCallback(main_browser_);
+      callback_ = std::make_shared<NWebGeolocationCallback>(main_browser_);
     }
     nweb_handler_->OnGeolocationShow(origin, callback_);
   }
@@ -1290,6 +1477,16 @@ void NWebHandlerDelegate::OnPermissionRequestCanceled(
     nweb_handler_->OnPermissionRequestCanceled(access_request);
   }
   return;
+}
+
+void NWebHandlerDelegate::OnScreenCaptureRequest(
+    CefRefPtr<CefScreenCaptureAccessRequest> request) {
+  LOG(INFO) << "NWebHandlerDelegate::OnScreenCaptureRequest origin: " << request->Origin().ToString();
+  if (nweb_handler_ != nullptr) {
+    std::shared_ptr<NWebScreenCaptureAccessRequest> access_request =
+        std::make_shared<NWebScreenCaptureAccessRequestDelegate>(request);
+    nweb_handler_->OnScreenCaptureRequest(access_request);
+  }
 }
 /* CefPermissionRequest method begin */
 
@@ -1325,6 +1522,7 @@ bool NWebHandlerDelegate::OnJSDialog(CefRefPtr<CefBrowser> browser,
 
 bool NWebHandlerDelegate::OnBeforeUnloadDialog(
     CefRefPtr<CefBrowser> browser,
+    const CefString& url,
     const CefString& message_text,
     bool is_reload,
     CefRefPtr<CefJSDialogCallback> callback) {
@@ -1333,7 +1531,7 @@ bool NWebHandlerDelegate::OnBeforeUnloadDialog(
   }
   std::shared_ptr<NWebJSDialogResult> js_result =
       std::make_shared<NWebJSDialogResultImpl>(callback);
-  return nweb_handler_->OnBeforeUnloadByJS(std::string(), message_text,
+  return nweb_handler_->OnBeforeUnloadByJS(url, message_text,
                                            js_result);
 }
 
@@ -1404,7 +1602,7 @@ void NWebHandlerDelegate::OnSelectPopupMenu(
   param->bounds = { bounds.x * ratio, bounds.y * ratio, bounds.width * ratio,
                     bounds.height * ratio};
   param->itemHeight = item_height;
-  param->itemFontSize = item_font_size;
+  param->itemFontSize = item_font_size * GetScale() / 100.0;
   param->selectedItem = selected_item;
   param->rightAligned = right_aligned;
   param->allowMultipleSelection = allow_multiple_selection;
@@ -1428,6 +1626,61 @@ void NWebHandlerDelegate::OnSelectPopupMenu(
   std::shared_ptr<NWebSelectPopupMenuCallback> popup_callback =
       std::make_shared<NWebSelectPopupMenuCallbackImpl>(callback);
   nweb_handler_->OnSelectPopupMenu(param, popup_callback);
+}
+
+void NWebHandlerDelegate::OnDateTimeChooserPopup(
+    CefRefPtr<CefBrowser> browser,
+    const CefDateTimeChooser& date_time_chooser,
+    const std::vector<CefDateTimeSuggestion>& suggestion,
+    CefRefPtr<CefDateTimeChooserCallback> callback) {
+  if (!browser || !callback || !nweb_handler_)
+    return;
+  if (date_time_chooser.minimum >= date_time_chooser.maximum) {
+    LOG(WARNING) << "date time chooser minimum > maxinum, is invald";
+    callback->Continue(false, 0);
+    return;
+  }
+  DateTimeChooserType type =
+    ConvertDateTimeChooserType(date_time_chooser.dialog_type);
+  DateTime selected = (type == DateTimeChooserType::DTC_MONTH) ?
+    ConvertMonthToDateTime(date_time_chooser.dialog_value) :
+    ConvertMsToDateTime(date_time_chooser.dialog_value);
+  DateTime minimum = (type == DateTimeChooserType::DTC_MONTH) ?
+    ConvertMonthToDateTime(date_time_chooser.minimum) :
+    ConvertMsToDateTime(date_time_chooser.minimum);
+  DateTime maximum = (type == DateTimeChooserType::DTC_MONTH) ?
+    ConvertMonthToDateTime(date_time_chooser.maximum) :
+    ConvertMsToDateTime(date_time_chooser.maximum);
+  DateTimeChooser chooser = {
+    type, selected, minimum, maximum, date_time_chooser.step};
+  std::shared_ptr<NWebDateTimeChooserCallback> chooser_callback =
+    std::make_shared<NWebDateTimeChooserCallbackImpl>(type, callback);
+  if (!chooser_callback) {
+    callback->Continue(false, 0);
+    return;
+  }
+  chooser.hasSelected = !std::isnan(date_time_chooser.dialog_value);
+  std::vector<DateTimeSuggestion> suggestions;
+  for (size_t index = 0; index < suggestion.size(); index++) {
+    DateTime value = (type == DateTimeChooserType::DTC_MONTH) ?
+        ConvertMonthToDateTime(suggestion[index].value) :
+        ConvertMsToDateTime(suggestion[index].value);
+    suggestions.push_back(DateTimeSuggestion{
+      value, CefString(&suggestion[index].localized_value).ToString(),
+      CefString(&suggestion[index].label).ToString(),
+    });
+    if (date_time_chooser.dialog_value == suggestion[index].value) {
+      chooser.suggestionIndex = index;
+    }
+  }
+  nweb_handler_->OnDateTimeChooserPopup(chooser, suggestions, chooser_callback);
+}
+
+void NWebHandlerDelegate::OnDateTimeChooserClose() {
+  if (!nweb_handler_)
+    return;
+  
+  nweb_handler_->OnDateTimeChooserClose();
 }
 /* CefDialogHandler method end */
 
@@ -1718,6 +1971,8 @@ CefValueType TranslateCefType(NWebValue::Type type) {
       return CefValueType::VTYPE_INVALID;
     case NWebValue::Type::BINARY:
       return CefValueType::VTYPE_BINARY;
+    default:
+      return CefValueType::VTYPE_INVALID;
   }
 }
 
@@ -1765,6 +2020,9 @@ int NWebHandlerDelegate::NotifyJavaScriptResult(
       nweb_javascript_callback_->GetJavaScriptResult(value_vector, method,
                                                      object_name);
 
+  if (!ark_result) {
+    return 1;
+  }
   ParseNWebValueToValue(ark_result, result);
   return ark_result->error_;
 }
@@ -1772,6 +2030,10 @@ int NWebHandlerDelegate::NotifyJavaScriptResult(
 #if defined(REPORT_SYS_EVENT)
 void NWebHandlerDelegate::SetNWebId(uint32_t nwebId) {
   nweb_id_ = nwebId;
+}
+
+uint32_t NWebHandlerDelegate::GetNWebId() {
+  return nweb_id_;
 }
 #endif
 
@@ -1784,5 +2046,13 @@ void NWebHandlerDelegate::SetFocusState(bool focusState) {
   if (event_handler_ != nullptr) {
     event_handler_->SetIsFocus(focusState);
   }
+}
+
+bool NWebHandlerDelegate::GetContinueNeedFocus() {
+  return continueNeedFocus_;
+}
+
+void NWebHandlerDelegate::SetContinueNeedFocus(bool continueNeedFocus) {
+  continueNeedFocus_ = continueNeedFocus;
 }
 }  // namespace OHOS::NWeb

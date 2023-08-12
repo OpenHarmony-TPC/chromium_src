@@ -56,9 +56,15 @@ class NWebResourceHandler : public CefResourceHandler {
   bool ReadFileData(void* data_out,
             int bytes_to_read,
             int& bytes_read);
+  bool ReadResourceData(void* data_out,
+            int bytes_to_read,
+            int& bytes_read);
   std::string data_;
   size_t offset_ = 0;
   std::shared_ptr<NWebUrlResourceResponse> response_;
+  std::unique_ptr<uint8_t[]> resource_data_;
+  size_t resource_data_offset_ = 0;
+  size_t resource_data_len_ = 0;
 };
 }
 

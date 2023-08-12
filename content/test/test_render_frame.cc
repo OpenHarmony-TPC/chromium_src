@@ -149,6 +149,11 @@ class MockFrameHost : public mojom::FrameHost {
         std::move(browser_interface_broker_receiver));
   }
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+    void OnClearContextMenu() override {
+
+    }
+#endif
   void CreatePortal(mojo::PendingAssociatedReceiver<blink::mojom::Portal>,
                     mojo::PendingAssociatedRemote<blink::mojom::PortalClient>,
                     CreatePortalCallback callback) override {

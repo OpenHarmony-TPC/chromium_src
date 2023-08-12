@@ -116,8 +116,11 @@ class NATIVE_THEME_EXPORT NativeThemeBase : public NativeTheme {
       State state,
       const gfx::Rect& rect,
       NativeTheme::ScrollbarOverlayColorTheme theme,
-      ColorScheme color_scheme) const;
-
+      ColorScheme color_scheme
+#if BUILDFLAG(IS_OHOS)                  
+      ,SkColor scrollbar_color
+#endif
+      ) const;
   virtual void PaintScrollbarCorner(cc::PaintCanvas* canvas,
                                     State state,
                                     const gfx::Rect& rect,

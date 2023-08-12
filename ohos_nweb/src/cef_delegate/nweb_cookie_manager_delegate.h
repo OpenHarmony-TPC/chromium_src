@@ -55,6 +55,7 @@ class NWebCookieManagerDelegate : public NWebCookieManagerDelegateInterface {
  private:
   CefRefPtr<CefCookieManager> GetGlobalCookieManager();
   CefRefPtr<CefCookieManager> cookie_manager_ = nullptr;
+  const int ENOUGH_WAITED_TIME = 500;
 };
 }  // namespace OHOS::NWeb
 #endif

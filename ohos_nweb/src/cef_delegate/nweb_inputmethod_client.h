@@ -22,13 +22,24 @@
 namespace OHOS::NWeb {
 class NWebInputMethodClient: public virtual CefBaseRefCounted {
  public:
+  enum class HideTextinputType {
+    FROM_KERNEL,
+    FROM_ONBLUR,
+    FROM_ONPAUSE,
+  };
+
   virtual ~NWebInputMethodClient() = default;
   virtual void Attach(CefRefPtr<CefBrowser> browser, bool show_keyboard, cef_text_input_mode_t input_mode) = 0;
   virtual void ShowTextInput() = 0;
-  virtual void HideTextInput() = 0;
+  virtual void HideTextInput(uint32_t nweb_id = 0, HideTextinputType hideType = HideTextinputType::FROM_KERNEL) = 0;
   virtual void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
                                       const CefString& selected_text,
                                       const CefRange& selected_range) = 0;
+  virtual void OnCursorUpdate(const CefRect& rect) = 0;
+  virtual void OnSelectionChanged(CefRefPtr<CefBrowser> browser,
+                                  const CefString& text,
+                                  const CefRange& selected_range) = 0;
+  virtual void SetFocusStatus(bool focus_status) = 0;
 };
 }
 

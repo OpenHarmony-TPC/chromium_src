@@ -5,7 +5,6 @@
 #ifndef MEDIA_BASE_OHOS_MEDIA_PLAYER_CALLBACK_H_
 #define MEDIA_BASE_OHOS_MEDIA_PLAYER_CALLBACK_H_
 
-#include <media_errors.h>
 #include "base/logging.h"
 #include "base/task/single_thread_task_runner.h"
 #include "media/base/ohos/ohos_media_player_bridge.h"
@@ -18,7 +17,7 @@ namespace media {
 
 class OHOSMediaPlayerBridge;
 
-class OHOSMediaPlayerCallback : public OHOS::Media::PlayerCallback {
+class OHOSMediaPlayerCallback : public OHOS::NWeb::PlayerCallbackAdapter {
  public:
   OHOSMediaPlayerCallback(
       const scoped_refptr<base::SingleThreadTaskRunner>& task_runner,
@@ -29,13 +28,8 @@ class OHOSMediaPlayerCallback : public OHOS::Media::PlayerCallback {
 
   virtual ~OHOSMediaPlayerCallback();
 
-  void OnError(OHOS::Media::PlayerErrorType errorType,
-               int32_t errorCode) override;
-  void OnInfo(OHOS::Media::PlayerOnInfoType type,
-              int32_t extra,
-              const OHOS::Media::Format& infoBody = {}) override;
-  bool IsUnsupportType(int32_t errorCode);
-  bool IsFatalError(int32_t errorCode);
+  void OnError(OHOS::NWeb::PlayerAdapterErrorType errorType) override;
+  void OnInfo(OHOS::NWeb::PlayerOnInfoType type, int32_t extra, int32_t value) override;
 
  private:
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;

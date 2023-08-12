@@ -16,15 +16,14 @@ OHOSMediaPlayerCallback::OHOSMediaPlayerCallback(
 
 OHOSMediaPlayerCallback::~OHOSMediaPlayerCallback() {}
 
-void OHOSMediaPlayerCallback::OnError(OHOS::Media::PlayerErrorType errorType,
-                                      int32_t errorCode) {
-  LOG(ERROR) << "media player error code=" << errorCode;
+void OHOSMediaPlayerCallback::OnError(OHOS::NWeb::PlayerAdapterErrorType errorType) {
+  LOG(ERROR) << "media player error";
   int media_error_type =
       OHOSMediaPlayerBridge::MediaErrorType::MEDIA_ERROR_INVALID_CODE;
-  if (IsUnsupportType(errorCode)) {
+  if (errorType == OHOS::NWeb::PlayerAdapterErrorType::UNSUPPORT_TYPE) {
     media_error_type =
         OHOSMediaPlayerBridge::MediaErrorType::MEDIA_ERROR_FORMAT;
-  } else if (IsFatalError(errorCode)) {
+  } else if (errorType == OHOS::NWeb::PlayerAdapterErrorType::FATAL_ERROR) {
     media_error_type =
         OHOSMediaPlayerBridge::MediaErrorType::MEDIA_ERROR_DECODE;
   }
@@ -33,63 +32,39 @@ void OHOSMediaPlayerCallback::OnError(OHOS::Media::PlayerErrorType errorType,
                                 media_error_type));
 }
 
-void OHOSMediaPlayerCallback::OnInfo(OHOS::Media::PlayerOnInfoType type,
-                                     int32_t extra,
-                                     const OHOS::Media::Format& infoBody) {
-  (void)infoBody;
+void OHOSMediaPlayerCallback::OnInfo(OHOS::NWeb::PlayerOnInfoType type,
+                                     int32_t extra, int32_t value) {
   switch (type) {
-    case OHOS::Media::INFO_TYPE_EOS:
+    case OHOS::NWeb::PlayerOnInfoType::INFO_TYPE_EOS:
       task_runner_->PostTask(
           FROM_HERE,
           base::BindOnce(&OHOSMediaPlayerBridge::OnEnd, media_player_));
       break;
-    case OHOS::Media::INFO_TYPE_STATE_CHANGE:
+    case OHOS::NWeb::PlayerOnInfoType::INFO_TYPE_STATE_CHANGE:
       task_runner_->PostTask(
           FROM_HERE,
           base::BindOnce(&OHOSMediaPlayerBridge::OnPlayerStateUpdate,
                          media_player_,
-                         static_cast<OHOS::Media::PlayerStates>(extra)));
+                         static_cast<OHOS::NWeb::PlayerAdapter::PlayerStates>(extra)));
       break;
-    case OHOS::Media::INFO_TYPE_POSITION_UPDATE:
+    case OHOS::NWeb::PlayerOnInfoType::INFO_TYPE_POSITION_UPDATE:
       break;
-    case OHOS::Media::INFO_TYPE_MESSAGE:
+    case OHOS::NWeb::PlayerOnInfoType::INFO_TYPE_MESSAGE:
+      break;
+    case OHOS::NWeb::PlayerOnInfoType::INFO_TYPE_INTERRUPT_EVENT:
+      task_runner_->PostTask(
+          FROM_HERE,
+          base::BindOnce(&OHOSMediaPlayerBridge::OnPlayerInterruptEvent,
+                         media_player_,
+                         value));
+      break;
+    case OHOS::NWeb::PlayerOnInfoType::INFO_TYPE_SEEKDONE:
+      task_runner_->PostTask(
+          FROM_HERE,
+          base::BindOnce(&OHOSMediaPlayerBridge::SeekDone, media_player_));
       break;
     default:
       break;
   }
 }
-
-bool OHOSMediaPlayerCallback::IsUnsupportType(int32_t errorCode) {
-  switch (errorCode) {
-    case OHOS::Media::MSERR_UNSUPPORT:
-    case OHOS::Media::MSERR_UNSUPPORT_AUD_SRC_TYPE:
-    case OHOS::Media::MSERR_UNSUPPORT_AUD_CHANNEL_NUM:
-    case OHOS::Media::MSERR_UNSUPPORT_AUD_ENC_TYPE:
-    case OHOS::Media::MSERR_UNSUPPORT_AUD_PARAMS:
-    case OHOS::Media::MSERR_UNSUPPORT_VID_SRC_TYPE:
-    case OHOS::Media::MSERR_UNSUPPORT_VID_ENC_TYPE:
-    case OHOS::Media::MSERR_UNSUPPORT_VID_PARAMS:
-    case OHOS::Media::MSERR_UNSUPPORT_CONTAINER_TYPE:
-    case OHOS::Media::MSERR_UNSUPPORT_PROTOCOL_TYPE:
-    case OHOS::Media::MSERR_UNSUPPORT_VID_DEC_TYPE:
-    case OHOS::Media::MSERR_UNSUPPORT_AUD_DEC_TYPE:
-      return true;
-  }
-  return false;
-}
-bool OHOSMediaPlayerCallback::IsFatalError(int32_t errorCode) {
-  switch (errorCode) {
-    case OHOS::Media::MSERR_NO_MEMORY:
-    case OHOS::Media::MSERR_SERVICE_DIED:
-    case OHOS::Media::MSERR_CREATE_PLAYER_ENGINE_FAILED:
-    case OHOS::Media::MSERR_CREATE_AVMETADATAHELPER_ENGINE_FAILED:
-    case OHOS::Media::MSERR_AUD_DEC_FAILED:
-    case OHOS::Media::MSERR_VID_DEC_FAILED:
-    case OHOS::Media::MSERR_OPEN_FILE_FAILED:
-    case OHOS::Media::MSERR_FILE_ACCESS_FAILED:
-      return true;
-  }
-  return false;
-}
-
 }  // namespace media

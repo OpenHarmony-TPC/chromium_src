@@ -11,6 +11,7 @@
 #include "base/auto_reset.h"
 #include "base/memory/raw_ptr.h"
 #include "base/trace_event/trace_event.h"
+#include "base/logging.h"
 #include "ui/events/event_constants.h"
 #include "ui/events/gesture_detection/gesture_configuration.h"
 #include "ui/events/gesture_detection/gesture_event_data.h"
@@ -21,6 +22,9 @@
 #include "ui/events/types/event_type.h"
 #include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/vector2d_f.h"
+#ifdef OHOS_ENABLE_DRAG_DROP
+#include "base/logging.h"
+#endif
 
 namespace ui {
 namespace {
@@ -125,6 +129,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
   GestureListenerImpl& operator=(const GestureListenerImpl&) = delete;
 
   void OnTouchEvent(const MotionEvent& event) {
+    LOG(INFO) << "DragDrop onTouchEvent: " << event.GetAction();
     const bool in_scale_gesture = IsScaleGestureDetectionInProgress();
     snap_scroll_controller_.SetSnapScrollMode(event, in_scale_gesture);
     if (in_scale_gesture)
@@ -177,6 +182,13 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
         DCHECK(!IsScaleGestureDetectionInProgress());
         current_longpress_time_ = gesture.time;
         break;
+#ifdef OHOS_ENABLE_DRAG_DROP
+      case ET_GESTURE_DRAG_LONG_PRESS:
+        DCHECK(!IsScaleGestureDetectionInProgress());
+        current_longpress_time_ = gesture.time;
+        LOG(INFO) << "DragDrop UpdateStateForEventPost";
+        break;
+#endif
       case ET_GESTURE_LONG_TAP:
         current_longpress_time_ = base::TimeTicks();
         break;
@@ -224,6 +236,9 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
            gesture.type() == ET_GESTURE_SHOW_PRESS ||
            gesture.type() == ET_GESTURE_TAP_CANCEL ||
            gesture.type() == ET_GESTURE_BEGIN ||
+           #ifdef OHOS_ENABLE_DRAG_DROP
+           gesture.type() == ET_GESTURE_DRAG_LONG_PRESS ||
+           #endif
            gesture.type() == ET_GESTURE_END);
 
     if (gesture.primary_tool_type == MotionEvent::ToolType::UNKNOWN ||
@@ -254,6 +269,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
     }
 
     if (should_update) {
+      LOG(INFO) << "DragDrop UpdateStateForEventPost " << gesture.type();
       UpdateStateForEventPost(gesture);
       GestureTouchUMAHistogram::RecordGestureEvent(gesture);
     }
@@ -516,6 +532,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
   }
 
   void OnTapCancel(const MotionEvent& e) override {
+    LOG(INFO) << "DragDrop OnTapCancel";
     GestureEventDetails tap_cancel_details(ET_GESTURE_TAP_CANCEL);
     tap_cancel_details.set_device_type(GestureDeviceType::DEVICE_TOUCHSCREEN);
     tap_cancel_details.set_primary_unique_touch_event_id(
@@ -605,6 +622,22 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
         current_down_action_unique_touch_event_id_);
     Send(CreateGesture(long_press_details, e));
   }
+
+#ifdef OHOS_ENABLE_DRAG_DROP
+  void OnDragLongPress(const MotionEvent& e) override {
+    LOG(INFO) << "DragDrop GestureDetector::OnDragLongPress ";
+    DCHECK(!IsDoubleTapInProgress());
+    SetIgnoreSingleTap(true);
+    GestureEventDetails drag_long_press_details(ET_GESTURE_DRAG_LONG_PRESS);
+    drag_long_press_details.set_device_type(
+        GestureDeviceType::DEVICE_TOUCHSCREEN);
+    Send(CreateGesture(drag_long_press_details, e));
+  }
+
+  void StopDragLongPressGesture() {
+    gesture_detector_.StopDragLongPressGesture();
+  }
+#endif
 
   GestureEventData CreateGesture(const GestureEventDetails& details,
                                  int motion_event_id,
@@ -877,6 +910,11 @@ bool GestureProvider::OnTouchEvent(const MotionEvent& event) {
   // gesture where the UP is not dispatched to content.
   uma_histogram_.RecordTouchEvent(event);
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+  if (event.GetAction() == MotionEvent::Action::UP) {
+    gesture_listener_->StopDragLongPressGesture();
+  }
+#endif
   if (!CanHandle(event))
     return false;
 
@@ -885,6 +923,14 @@ bool GestureProvider::OnTouchEvent(const MotionEvent& event) {
   OnTouchEventHandlingEnd(event);
   return true;
 }
+#ifdef OHOS_ENABLE_DRAG_DROP
+void GestureProvider::ResetDetection(bool is_lost_focus) {
+  MotionEventGeneric generic_cancel_event(
+      MotionEvent::Action::CANCEL, base::TimeTicks::Now(), PointerProperties(),
+      is_lost_focus);
+  OnTouchEvent(generic_cancel_event);
+}
+#endif
 
 void GestureProvider::ResetDetection() {
   MotionEventGeneric generic_cancel_event(

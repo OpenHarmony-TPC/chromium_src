@@ -140,6 +140,9 @@ class NET_EXPORT_PRIVATE TransportConnectJob : public ConnectJob {
   bool HasEstablishedConnection() const override;
   ConnectionAttempts GetConnectionAttempts() const override;
   ResolveErrorInfo GetResolveErrorInfo() const override;
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int timeout_override) override;
+#endif
 
   // Rolls |addrlist| forward until the first IPv4 address, if any.
   // WARNING: this method should only be used to implement the prefer-IPv4 hack.

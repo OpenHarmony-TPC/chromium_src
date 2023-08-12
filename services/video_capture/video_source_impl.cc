@@ -54,6 +54,9 @@ void VideoSourceImpl::CreatePushSubscription(
       std::make_pair(subscription.get(), std::move(subscription)));
   switch (device_status_) {
     case DeviceStatus::kNotStarted:
+#if BUILDFLAG(IS_OHOS)
+      LOG(INFO) << "VideoSourceImpl::CreatePushSubscription";
+#endif
       StartDeviceWithSettings(requested_settings);
       return;
     case DeviceStatus::kStartingAsynchronously:
@@ -92,6 +95,9 @@ void VideoSourceImpl::OnClientDisconnected() {
 void VideoSourceImpl::StartDeviceWithSettings(
     const media::VideoCaptureParams& requested_settings) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << "VideoSourceImpl::StartDeviceWithSettings";
+#endif
   device_start_settings_ = requested_settings;
   device_status_ = DeviceStatus::kStartingAsynchronously;
   device_factory_->CreateDevice(

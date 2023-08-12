@@ -186,6 +186,8 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
   absl::optional<net::NetLogSource> net_log_reference_info;
   mojom::IPAddressSpace target_ip_address_space =
       mojom::IPAddressSpace::kUnknown;
+
+  bool is_download_request = false;
 };
 
 // This does not accept |kDefault| referrer policy.

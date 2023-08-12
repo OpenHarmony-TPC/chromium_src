@@ -80,6 +80,9 @@ void InkDropEventHandler::OnGestureEvent(ui::GestureEvent* event) {
       event->SetHandled();
       break;
     case ui::ET_GESTURE_LONG_PRESS:
+#ifdef OHOS_ENABLE_DRAG_DROP
+    case ui::ET_GESTURE_DRAG_LONG_PRESS:
+#endif
       if (current_ink_drop_state == InkDropState::ACTIVATED)
         return;
       ink_drop_state = InkDropState::ALTERNATE_ACTION_PENDING;

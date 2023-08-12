@@ -141,6 +141,10 @@ class VIZ_SERVICE_EXPORT Display : public DisplaySchedulerClient,
   // may be run immediately.
   void DisableSwapUntilResize(base::OnceClosure no_pending_swaps_callback);
 
+#if BUILDFLAG(IS_OHOS)
+  void SetShouldFrameSubmissionBeforeDraw(bool should);
+#endif
+
   // Sets the color matrix that will be used to transform the output of this
   // display. This is only supported for GPU compositing.
   void SetColorMatrix(const skia::Matrix44& matrix);

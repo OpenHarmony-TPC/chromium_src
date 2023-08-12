@@ -130,4 +130,16 @@ void URLRequestContext::AssertNoURLRequests() const {
   }
 }
 
+#if BUILDFLAG(IS_OHOS)
+void URLRequestContext::SetConnectTimeout(int seconds) {
+  HttpTransactionFactory* transaction_factory = http_transaction_factory();
+  if (!transaction_factory)
+    return;
+  HttpNetworkSession* network_session = transaction_factory->GetSession();
+  if (!network_session)
+    return;
+  network_session->SetConnectTimeout(seconds);
+}
+#endif
+
 }  // namespace net

@@ -69,6 +69,7 @@ class NWebPreferenceDelegate : public NWebPreference {
   void PutMultiWindowAccess(bool flag) override;
   void PutHorizontalScrollBarAccess(bool flag) override;
   void PutVerticalScrollBarAccess(bool flag) override;
+  void PutScrollBarColor(uint32_t colorValue) override;
   /* get methods*/
   bool EnableContentAccess() override;
   bool EnableRawFileAccess() override;
@@ -107,6 +108,7 @@ class NWebPreferenceDelegate : public NWebPreference {
   bool IsMultiWindowAccess() override;
   bool IsHorizontalScrollBarAccess() override;
   bool IsVerticalScrollBarAccess() override;
+  uint32_t GetScrollBarColor() override;
 
   bool RunningInsecureContentAllowed();
   bool UseStricMixedContentCheckingAllowed();
@@ -114,7 +116,10 @@ class NWebPreferenceDelegate : public NWebPreference {
   bool GetPinchSmoothMode() override;
 
   void PutHasInternetPermission(bool flag);
-
+  void SetBackgroundColor(int32_t color);
+  int32_t GetBackgroundColor() const;
+  void SetEnableBlankTargetPopupIntercept(bool enable);
+  bool IsBlankTargetPopupInterceptEnabled();
  private:
   CefRefPtr<CefBrowser> browser_ = nullptr;
 
@@ -156,7 +161,10 @@ class NWebPreferenceDelegate : public NWebPreference {
   bool is_network_blocked_;
   bool has_internet_permission_;
   bool overload_mode_enabled_{true};
+  uint32_t scrollbar_color_{0};
   CacheModeFlag cache_mode_flag_{CacheModeFlag::USE_DEFAULT};
+  int32_t background_color_{0xffffffff};
+  bool enable_blank_target_popup_intercept_{true};
 };
 }  // namespace OHOS::NWeb
 

@@ -112,6 +112,10 @@ struct EnumTraits<ui::mojom::MenuSourceType, ui::MenuSourceType> {
         return ui::mojom::MenuSourceType::ADJUST_SELECTION;
       case ui::MENU_SOURCE_ADJUST_SELECTION_RESET:
         return ui::mojom::MenuSourceType::ADJUST_SELECTION_RESET;
+#if BUILDFLAG(IS_OHOS)
+      case ui::MENU_SOURCE_SELECT_AND_COPY:
+        return ui::mojom::MenuSourceType::SELECT_AND_COPY;
+#endif
     }
     NOTREACHED();
     return ui::mojom::MenuSourceType::NONE;
@@ -153,6 +157,11 @@ struct EnumTraits<ui::mojom::MenuSourceType, ui::MenuSourceType> {
       case ui::mojom::MenuSourceType::ADJUST_SELECTION_RESET:
         *out = ui::MENU_SOURCE_ADJUST_SELECTION_RESET;
         return true;
+#if BUILDFLAG(IS_OHOS)
+      case ui::mojom::MenuSourceType::SELECT_AND_COPY:
+        *out = ui::MENU_SOURCE_SELECT_AND_COPY;
+        return true;
+#endif
     }
     NOTREACHED();
     return false;

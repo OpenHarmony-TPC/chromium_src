@@ -26,6 +26,10 @@ GestureDetector::Config BuildGestureDetectorConfig(
   GestureDetector::Config config;
   config.longpress_timeout =
       base::Milliseconds(gesture_config.long_press_time_in_ms());
+#ifdef OHOS_ENABLE_DRAG_DROP
+    config.draglongpress_timeout = base::Milliseconds(
+        gesture_config.drag_long_press_time_in_ms());
+#endif
   config.showpress_timeout =
       base::Milliseconds(gesture_config.show_press_delay_in_ms());
   config.double_tap_timeout =

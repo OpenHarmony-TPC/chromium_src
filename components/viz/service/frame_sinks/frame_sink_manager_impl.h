@@ -252,6 +252,10 @@ class VIZ_SERVICE_EXPORT FrameSinkManagerImpl
   bool VerifySandboxedThreadIds(
       base::flat_set<base::PlatformThreadId> thread_ids);
 
+#if BUILDFLAG(IS_OHOS)
+  void OnVsync(const FrameSinkId& frame_sink_id);
+#endif
+
  private:
   friend class FrameSinkManagerTest;
 

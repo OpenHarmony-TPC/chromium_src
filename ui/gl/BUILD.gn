@@ -159,7 +159,7 @@ component("gl") {
       "gl_surface_egl_ohos.h",
     ]
 
-    libs = [ "surface.z" ]
+    libs = [ "nweb_ohos_adapter.z" ]
     lib_dirs = ohos_libs_dir
   }
 

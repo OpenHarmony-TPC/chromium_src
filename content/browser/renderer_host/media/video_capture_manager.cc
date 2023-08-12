@@ -235,9 +235,14 @@ void VideoCaptureManager::QueueStartDevice(
   DCHECK(lock_time_.is_null());
   device_start_request_queue_.push_back(
       CaptureDeviceStartRequest(controller, session_id, params));
-  if (device_start_request_queue_.size() == 1)
+  if (device_start_request_queue_.size() == 1) {
+#if BUILDFLAG(IS_OHOS)
+    EmitLogMessage("VideoCaptureManager::QueueStartDevice", 1);
+#endif
     ProcessDeviceStartRequestQueue();
+  }
 }
+
 
 void VideoCaptureManager::DoStopDevice(VideoCaptureController* controller) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -417,6 +422,15 @@ void VideoCaptureManager::ConnectClient(
     std::move(done_cb).Run(nullptr);
     return;
   }
+
+#if BUILDFLAG(IS_OHOS)
+  std::ostringstream string_stream;
+  string_stream << "VideoCaptureManager  HasActiveClient: "
+                << controller->HasActiveClient()
+                << ", HasPausedClient: " << controller->HasPausedClient()
+                << ", lock_time_: " << lock_time_.is_null();
+  EmitLogMessage(string_stream.str(), 1);
+#endif
 
   // First client starts the device. Device can't be started while the screen is
   // locked.
@@ -1015,6 +1029,9 @@ void VideoCaptureManager::EmitLogMessage(const std::string& message,
                                          int verbose_log_level) {
   DVLOG(verbose_log_level) << message;
   emit_log_message_cb_.Run(message);
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << message;
+#endif
 }
 
 }  // namespace content

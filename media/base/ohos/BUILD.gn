@@ -28,10 +28,7 @@ if (is_ohos) {
       "//media/base",
       "//url",
     ]
-    libs = [
-      "surface.z",
-      "media_client.z",
-    ]
+    libs = [ "nweb_ohos_adapter.z" ]
     include_dirs = ohos_src_includes
     lib_dirs = ohos_libs_dir
   }

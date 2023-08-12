@@ -299,7 +299,7 @@ std::string NWebCookieManagerDelegate::ReturnCookie(
     LOG(ERROR) << "VisitUrlCookies failed";
     return "";
   }
-  event->Wait();
+  event->TimedWait(base::Milliseconds(ENOUGH_WAITED_TIME));
   return visitor->ReturnCookieLine();
 }
 
@@ -349,7 +349,7 @@ int NWebCookieManagerDelegate::SetCookie(
     LOG(ERROR) << "SetCookie error";
     return NWEB_INVALID_URL;
   }
-  completion->Wait();
+  completion->TimedWait(base::Milliseconds(ENOUGH_WAITED_TIME));
   return callback->IsSetSuccess() ? NWEB_OK : NWEB_ERR;
 }
 
@@ -378,7 +378,7 @@ bool NWebCookieManagerDelegate::ExistCookies() {
       base::WaitableEvent::InitialState::NOT_SIGNALED);
   CefRefPtr<HasCookieVisitor> visitor = new HasCookieVisitor(completion, nullptr);
   cookie_manager->VisitAllCookies(visitor);
-  completion->Wait();
+  completion->TimedWait(base::Milliseconds(ENOUGH_WAITED_TIME));
   return visitor->IsExistCookies();
 }
 
@@ -411,7 +411,7 @@ bool NWebCookieManagerDelegate::Store() {
     LOG(ERROR) << "Store Failed";
     return false;
   }
-  event->Wait();
+  event->TimedWait(base::Milliseconds(ENOUGH_WAITED_TIME));
   return true;
 }
 
@@ -448,7 +448,7 @@ void NWebCookieManagerDelegate::DeleteCookieEntirely(
     LOG(ERROR) << "DeleteCookieEntirely Failed";
   }
   if (event != nullptr) {
-    event->Wait();
+    event->TimedWait(base::Milliseconds(ENOUGH_WAITED_TIME));
   }
 }
 }  // namespace OHOS::NWeb

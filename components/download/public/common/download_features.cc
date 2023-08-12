@@ -25,6 +25,8 @@ const base::Feature kParallelDownloading {
   "ParallelDownloading",
 #if BUILDFLAG(IS_ANDROID)
       base::FEATURE_ENABLED_BY_DEFAULT
+#elif BUILDFLAG(IS_OHOS)
+      base::FEATURE_ENABLED_BY_DEFAULT
 #else
       base::FEATURE_DISABLED_BY_DEFAULT
 #endif

@@ -306,6 +306,10 @@ class NET_EXPORT URLRequestContext {
     DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   }
 
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int seconds);
+#endif
+
  private:
   // Ownership for these members are not defined here. Clients should either
   // provide storage elsewhere or have a subclass take ownership.

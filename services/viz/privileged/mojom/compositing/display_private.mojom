@@ -15,6 +15,7 @@ import "ui/gfx/geometry/mojom/geometry.mojom";
 import "ui/latency/mojom/latency_info.mojom";
 import "services/viz/privileged/mojom/compositing/layered_window_updater.mojom";
 import "services/viz/privileged/mojom/compositing/vsync_parameter_observer.mojom";
+import "services/viz/public/mojom/compositing/frame_sink_id.mojom";
 
 // The DisplayPrivate is used by privileged clients to talk to Display.
 interface DisplayPrivate {
@@ -24,6 +25,9 @@ interface DisplayPrivate {
   // then will no longer swap until Resize() is called with a non-empty size.
   [EnableIf=is_win, Sync]
   DisableSwapUntilResize() => ();
+
+  [EnableIf=is_ohos, Sync]
+  SetShouldFrameSubmissionBeforeDraw(bool should) => ();
 
   // Resizes the display.
   Resize(gfx.mojom.Size size);
@@ -86,6 +90,10 @@ interface DisplayPrivate {
   // sent to viz and stored, to be used when drawing a delegated ink trail.
   SetDelegatedInkPointRenderer(
     pending_receiver<gfx.mojom.DelegatedInkPointRenderer> receiver);
+
+  // Set Current Display client Frame sink ID.
+  [EnableIf=is_ohos]
+  SetCurrentFrameSinkId(FrameSinkId frame_sink_id);
 };
 
 interface DisplayClient {
@@ -107,6 +115,10 @@ interface DisplayClient {
   // Notifies that a swap has occurred with a new size.
   [EnableIf=is_linux]
   DidCompleteSwapWithNewSize(gfx.mojom.Size size);
+
+  // Notifies that a swap has occurred with a new size in OHOS.
+  [EnableIf=is_ohos]
+  DidCompleteSwapWithNewSizeOHOS(gfx.mojom.Size size);
 
   // Notifies the client of the result of context creation attempt. On Android we can't
   // fall back to SW in failure cases, so we need to handle this specifically.

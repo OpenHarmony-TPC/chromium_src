@@ -2,10 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <openssl/bio.h>
+#include <openssl/pem.h>
 #include <set>
 #include <string>
 #include <vector>
+
+#include "base/command_line.h"
 #include "base/logging.h"
+#include "content/public/common/content_switches.h"
 #include "crypto/sha2.h"
 #include "net/cert/asn1_util.h"
 #include "net/cert/cert_net_fetcher.h"
@@ -16,6 +21,7 @@
 #include "net/cert/known_roots.h"
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
+#include "ohos_adapter_helper.h"
 #include "openssl/err.h"
 #include "openssl/ossl_typ.h"
 #include "openssl/x509.h"
@@ -25,6 +31,8 @@
 
 #define ROOT_CERT "/etc/ssl/certs/cacert.pem"
 #define MIN_CERT_NUM 1
+#define DER_ENCODED 0x30
+constexpr int32_t APPLICATION_API_10 = 10;
 namespace net {
 // OH ignores the authType parameter to
 // X509TrustManager.checkServerTrusted, so pass in a dummy value. See
@@ -55,9 +63,84 @@ void X509_d2i_free(X509* server_cert[], uint32_t server_cert_sum) {
   }
 }
 
+X509* p2i_X509(const char *pem) {
+  BIO* bio = BIO_new_mem_buf(pem, strlen(pem));
+  if (!bio) {
+    LOG(ERROR) << "Create x509 from PEM, BIO new memory buffer failed";
+    return nullptr;
+  }
+  auto x509 = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+  if (x509 == nullptr) {
+    LOG(ERROR) << "Create x509 from PEM, x509 is null";
+    BIO_free(bio);
+    return nullptr;
+  }
+  BIO_free(bio);
+
+  return x509;
+}
+
+int32_t GetApplicationApiVersion() {
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kOhosAppApiVersion)) {
+    LOG(ERROR) << "kOhosAppApiVersion not exist";
+    return -1;
+  }
+  std::string apiVersion = base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+    switches::kOhosAppApiVersion);
+  if (apiVersion.empty()) {
+    return -1;
+  }
+  return std::stoi(apiVersion);
+}
+
+int GetVerifiedChain(X509_STORE_CTX* ctx, std::vector<std::string>* verified_chain) {
+  uint8_t* cert_der = nullptr;
+  uint8_t* buf = nullptr;
+  X509* x509 = nullptr;
+  int cert_len = 0;
+
+  verified_chain->reserve(1 + sk_X509_num(ctx->chain));
+  for (unsigned long i = 0; i < sk_X509_num(ctx->chain); i++) {
+    x509 = sk_X509_value(ctx->chain, i);
+    cert_len = i2d_X509(x509, nullptr);
+    if (cert_len <= 0) {
+      LOG(ERROR) << "I2d_X509 get cert length, cert length is less than or equal to 0";
+      return X509_V_ERR_UNSPECIFIED;
+    }
+
+    buf = (uint8_t*)OPENSSL_malloc(cert_len);
+    if (buf == nullptr) {
+      LOG(ERROR) << "OPENSSL_malloc failed";
+      return X509_V_ERR_UNSPECIFIED;
+    }
+
+    // The buf pointer of the i2d_X509 function changed during the conversion process,
+    // and finally changed to buf = cert_der + cert_len;
+    cert_der = buf;
+    i2d_X509(x509, &buf);
+
+    auto cert_der_span = base::make_span(cert_der, cert_len);
+    bssl::UniquePtr<CRYPTO_BUFFER> cert_buffer = net::x509_util::CreateCryptoBuffer(cert_der_span);
+    if (cert_buffer == nullptr) {
+      LOG(ERROR) << "Cert buffer is nullptr";
+      OPENSSL_free(cert_der);
+      return X509_V_ERR_UNSPECIFIED;
+    }
+
+    verified_chain->emplace_back(net::x509_util::CryptoBufferAsStringPiece(cert_buffer.get()));
+
+    OPENSSL_free(cert_der);
+    cert_der = nullptr;
+    buf = nullptr;
+  }
+
+  return X509_V_OK;
+}
+
 int CertChainVerify(X509* server_cert[],
                     int32_t server_cert_sum,
-                    X509_STORE* ca_store) {
+                    X509_STORE* ca_store,
+                    std::vector<std::string>* verified_chain) {
   uint32_t i;
   STACK_OF(X509)* ca_stack = nullptr;
   X509_STORE_CTX* ctx = nullptr;
@@ -92,6 +175,14 @@ int CertChainVerify(X509* server_cert[],
     return error;
   }
 
+  if (GetVerifiedChain(ctx, verified_chain) != X509_V_OK) {
+    LOG(ERROR) << "Get verified chain failed";
+    X509_d2i_free(server_cert, server_cert_sum);
+    X509_STORE_CTX_free(ctx);
+    X509_STORE_free(ca_store);
+    return X509_V_ERR_UNSPECIFIED;
+  }
+
   X509_STORE_CTX_free(ctx);
   X509_d2i_free(server_cert, server_cert_sum);
   X509_STORE_free(ca_store);
@@ -99,7 +190,7 @@ int CertChainVerify(X509* server_cert[],
   return X509_V_OK;
 }
 
-int CertVerify(const std::vector<std::string>& cert_bytes) {
+int CertVerify(const std::vector<std::string>& cert_bytes, std::vector<std::string>* verified_chain) {
   uint32_t server_cert_sum;
   const unsigned char* der_encoded_tmp = nullptr;
   uint32_t i;
@@ -139,6 +230,9 @@ int CertVerify(const std::vector<std::string>& cert_bytes) {
     return X509_V_ERR_UNSPECIFIED;
   }
 
+  // Allow partial chains if at least one certificate is in trusted store
+  X509_STORE_set_flags(ca_store, X509_V_FLAG_PARTIAL_CHAIN);
+
   // Create X509_LOOKUP, the store_ctx member of this data structure is
   // associated with the newly created certificate store ca_store
   look_up = X509_STORE_add_lookup(ca_store, X509_LOOKUP_file());
@@ -159,7 +253,55 @@ int CertVerify(const std::vector<std::string>& cert_bytes) {
     return X509_V_ERR_UNSPECIFIED;
   }
 
-  return CertChainVerify(server_cert, server_cert_sum, ca_store);
+  // Add user cert to ca store
+  if (GetApplicationApiVersion() >= APPLICATION_API_10) {
+    X509* certTmp = nullptr;
+    auto RootCertDataAdapter = OHOS::NWeb::OhosAdapterHelper::GetInstance().GetRootCertDataAdapter();
+    if (RootCertDataAdapter == nullptr) {
+      LOG(ERROR) << "Get cert info from cert manager, root cert data adapter is null";
+      return X509_V_ERR_UNSPECIFIED;
+    }
+    auto certMaxSize = RootCertDataAdapter->GetCertMaxSize();
+    uint8_t* certData = static_cast<uint8_t*>(malloc(certMaxSize));
+    if (!certData) {
+      LOG(ERROR) << "Get cert info from cert manager, malloc cert store failed";
+      return X509_V_ERR_UNSPECIFIED;
+    }
+
+    auto userRootCertSum = RootCertDataAdapter->GetUserRootCertSum();
+    for (i = 0; i < userRootCertSum; i++) {
+      memset(certData, 0, certMaxSize);
+      RootCertDataAdapter->GetUserRootCertData(i, certData);
+      if (*certData == DER_ENCODED) {
+        der_encoded_tmp = certData;
+        certTmp = d2i_X509(nullptr, &der_encoded_tmp, certMaxSize);
+        if (!certTmp) {
+          LOG(ERROR) << "Get cert info from cert manager, user cert der convert to X509 failed, user cert count = " << i;
+          continue;
+        }
+      } else if (*certData == '-') {
+        certTmp = p2i_X509((char*)certData);
+        if (!certTmp) {
+          LOG(ERROR) << "Get cert info from cert manager, user cert pem convert to X509 failed, user cert count = " << i;
+          continue;
+        }
+      } else {
+        LOG(ERROR) << "Get cert info from cert manager, cert format error, user cert count = " << i;
+        continue;
+      }
+
+      auto ret = X509_STORE_add_cert(ca_store, certTmp);
+      if (!ret) {
+        LOG(ERROR) << "Get cert info from cert manager, add user cert to X509 store failed, ret = "
+          << ret << ", user cert count = " << i;
+        continue;
+      }
+    }
+    X509_free(certTmp);
+    free(certData);
+  }
+
+  return CertChainVerify(server_cert, server_cert_sum, ca_store, verified_chain);
 }
 
 // Starting at certs[start], this function searches |certs| for an issuer of
@@ -248,9 +390,7 @@ void X509CertChainVerify(const std::vector<std::string>& cert_chain,
                          std::vector<std::string>* verified_chain) {
   *is_issued_by_known_root = false;
 
-  *status = CertVerify(cert_chain);
-
-  verified_chain->assign(cert_chain.begin(), cert_chain.end());
+  *status = CertVerify(cert_chain, verified_chain);
 }
 
 // Uses X509CertChainVerify() to verify the certificates in |certs| for

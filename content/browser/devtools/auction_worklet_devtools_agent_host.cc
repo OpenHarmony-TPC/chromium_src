@@ -89,7 +89,7 @@ AuctionWorkletDevToolsAgentHost::~AuctionWorkletDevToolsAgentHost() = default;
 
 void AuctionWorkletDevToolsAgentHost::WorkletDestroyed() {
   worklet_ = nullptr;
-  ForceDetachAllSessions();
+  auto retain_this = ForceDetachAllSessionsImpl();
   GetRendererChannel()->SetRenderer(mojo::NullRemote(), mojo::NullReceiver(),
                                     ChildProcessHost::kInvalidUniqueID);
 }

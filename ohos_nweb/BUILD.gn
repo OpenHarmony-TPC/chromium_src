@@ -21,7 +21,7 @@ import("//tools/grit/repack.gni")
 component("nweb_hilog") {
   sources = [ "src/nweb_hilog.h" ]
 
-  libs = [ "hilog" ]
+  libs = [ "nweb_ohos_adapter.z" ]
 
   include_dirs = ohos_src_includes
   lib_dirs = ohos_libs_dir
@@ -38,25 +38,20 @@ config("cef_nweb_config") {
     "//cef",
     "//cef/include",
     "//cef/libcef/browser/net_service",
-    "//third_party/skia"
+    "//third_party/skia",
+    "browser/performance_manager",
+    "browser/performance_manager/mechanisms",
+    "browser/performance_manager/policies",
   ]
   include_dirs += ohos_src_includes
 
   lib_dirs = ohos_libs_dir
-  libs = [
-    "mmi-client.z",
-    "ipc_core.z",
-    "accesstoken_sdk.z",
-    "nweb_ohos_adapter.z",
-    "hisysevent.z",
-  ]
+  libs = [ "nweb_ohos_adapter.z" ]
 
   defines = [ "USING_CHROMIUM_INCLUDES" ]
 
   if (product_name == "rk3568") {
-    defines += [
-      "RK3568",
-    ]
+    defines += [ "RK3568" ]
   }
 
   if (report_sys_event) {
@@ -71,6 +66,12 @@ component("cef_nweb") {
   ]
 
   sources = [
+    "browser/performance_manager/mechanisms/background_task_holder.cc",
+    "browser/performance_manager/mechanisms/background_task_holder.h",
+    "browser/performance_manager/nweb_performance_manager.cc",
+    "browser/performance_manager/nweb_performance_manager.h",
+    "browser/performance_manager/policies/background_task_policy.cc",
+    "browser/performance_manager/policies/background_task_policy.h",
     "src/cef_delegate/nweb_access_request_delegate.cc",
     "src/cef_delegate/nweb_access_request_delegate.h",
     "src/cef_delegate/nweb_application.cc",
@@ -89,6 +90,10 @@ component("cef_nweb") {
     "src/cef_delegate/nweb_delegate.h",
     "src/cef_delegate/nweb_display_listener.cc",
     "src/cef_delegate/nweb_display_listener.h",
+    "src/cef_delegate/nweb_download_handler_delegate.cc",
+    "src/cef_delegate/nweb_download_handler_delegate.h",
+    "src/cef_delegate/nweb_drag_data_impl.cc",
+    "src/cef_delegate/nweb_drag_data_impl.h",
     "src/cef_delegate/nweb_event_handler.cc",
     "src/cef_delegate/nweb_event_handler.h",
     "src/cef_delegate/nweb_file_selector_params_impl.cc",
@@ -218,11 +223,12 @@ component("nweb_sources") {
   deps = [
     ":cef_nweb",
     ":nweb_hilog",
+    "//third_party/boringssl",
   ]
 
   public_deps = [ "//third_party/abseil-cpp:absl" ]
 
-  libs = [ "surface.z" ]
+  libs = [ "nweb_ohos_adapter.z" ]
 }
 
 #################################################

@@ -182,7 +182,7 @@ void VideoCaptureHost::OnEnded(const VideoCaptureControllerID& controller_id) {
 
 void VideoCaptureHost::OnStarted(
     const VideoCaptureControllerID& controller_id) {
-  DVLOG(1) << __func__;
+  LOG(INFO) << __func__;
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   if (controllers_.find(controller_id) == controllers_.end())
     return;
@@ -203,7 +203,7 @@ void VideoCaptureHost::Start(
     const base::UnguessableToken& session_id,
     const media::VideoCaptureParams& params,
     mojo::PendingRemote<media::mojom::VideoCaptureObserver> observer) {
-  DVLOG(1) << __func__ << " session_id=" << session_id
+  LOG(INFO) << __func__ << " session_id=" << session_id
            << ", device_id=" << device_id << ", format="
            << media::VideoCaptureFormat::ToString(params.requested_format);
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -224,7 +224,6 @@ void VideoCaptureHost::Start(
     NotifyStreamAdded();
     return;
   }
-
   controllers_[controller_id] = base::WeakPtr<VideoCaptureController>();
   media_stream_manager_->video_capture_manager()->ConnectClient(
       session_id, params, controller_id, this,
@@ -233,7 +232,7 @@ void VideoCaptureHost::Start(
 }
 
 void VideoCaptureHost::Stop(const base::UnguessableToken& device_id) {
-  DVLOG(1) << __func__ << " " << device_id;
+  LOG(INFO) << __func__ << " " << device_id;
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   const VideoCaptureControllerID& controller_id(device_id);

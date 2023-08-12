@@ -78,6 +78,10 @@
 #include "ui/accessibility/ax_tree_update.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "content/common/frame.mojom.h"
+#endif  // IS_OHOS
+
 using blink::web_pref::WebPreferences;
 
 namespace printing {
@@ -1236,6 +1240,12 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
   // Detached documents can't be printed.
   if (!web_frame->GetDocument().GetFrame())
     return;
+  
+#if BUILDFLAG(IS_OHOS)
+  if (delegate_->IsScriptedPrintEnabled()) {
+    return;
+  }
+#endif  // IS_OHOS
 
   if (in_scripted_print_)
     return;

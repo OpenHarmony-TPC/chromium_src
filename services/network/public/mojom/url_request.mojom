@@ -465,6 +465,9 @@ struct URLRequest {
   // Clients outside the network service must not set this field to a value
   // other than `kUnknown`.
   IPAddressSpace target_ip_address_space;
+
+  // True for download request.
+  bool is_download_request;
 };
 
 // URLRequestBody represents body (i.e. upload data) of a HTTP request.

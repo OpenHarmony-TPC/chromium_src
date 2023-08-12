@@ -160,7 +160,7 @@ class BASE_EXPORT DiscardableSharedMemory {
       trace_event::ProcessMemoryDump* pmd,
       bool is_owned) const;
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   // Returns true if the Ashmem device is supported on this system.
   // Only use this for unit-testing.
   static bool IsAshmemDeviceSupportedForTesting();

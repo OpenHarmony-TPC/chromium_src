@@ -445,6 +445,9 @@ int HttpProxyConnectJob::DoTransportConnect() {
     nested_connect_job_ = TransportConnectJob::CreateTransportConnectJob(
         params_->transport_params(), priority(), socket_tag(),
         common_connect_job_params(), this, &net_log());
+#if BUILDFLAG(IS_OHOS)
+    nested_connect_job_->SetConnectTimeout(timeout_override_for_nested_job_);
+#endif
   } else {
     DCHECK_EQ(scheme, ProxyServer::SCHEME_HTTPS);
     DCHECK(params_->ssl_params());
@@ -823,5 +826,12 @@ SpdySessionKey HttpProxyConnectJob::CreateSpdySessionKey() const {
       params_->network_isolation_key(),
       params_->ssl_params()->GetDirectConnectionParams()->secure_dns_policy());
 }
+
+#if BUILDFLAG(IS_OHOS)
+void HttpProxyConnectJob::SetConnectTimeout(int timeout_override) {
+  timeout_override_for_nested_job_ = timeout_override;
+  timeout_override_ = base::TimeDelta();
+}
+#endif
 
 }  // namespace net

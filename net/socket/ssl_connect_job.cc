@@ -279,6 +279,9 @@ int SSLConnectJob::DoTransportConnect() {
   nested_connect_job_ = TransportConnectJob::CreateTransportConnectJob(
       params_->GetDirectConnectionParams(), priority(), socket_tag(),
       common_connect_job_params(), this, &net_log());
+#if BUILDFLAG(IS_OHOS)
+  nested_connect_job_->SetConnectTimeout(timeout_override_for_nested_job_);
+#endif
   return nested_connect_job_->Connect();
 }
 
@@ -308,6 +311,9 @@ int SSLConnectJob::DoSOCKSConnect() {
   nested_connect_job_ = std::make_unique<SOCKSConnectJob>(
       priority(), socket_tag(), common_connect_job_params(),
       params_->GetSocksProxyConnectionParams(), this, &net_log());
+#if BUILDFLAG(IS_OHOS)
+  nested_connect_job_->SetConnectTimeout(timeout_override_for_nested_job_);
+#endif
   return nested_connect_job_->Connect();
 }
 
@@ -332,6 +338,9 @@ int SSLConnectJob::DoTunnelConnect() {
   nested_connect_job_ = std::make_unique<HttpProxyConnectJob>(
       priority(), socket_tag(), common_connect_job_params(),
       params_->GetHttpProxyConnectionParams(), this, &net_log());
+#if BUILDFLAG(IS_OHOS)
+  nested_connect_job_->SetConnectTimeout(timeout_override_for_nested_job_);
+#endif
   return nested_connect_job_->Connect();
 }
 
@@ -539,5 +548,12 @@ void SSLConnectJob::ChangePriorityInternal(RequestPriority priority) {
   if (nested_connect_job_)
     nested_connect_job_->ChangePriority(priority);
 }
+
+#if BUILDFLAG(IS_OHOS)
+void SSLConnectJob::SetConnectTimeout(int timeout_override) {
+  timeout_override_for_nested_job_ = timeout_override;
+  timeout_override_ = base::TimeDelta();
+}
+#endif
 
 }  // namespace net

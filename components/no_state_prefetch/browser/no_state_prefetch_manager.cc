@@ -206,6 +206,19 @@ NoStatePrefetchManager::StartPrefetchingFromLinkRelPrerender(
       session_storage_namespace);
 }
 
+#if BUILDFLAG(IS_OHOS)
+std::unique_ptr<NoStatePrefetchHandle>
+NoStatePrefetchManager::StartOhPrefetchingFromOmnibox(
+    const GURL& url,
+    content::SessionStorageNamespace* session_storage_namespace,
+    const gfx::Size& size,
+    const std::string& extra_headers) {
+  return StartPrefetchingWithPreconnectFallback(
+      ORIGIN_OMNIBOX, url, content::Referrer(), absl::nullopt, gfx::Rect(size),
+      session_storage_namespace, extra_headers);
+}
+#endif
+
 std::unique_ptr<NoStatePrefetchHandle>
 NoStatePrefetchManager::StartPrefetchingFromOmnibox(
     const GURL& url,
@@ -513,7 +526,12 @@ NoStatePrefetchManager::StartPrefetchingWithPreconnectFallback(
     const content::Referrer& referrer,
     const absl::optional<url::Origin>& initiator_origin,
     const gfx::Rect& bounds,
-    SessionStorageNamespace* session_storage_namespace) {
+    SessionStorageNamespace* session_storage_namespace
+#if BUILDFLAG(IS_OHOS)
+    ,
+    const std::string& extra_headers
+#endif
+) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -647,7 +665,10 @@ NoStatePrefetchManager::StartPrefetchingWithPreconnectFallback(
   }
 
   DCHECK(!no_state_prefetch_contents_ptr->prerendering_has_started());
-
+#if BUILDFLAG(IS_OHOS)
+  no_state_prefetch_contents_ptr->SetOhStartPrerenderingExtraHeaders(
+      extra_headers);
+#endif
   std::unique_ptr<NoStatePrefetchHandle> no_state_prefetch_handle =
       base::WrapUnique(
           new NoStatePrefetchHandle(active_prefetches_.back().get()));
@@ -657,7 +678,6 @@ NoStatePrefetchManager::StartPrefetchingWithPreconnectFallback(
 
   gfx::Rect contents_bounds =
       bounds.IsEmpty() ? config_.default_tab_bounds : bounds;
-
   no_state_prefetch_contents_ptr->StartPrerendering(contents_bounds,
                                                     session_storage_namespace);
 

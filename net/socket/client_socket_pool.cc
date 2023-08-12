@@ -210,4 +210,14 @@ std::unique_ptr<ConnectJob> ClientSocketPool::CreateConnectJob(
       group_id.secure_dns_policy(), common_connect_job_params_, delegate);
 }
 
+#if BUILDFLAG(IS_OHOS)
+void ClientSocketPool::SetConnectTimeout(int timeout_override) {
+  timeout_override_ = timeout_override;
+}
+
+int ClientSocketPool::GetConnectTimeout() {
+  return timeout_override_;
+}
+#endif
+
 }  // namespace net

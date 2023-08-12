@@ -30,6 +30,9 @@ const char kAudioServiceQuitTimeoutMs[] = "audio-service-quit-timeout-ms";
 const char kAutoplayPolicy[] = "autoplay-policy";
 
 const char kDisableAudioOutput[] = "disable-audio-output";
+#if BUILDFLAG(IS_OHOS)
+const char kDisableAudioInput[] = "disable-audio-input";
+#endif
 
 // Causes the AudioManager to fail creating audio streams. Used when testing
 // various failure cases.

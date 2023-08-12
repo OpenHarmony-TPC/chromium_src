@@ -364,6 +364,10 @@ class TestConnectJob : public ConnectJob {
     return nullptr;
   }
 
+#if defined(HW_BUILD_NETWORK)
+  void SetConnectTimeout(int timeout_override) override {}
+#endif
+
  private:
   // From ConnectJob:
 

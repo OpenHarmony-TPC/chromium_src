@@ -8,9 +8,9 @@
 #include <sys/stat.h>
 #include <utility>
 
-#include <display_type.h>
 #include <cerrno>
 #include "base/logging.h"
+#include "graphic_adapter.h"
 #include "media/base/video_frame.h"
 
 namespace content {
@@ -144,7 +144,7 @@ void OHOSMediaPlayerRendererClient::OnFrameUpdate(
   gfx::Rect visible_rect = gfx::Rect(0, 0, visible_width, visible_height);
   gfx::Size natural_size = gfx::Size(visible_width, visible_height);
   const base::TimeDelta kZero;
-  if (src_format == PIXEL_FMT_YCBCR_420_SP) {
+  if (src_format == OHOS::NWeb::PixelFormatAdapter::PIXEL_FMT_YCBCR_420_SP) {
     PaintNV12VideoFrame(coded_size, visible_rect, natural_size, mapped,
                         buffer_size, fd, fd_browser);
   } else {

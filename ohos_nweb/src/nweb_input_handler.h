@@ -26,17 +26,16 @@ class NWebInputHandler {
   static std::shared_ptr<NWebInputHandler> Create(
       std::shared_ptr<NWebDelegateInterface> nweb_delegate);
 
-  NWebInputHandler(
-      std::shared_ptr<NWebDelegateInterface> nweb_delegate);
+  NWebInputHandler(std::shared_ptr<NWebDelegateInterface> nweb_delegate);
   ~NWebInputHandler() = default;
 
   bool Init();
   void OnDestroy();
 
   /* event interface */
-  void OnTouchPress(int32_t id, double x, double y);
-  void OnTouchRelease(int32_t id, double x, double y);
-  void OnTouchMove(int32_t id, double x, double y);
+  void OnTouchPress(int32_t id, double x, double y, bool from_overlay);
+  void OnTouchRelease(int32_t id, double x, double y, bool from_overlay);
+  void OnTouchMove(int32_t id, double x, double y, bool from_overlay);
   void OnTouchCancel();
   void OnNavigateBack();
   bool SendKeyEvent(int32_t keyCode, int32_t keyAction);
@@ -53,6 +52,6 @@ class NWebInputHandler {
   double last_y_ = -1;
   std::unordered_map<uint32_t, bool> touch_press_id_map_;
 };
-}
+}  // namespace OHOS::NWeb
 
 #endif  // NWEB_INPUT_HANDLER_H

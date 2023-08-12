@@ -21,10 +21,12 @@
 #include <memory>
 #include <mutex>
 #include <vector>
+#include <set>
 #include "capi/nweb_app_client_extension_callback.h"
+#include "capi/nweb_download_delegate_callback.h"
 #include "nweb.h"
-#include "nweb_errors.h"
 #include "nweb_download_callback.h"
+#include "nweb_errors.h"
 #include "nweb_input_handler.h"
 #include "nweb_inputmethod_handler.h"
 #include "nweb_output_handler.h"
@@ -40,13 +42,19 @@ class NWebImpl : public NWeb {
 
   /* event interface */
   void Resize(uint32_t width, uint32_t height) override;
-  void OnTouchPress(int32_t id, double x, double y) override;
-  void OnTouchRelease(int32_t id, double x, double y) override;
-  void OnTouchMove(int32_t id, double x, double y) override;
+  void OnTouchPress(int32_t id, double x, double y, bool from_overlay) override;
+  void OnTouchRelease(int32_t id,
+                      double x,
+                      double y,
+                      bool from_overlay) override;
+  void OnTouchMove(int32_t id, double x, double y, bool from_overlay) override;
   void OnTouchCancel() override;
   void OnNavigateBack() override;
   bool SendKeyEvent(int32_t keyCode, int32_t keyAction) override;
-  void SendMouseWheelEvent(double x, double y, double deltaX, double deltaY) override;
+  void SendMouseWheelEvent(double x,
+                           double y,
+                           double deltaX,
+                           double deltaY) override;
   void SendMouseEvent(int x, int y, int button, int action, int count) override;
 
   // public api
@@ -68,7 +76,8 @@ class NWebImpl : public NWeb {
   void ExecuteJavaScript(const std::string& code) const override;
   void ExecuteJavaScript(
       const std::string& code,
-      std::shared_ptr<NWebValueCallback<std::string>> callback) const override;
+      std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback,
+      bool extention) const override;
   void PutBackgroundColor(int color) const override;
   void InitialScale(float scale) const override;
   void OnPause() const override;
@@ -82,7 +91,9 @@ class NWebImpl : public NWeb {
   const std::shared_ptr<NWebHandler> GetNWebHandler() const override;
   std::string Title() override;
   void CreateWebMessagePorts(std::vector<std::string>& ports) override;
-  void PostWebMessage(std::string& message, std::vector<std::string>& ports, std::string& targetUri) override;
+  void PostWebMessage(std::string& message,
+                      std::vector<std::string>& ports,
+                      std::string& targetUri) override;
   void ClosePort(std::string& port_handle) override;
   void PostPortMessage(std::string& port_handle, std::shared_ptr<NWebMessage> data) override;
   void SetPortMessageCallback(std::string& port_handle,
@@ -110,7 +121,7 @@ class NWebImpl : public NWeb {
       const std::vector<std::string>& method_list) override;
   void SetNWebJavaScriptResultCallBack(
       std::shared_ptr<NWebJavaScriptResultCallBack> callback) override;
-  void OnFocus() const override;
+  void OnFocus(const FocusReason& focusReason = FocusReason::FOCUS_DEFAULT) const override;
   void OnBlur(const BlurReason& blurReason) const override;
   void StoreWebArchive(
       const std::string& base_name,
@@ -126,6 +137,7 @@ class NWebImpl : public NWeb {
       ImageColorType& colorType, ImageAlphaType& alphaType) override;
   void PutNetworkAvailable(bool available) override;
   void SendDragEvent(const DragEvent& dragEvent) const override;
+  std::shared_ptr<NWebDragData> GetOrCreateDragData() override;
   void UpdateLocale(const std::string& language, const std::string& region) override;
 
   void HasImages(std::shared_ptr<NWebValueCallback<bool>> callback) override;
@@ -139,19 +151,37 @@ class NWebImpl : public NWeb {
   void ScrollBy(float delta_x, float delta_y) override;
   void SlideScroll(float vx, float vy) override;
   bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) override;
+  void SetScreenOffSet(double x, double y) override;
+  void SetShouldFrameSubmissionBeforeDraw(bool should) override;
+  void RegisterScreenLockFunction(int32_t windowId, const SetKeepScreenOn&& handle) override;
+  void UnRegisterScreenLockFunction(int32_t windowId) override;
+  void NotifyMemoryLevel(int32_t level) override;
+  void OnWebviewHide() const override;
+  void OnWebviewShow() const override;
+
+  // For NWebEx
   static NWebImpl* FromID(int32_t nweb_id);
   std::string GetUrl() const override;
-
+  void SetAudioMuted(bool muted) override;
+  void SetAudioResumeInterval(int32_t resumeInterval) override;
+  void SetAudioExclusive(bool audioExclusive) override;
+  void PrefetchPage(
+      std::string& url,
+      std::map<std::string, std::string> additionalHttpHeaders) override;
   CefRefPtr<CefClient> GetCefClient() const {
     return nweb_delegate_ ? nweb_delegate_->GetCefClient() : nullptr;
   }
   void AddNWebToMap(uint32_t id, std::shared_ptr<NWebImpl>& nweb);
 
 #if defined (OHOS_NWEB_EX)
+  static void ResumeDownloadStatic(std::shared_ptr<NWebDownloadItem> download_item);
   static const std::vector<std::string>& GetCommandLineArgsForNWebEx();
   static void InitBrowserServiceApi(std::vector<std::string>& browser_args);
   static bool GetBrowserServiceApiEnabled();
-
+  static void SetConnectTimeout(int32_t seconds);
+  static void SetUrlExceptionList(int contentType,
+                                  std::vector<std::string>& urls,
+                                  bool accept);
   void PutWebAppClientExtensionCallback(
       std::shared_ptr<NWebAppClientExtensionCallback>
           web_app_client_extension_listener);
@@ -161,14 +191,25 @@ class NWebImpl : public NWeb {
   void SetBrowserUserAgentString(const std::string& user_agent);
   void SetForceEnableZoom(bool forceEnableZoom) const;
   bool GetForceEnableZoom() const;
+  void SelectAndCopy() const;
+  bool ShouldShowFreeCopy() const;
+  void PutWebDownloadDelegateCallback(
+      std::shared_ptr<NWebDownloadDelegateCallback>);
+  void StartDownload(const char* url);
+  void ResumeDownload(std::shared_ptr<NWebDownloadItem>);
+  void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) const;
 #endif  // OHOS_NWEB_EX
-
+  void NotifyPopupWindowResult(bool result) override {
+    nweb_delegate_->NotifyPopupWindowResult(result);
+  }
  private:
   void ProcessInitArgs(const NWebInitArgs& init_args);
   void InitWebEngineArgs(const NWebInitArgs& init_args);
   bool InitWebEngine(const NWebCreateInfo& create_info);
   bool SetVirtualDeviceRatio();
   uint32_t NormalizeVirtualDeviceRatio(uint32_t length);
+  void StopCameraSession() const;
+  void RestartCameraSession() const;
 
  private:
   uint32_t nweb_id_ = 0;
@@ -181,6 +222,7 @@ class NWebImpl : public NWeb {
   std::list<std::string> web_engine_args_;
   float device_pixel_ratio_ = 0.f;
   bool is_enhance_surface_ = false;
+  static std::set<uint32_t> focus_nweb_id_;
 };
 }  // namespace OHOS::NWeb
 

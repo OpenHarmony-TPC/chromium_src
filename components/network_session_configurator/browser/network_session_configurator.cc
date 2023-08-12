@@ -39,6 +39,10 @@
 #include "base/mac/mac_util.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "ohos_adapter_helper.h"
+#endif
+
 namespace {
 
 // Map from name to value for all parameters associate with a field trial.
@@ -759,6 +763,18 @@ void ParseCommandLineAndFieldTrials(const base::CommandLine& command_line,
 }
 
 net::URLRequestContextBuilder::HttpCacheParams::Type ChooseCacheType() {
+#if BUILDFLAG(IS_OHOS)
+  auto& system_properties_adapter =
+        OHOS::NWeb::OhosAdapterHelper::GetInstance()
+            .GetSystemPropertiesInstance();
+  OHOS::NWeb::ProductDeviceType deviceType =
+      system_properties_adapter.GetProductDeviceType();
+  if (deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_MOBILE) {
+    return net::URLRequestContextBuilder::HttpCacheParams::DISK_SIMPLE;
+  } else {
+    return net::URLRequestContextBuilder::HttpCacheParams::DISK_BLOCKFILE;
+  }
+#else
 #if !BUILDFLAG(IS_ANDROID)
   const std::string experiment_name =
       base::FieldTrialList::FindFullName("SimpleCacheTrial");
@@ -788,6 +804,7 @@ net::URLRequestContextBuilder::HttpCacheParams::Type ChooseCacheType() {
   return net::URLRequestContextBuilder::HttpCacheParams::DISK_SIMPLE;
 #else
   return net::URLRequestContextBuilder::HttpCacheParams::DISK_BLOCKFILE;
+#endif
 #endif
 }
 

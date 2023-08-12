@@ -75,6 +75,9 @@ class NET_EXPORT_PRIVATE ClientSocketPoolManager {
 
   // Creates a Value summary of the state of the socket pools.
   virtual std::unique_ptr<base::Value> SocketPoolInfoToValue() const = 0;
+#if BUILDFLAG(IS_OHOS)
+  virtual void SetConnectTimeout(int seconds) = 0;
+#endif
 };
 
 // A helper method that uses the passed in proxy information to initialize a

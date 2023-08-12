@@ -2352,6 +2352,16 @@ void RenderFrameImpl::DidCommitAndDrawCompositorFrame() {
 #endif
 }
 
+#if BUILDFLAG(IS_OHOS)
+void RenderFrameImpl::SetZoomLevel(float magnify_delta, const gfx::Point& anchor) {
+  auto web_frame_widget = GetLocalRootWebFrameWidget();
+  if (!web_frame_widget) {
+    return;
+  }
+  web_frame_widget->SetZoomLevel(magnify_delta, anchor);
+}
+#endif  // BUILDFLAG(IS_OHOS)
+
 RenderView* RenderFrameImpl::GetRenderView() {
   return render_view_;
 }
@@ -6244,5 +6254,13 @@ bool RenderFrameImpl::DeferMediaLoad(bool has_played_media_before,
   return GetContentClient()->renderer()->DeferMediaLoad(
       this, has_played_media_before, std::move(closure));
 }
+
+#ifdef OHOS_ENABLE_DRAG_DROP
+void RenderFrameImpl::ClearContextMenu() {
+  // It does not postTask here because contextmenu popup windows should be
+  // dismissed before drag start.
+  GetFrameHost()->OnClearContextMenu();
+}
+#endif //OHOS_ENABLE_DRAG_DROP
 
 }  // namespace content

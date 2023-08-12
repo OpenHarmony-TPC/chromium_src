@@ -328,6 +328,12 @@ void DelegatedFrameHost::OnFrameTokenChanged(uint32_t frame_token,
   client_->OnFrameTokenChanged(frame_token, activation_time);
 }
 
+#if BUILDFLAG(IS_OHOS)
+void DelegatedFrameHost::OnVsync() {
+  client_->OnVsync();
+}
+#endif
+
 // CommitPending without a target for TakeFallbackContentFrom. Since we cannot
 // guarantee that Navigation will complete, evict our surfaces which are from
 // a previous Navigation.

@@ -49,6 +49,10 @@ class NET_EXPORT_PRIVATE ClientSocketPoolManagerImpl
   // Creates a Value summary of the state of the socket pools.
   std::unique_ptr<base::Value> SocketPoolInfoToValue() const override;
 
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int seconds) override;
+#endif
+
  private:
   using SocketPoolMap =
       std::map<ProxyServer, std::unique_ptr<ClientSocketPool>>;
@@ -60,7 +64,9 @@ class NET_EXPORT_PRIVATE ClientSocketPoolManagerImpl
   const HttpNetworkSession::SocketPoolType pool_type_;
 
   SocketPoolMap socket_pools_;
-
+#if BUILDFLAG(IS_OHOS)
+  int timeout_override_{0};
+#endif
   THREAD_CHECKER(thread_checker_);
 };
 

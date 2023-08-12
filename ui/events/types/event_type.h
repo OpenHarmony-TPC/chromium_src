@@ -46,6 +46,9 @@ enum EventType {
   ET_GESTURE_PINCH_END,
   ET_GESTURE_PINCH_UPDATE,
   ET_GESTURE_LONG_PRESS,
+#ifdef OHOS_ENABLE_DRAG_DROP
+  ET_GESTURE_DRAG_LONG_PRESS,
+#endif
   ET_GESTURE_LONG_TAP,
   // A SWIPE gesture can happen at the end of a touch sequence involving one or
   // more fingers if the finger velocity was high enough when the first finger

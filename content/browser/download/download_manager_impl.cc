@@ -430,7 +430,11 @@ void DownloadManagerImpl::DetermineDownloadTarget(
   // type.  If the types ever diverge, gasket code will need to
   // be written here.
   if (!delegate_ || !delegate_->DetermineDownloadTarget(item, &callback)) {
+#if BUILDFLAG(IS_OHOS)
+    base::FilePath target_path = item->GetFullPath();
+#else
     base::FilePath target_path = item->GetForcedFilePath();
+#endif  //  BUILDFLAG(IS_OHOS)
     // TODO(asanka): Determine a useful path if |target_path| is empty.
     std::move(callback).Run(
         target_path, download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,

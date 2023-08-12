@@ -73,6 +73,11 @@
 #include "gpu/command_buffer/service/shared_image_backing_scoped_hardware_buffer_fence_sync.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "gpu/command_buffer/service/shared_image_backing_factory_egl.h"
+#include "gpu/command_buffer/service/shared_image_backing_scoped_hardware_buffer_fence_sync.h"
+#endif
+
 namespace gpu {
 
 #if BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS_ASH) &&          \
@@ -161,7 +166,7 @@ SharedImageFactory::SharedImageFactory(
                                   : nullptr);
     factories_.push_back(std::move(gl_texture_backing_factory));
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
     auto egl_backing_factory = std::make_unique<SharedImageBackingFactoryEGL>(
         gpu_preferences, workarounds, gpu_feature_info,
         shared_image_manager->batch_access_manager());

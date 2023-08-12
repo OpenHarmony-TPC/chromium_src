@@ -26,7 +26,7 @@
 #include <sys/mman.h>
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 #include "third_party/ashmem/ashmem.h"
 #endif
 
@@ -122,7 +122,7 @@ size_t AlignToPageSize(size_t size) {
   return bits::AlignUp(size, base::GetPageSize());
 }
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 bool UseAshmemUnpinningForDiscardableMemory() {
   if (!ashmem_device_is_supported())
     return false;
@@ -135,7 +135,7 @@ bool UseAshmemUnpinningForDiscardableMemory() {
   }
   return true;
 }
-#endif  // BUILDFLAG(IS_ANDROID)
+#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 
 }  // namespace
 
@@ -275,7 +275,7 @@ DiscardableSharedMemory::LockResult DiscardableSharedMemory::Lock(
   if (!length)
       return PURGED;
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   // Ensure that the platform won't discard the required pages.
   return LockPages(shared_memory_region_,
                    AlignToPageSize(sizeof(SharedState)) + offset, length);
@@ -479,7 +479,7 @@ void DiscardableSharedMemory::ReleaseMemoryIfPossible(size_t offset,
 #else  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 #define MADV_PURGE_ARGUMENT MADV_FREE
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
-        // BUILDFLAG(IS_ANDROID)
+        // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   // Advise the kernel to remove resources associated with purged pages.
   // Subsequent accesses of memory pages will succeed, but might result in
   // zero-fill-on-demand pages.
@@ -559,7 +559,7 @@ DiscardableSharedMemory::LockResult DiscardableSharedMemory::LockPages(
     const UnsafeSharedMemoryRegion& region,
     size_t offset,
     size_t length) {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   if (region.IsValid()) {
     if (UseAshmemUnpinningForDiscardableMemory()) {
       int pin_result =
@@ -579,7 +579,7 @@ void DiscardableSharedMemory::UnlockPages(
     const UnsafeSharedMemoryRegion& region,
     size_t offset,
     size_t length) {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   if (region.IsValid()) {
     if (UseAshmemUnpinningForDiscardableMemory()) {
       int unpin_result =
@@ -594,7 +594,7 @@ Time DiscardableSharedMemory::Now() const {
   return Time::Now();
 }
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 // static
 bool DiscardableSharedMemory::IsAshmemDeviceSupportedForTesting() {
   return UseAshmemUnpinningForDiscardableMemory();

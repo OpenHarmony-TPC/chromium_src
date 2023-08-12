@@ -811,6 +811,11 @@ class CONTENT_EXPORT WebContentsObserver {
                                        AllowServiceWorkerResult allowed) {}
   WebContents* web_contents() const;
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void OpenDateTimeChooser() {}
+  virtual void CloseDateTimeChooser() {}
+#endif
+
  protected:
   // Use this constructor when the object is tied to a single WebContents for
   // its entire lifetime.

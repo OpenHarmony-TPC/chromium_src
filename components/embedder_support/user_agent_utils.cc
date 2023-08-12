@@ -35,7 +35,9 @@
 #include "base/win/registry.h"
 #include "base/win/windows_version.h"
 #endif  // BUILDFLAG(IS_WIN)
-
+#if BUILDFLAG(IS_OHOS)
+#include "ohos_adapter_helper.h"
+#endif
 namespace embedder_support {
 
 namespace {
@@ -360,6 +362,14 @@ std::string GetProduct(const bool allow_version_override,
         switches::kUserAgentProductAndVersion);
   }
 
+#if BUILDFLAG(IS_OHOS)
+  if (allow_version_override) {
+    std::string version_str = "Chrome/";
+    version_str.append(version_info::GetMajorVersionNumber());
+    version_str.append(".0.0.0");
+    return version_str;
+  }
+#endif
   // FF Priority 1: force major version to 99 and minor version to major version
   // number.
   if (allow_version_override &&
@@ -409,10 +419,30 @@ std::string GetFullUserAgent(
     ForceMajorVersionToMinorPosition force_major_to_minor) {
   std::string product =
       GetProduct(/*allow_override=*/true, force_major_to_minor);
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+#if BUILDFLAG(IS_ANDROID)
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kUseMobileUserAgent))
     product += " Mobile";
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  auto& system_properties_adapter = OHOS::NWeb::OhosAdapterHelper::GetInstance()
+                                        .GetSystemPropertiesInstance();
+  OHOS::NWeb::ProductDeviceType deviceType =
+      system_properties_adapter.GetProductDeviceType();
+  switch (deviceType) {
+    case OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_MOBILE:
+      product += " Mobile";
+      break;
+    case OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_TABLET:
+      product += " Tablet";
+      break;
+    case OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_PC:
+    case OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_UNKNOWN:
+    default:
+      // product += "";
+      break;
+  }
 #endif
   return content::BuildUserAgentFromProduct(product);
 }

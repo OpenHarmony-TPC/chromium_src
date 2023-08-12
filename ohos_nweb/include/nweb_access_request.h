@@ -64,6 +64,39 @@ public:
     */
     virtual void Refuse() = 0;
 };
+
+struct NWebScreenCaptureConfig {
+    int32_t mode = 0;
+    int32_t sourceId = -1;
+};
+
+class OHOS_NWEB_EXPORT NWebScreenCaptureAccessRequest {
+public:
+    NWebScreenCaptureAccessRequest() = default;
+
+
+    virtual ~NWebScreenCaptureAccessRequest() = default;
+
+    /**
+    * Get the origin of the web page which is trying to access the screen capture resource.
+    *
+    * @return the origin of the web page which is trying to access the resource.
+    */
+    virtual std::string Origin() = 0;
+
+    /**
+    * Agree the origin to access the given resources.
+    * The granted access is only valid for this WebView.
+    *
+    * @param config screen capture config.
+    */
+    virtual void Agree(const NWebScreenCaptureConfig& config) = 0;
+
+    /**
+    * Refuse the request.
+    */
+    virtual void Refuse() = 0;
+};
 }  // namespace OHOS::NWeb
 
 #endif  // NWEB_ACCESS_REQUEST_H

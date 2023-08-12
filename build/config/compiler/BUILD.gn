@@ -1485,6 +1485,14 @@ config("default_warnings") {
         "-Wno-error=non-c-typedef-for-linkage",
         "-Wno-c++11-narrowing",
         "-Wno-builtin-assume-aligned-alignment",
+        "-Wno-deprecated-builtins",
+        "-Wno-deprecated-non-prototype",
+        "-Wno-array-parameter",
+        "-Wno-error=unused-but-set-variable",
+        "-Wno-unused-but-set-variable",
+        "-Wno-deprecated-declarations",
+        "-Wno-unqualified-std-cast-call",
+        "-Wno-error=invalid-offsetof"
       ]
     } else {
       cflags += [

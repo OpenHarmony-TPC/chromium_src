@@ -41,5 +41,8 @@ enum MenuSourceType {
   TOUCH_HANDLE,
   STYLUS,
   ADJUST_SELECTION,
-  ADJUST_SELECTION_RESET
+  ADJUST_SELECTION_RESET,
+  //#if defined(OHOS_NWEB_EX)
+  SELECT_AND_COPY
+  //#endif
 };

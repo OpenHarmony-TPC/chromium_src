@@ -296,6 +296,10 @@ class NET_EXPORT HttpNetworkSession {
   CommonConnectJobParams CreateCommonConnectJobParams(
       bool for_websockets = false);
 
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int seconds);
+#endif
+
  private:
   friend class HttpNetworkSessionPeer;
 

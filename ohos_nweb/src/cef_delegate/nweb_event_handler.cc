@@ -15,18 +15,23 @@
 
 #include "nweb_event_handler.h"
 
+#include <cmath>
+
 #include "cef/include/base/cef_logging.h"
 #include "cef/include/base/cef_macros.h"
 #include "cef/include/internal/cef_types.h"
 #include "cef/include/internal/cef_types_wrappers.h"
 
+#include "base/trace_event/common/trace_event_common.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
 #include "ui/events/keycodes/keysym_to_unicode.h"
 
 namespace OHOS::NWeb {
 
 constexpr double MAX_ZOOM_FACTOR = 10.0;
+constexpr double MIN_ZOOM_FACTOR = -10.0;
 constexpr double ZOOM_FACTOR = 2.0;
+constexpr double ZOOM_TARGET = 5.5;
 
 // static
 std::shared_ptr<NWebEventHandler> NWebEventHandler::Create() {
@@ -39,14 +44,12 @@ std::shared_ptr<NWebEventHandler> NWebEventHandler::Create() {
 }
 
 NWebEventHandler::NWebEventHandler() {
-  mmi_adapter_ = OHOS::NWeb::OhosAdapterHelper::GetInstance().CreateMMIAdapter();
+  mmi_adapter_ =
+      OHOS::NWeb::OhosAdapterHelper::GetInstance().CreateMMIAdapter();
   if (mmi_adapter_ == nullptr) {
     LOG(ERROR) << "display_manager_adapter is nullptr";
     return;
   }
-  mmi_id_ = mmi_adapter_->RegisterMMIInputListener([this](int32_t keyCode, int32_t keyAction) {
-    this->SendKeyEventFromMMI(keyCode, keyAction);
-  });
 }
 
 void NWebEventHandler::OnDestroy() {
@@ -60,7 +63,13 @@ void NWebEventHandler::SetBrowser(CefRefPtr<CefBrowser> browser) {
   browser_ = browser;
 }
 
-void NWebEventHandler::OnTouchPress(int32_t id, double x, double y) {
+void NWebEventHandler::OnTouchPress(int32_t id,
+                                    double x,
+                                    double y,
+                                    bool from_overlay) {
+  TRACE_EVENT0("input",
+               "NWebEventHandler::OnTouchPress sliding response begin");
+  LOG(DEBUG) << "NWebEventHandler::OnTouchPress sliding response begin";
   CefTouchEvent touch_pressed;
   touch_pressed.type = CEF_TET_PRESSED;
   touch_pressed.pointer_type = CEF_POINTER_TYPE_TOUCH;
@@ -68,12 +77,16 @@ void NWebEventHandler::OnTouchPress(int32_t id, double x, double y) {
   touch_pressed.x = x;
   touch_pressed.y = y;
   touch_pressed.modifiers = EVENTFLAG_NONE;
+  touch_pressed.from_overlay = from_overlay;
   if (browser_ && browser_->GetHost()) {
     browser_->GetHost()->SendTouchEvent(touch_pressed);
   }
 }
 
-void NWebEventHandler::OnTouchMove(int32_t id, double x, double y) {
+void NWebEventHandler::OnTouchMove(int32_t id,
+                                   double x,
+                                   double y,
+                                   bool from_overlay) {
   CefTouchEvent touch_move;
   touch_move.type = CEF_TET_MOVED;
   touch_move.pointer_type = CEF_POINTER_TYPE_TOUCH;
@@ -81,12 +94,16 @@ void NWebEventHandler::OnTouchMove(int32_t id, double x, double y) {
   touch_move.x = x;
   touch_move.y = y;
   touch_move.modifiers = EVENTFLAG_NONE;
+  touch_move.from_overlay = from_overlay;
   if (browser_ && browser_->GetHost()) {
     browser_->GetHost()->SendTouchEvent(touch_move);
   }
 }
 
-void NWebEventHandler::OnTouchRelease(int32_t id, double x, double y) {
+void NWebEventHandler::OnTouchRelease(int32_t id,
+                                      double x,
+                                      double y,
+                                      bool from_overlay) {
   CefTouchEvent touch_end;
   touch_end.type = CEF_TET_RELEASED;
   touch_end.pointer_type = CEF_POINTER_TYPE_TOUCH;
@@ -94,6 +111,7 @@ void NWebEventHandler::OnTouchRelease(int32_t id, double x, double y) {
   touch_end.x = x;
   touch_end.y = y;
   touch_end.modifiers = EVENTFLAG_NONE;
+  touch_end.from_overlay = from_overlay;
   if (browser_ && browser_->GetHost()) {
     browser_->GetHost()->SendTouchEvent(touch_end);
   }
@@ -111,7 +129,8 @@ void NWebEventHandler::SendKeyEventFromMMI(int32_t keyCode, int32_t keyAction) {
   if (!isFocus_ || !NWebInputDelegate::IsMMIKeyEvent(keyCode)) {
     return;
   }
-  LOG(DEBUG) << "SendKeyEventFromMMI keyCode = " << keyCode << " keyAction = " << keyAction;
+  LOG(DEBUG) << "SendKeyEventFromMMI keyCode = " << keyCode
+             << " keyAction = " << keyAction;
   SendKeyEvent(keyCode, keyAction);
 }
 
@@ -119,16 +138,26 @@ bool NWebEventHandler::SendKeyEventFromAce(int32_t keyCode, int32_t keyAction) {
   if (mmi_id_ >= 0 && NWebInputDelegate::IsMMIKeyEvent(keyCode)) {
     return true;
   }
-  LOG(DEBUG) << "SendKeyEventFromAce keyCode = " << keyCode << " keyAction = " << keyAction;
+  LOG(DEBUG) << "SendKeyEventFromAce keyCode = " << keyCode
+             << " keyAction = " << keyAction;
   return SendKeyEvent(keyCode, keyAction);
 }
 
 bool NWebEventHandler::SendKeyEvent(int32_t keyCode, int32_t keyAction) {
-  LOG(DEBUG) << "SendKeyEvent keyCode = " << keyCode << " keyAction = " << keyAction;
+  LOG(DEBUG) << "SendKeyEvent keyCode = " << keyCode
+             << " keyAction = " << keyAction;
+  if (keyCode < 0) {
+    LOG(ERROR) << "SendKeyEvent obtaining invalid keyCode";
+    return false;
+  }
   CefKeyEvent keyEvent;
   input_delegate_.SetModifiers(keyCode, keyAction);
   keyEvent.windows_key_code =
       NWebInputDelegate::CefConverter("keycode", keyCode);
+  if (keyEvent.windows_key_code == -1) {
+    LOG(ERROR) << "SendKeyEvent keyCode conversion failed";
+    return false;
+  }
   keyEvent.type = static_cast<cef_key_event_type_t>(
       NWebInputDelegate::CefConverter("keyaction", keyAction));
   keyEvent.modifiers = input_delegate_.GetModifiers();
@@ -163,13 +192,22 @@ void NWebEventHandler::SendMouseWheelEvent(double x,
   mouseEvent.x = x;
   mouseEvent.y = y;
   mouseEvent.modifiers = input_delegate_.GetModifiers();
-  if (!browser_ || !browser_->GetHost()){
+  if (!browser_ || !browser_->GetHost()) {
     return;
   }
   if ((mouseEvent.modifiers & EVENTFLAG_CONTROL_DOWN) && (deltaY != 0)) {
+    if (sum_deltaY_ != 0 && sum_deltaY_ * deltaY < 0) {
+      sum_deltaY_ = 0;
+    }
+    sum_deltaY_ += deltaY;
+    if (std::abs(sum_deltaY_) < ZOOM_TARGET) {
+      return;
+    }
     double curFactor = browser_->GetHost()->GetZoomLevel();
-    double tempZoomFactor = deltaY < 0 ? curFactor + ZOOM_FACTOR : curFactor - ZOOM_FACTOR;
-    if (tempZoomFactor > MAX_ZOOM_FACTOR || tempZoomFactor < 0) {
+    double tempZoomFactor =
+        sum_deltaY_ < 0 ? curFactor + ZOOM_FACTOR : curFactor - ZOOM_FACTOR;
+    sum_deltaY_ = 0;
+    if (tempZoomFactor > MAX_ZOOM_FACTOR || tempZoomFactor < MIN_ZOOM_FACTOR) {
       LOG(ERROR) << "The mouse wheel event can no longer be zoomed in or out.";
       return;
     }
@@ -185,10 +223,15 @@ void NWebEventHandler::SendMouseWheelEvent(double x,
     horizontalDelta = deltaX * input_delegate_.GetMouseWheelRatio();
     verticalDelta = deltaY * input_delegate_.GetMouseWheelRatio();
   }
-  browser_->GetHost()->SendMouseWheelEvent(mouseEvent, horizontalDelta, verticalDelta);
+  browser_->GetHost()->SendMouseWheelEvent(mouseEvent, horizontalDelta,
+                                           verticalDelta);
 }
 
-void NWebEventHandler::SendMouseEvent(int x, int y, int button, int action, int count) {
+void NWebEventHandler::SendMouseEvent(int x,
+                                      int y,
+                                      int button,
+                                      int action,
+                                      int count) {
   CefMouseEvent mouseEvent;
   mouseEvent.x = x;
   mouseEvent.y = y;
@@ -198,11 +241,16 @@ void NWebEventHandler::SendMouseEvent(int x, int y, int button, int action, int 
 
   if (browser_ && browser_->GetHost()) {
     if (NWebInputDelegate::IsMouseDown(action)) {
-      browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, false, count);
+      browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, false,
+                                               count);
     } else if (NWebInputDelegate::IsMouseUp(action)) {
       browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, true, 1);
     } else if (NWebInputDelegate::IsMouseMove(action)) {
       browser_->GetHost()->SendMouseMoveEvent(mouseEvent, false);
+    } else if (NWebInputDelegate::IsMouseLeave(action)) {
+      browser_->GetHost()->SendMouseMoveEvent(mouseEvent, true);
+    } else {
+      LOG(DEBUG) << "mouse event action: " << action;
     }
   }
 }

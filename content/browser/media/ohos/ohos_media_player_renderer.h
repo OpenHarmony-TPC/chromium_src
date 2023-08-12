@@ -7,6 +7,7 @@
 
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "base/timer/timer.h"
 #include "base/unguessable_token.h"
 #include "content/common/content_export.h"
 #include "content/public/browser/render_frame_host.h"
@@ -24,6 +25,7 @@
 
 namespace content {
 class WebContents;
+class OHOSMediaPlayerRendererWebContentsObserver;
 
 class CONTENT_EXPORT OHOSMediaPlayerRenderer
     : public media::Renderer,
@@ -69,6 +71,11 @@ class CONTENT_EXPORT OHOSMediaPlayerRenderer
   void OnPlaybackComplete() override;
   void OnError(int error) override;
   void OnVideoSizeChanged(int width, int height) override;
+  void OnPlayerInterruptEvent(int32_t value) override;
+
+  void OnUpdateAudioMutingState(bool muted);
+  void OnWebContentsDestroyed();
+  void OnAudioStateChanged(bool isAudible) override;
 
   // media::mojom::MediaPlayerRendererExtension implementation.
   //
@@ -103,9 +110,15 @@ class CONTENT_EXPORT OHOSMediaPlayerRenderer
 
   gfx::Size video_size_;
 
+  bool web_contents_muted_;
+  raw_ptr<OHOSMediaPlayerRendererWebContentsObserver> web_contents_observer_;
   float volume_;
 
   bool initialized_ = false;
+
+  WebContents* web_contents_ = nullptr;
+
+  time_t intervalSinceLastSuspend_;
 
   mojo::Receiver<MediaPlayerRendererExtension> renderer_extension_receiver_;
 

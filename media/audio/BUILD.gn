@@ -249,6 +249,10 @@ source_set("audio") {
       "ohos/ohos_audio_manager.h",
       "ohos/ohos_audio_output_stream.cc",
       "ohos/ohos_audio_output_stream.h",
+      "ohos/ohos_audio_input_stream.cc",
+      "ohos/ohos_audio_input_stream.h",
+      "ohos/ohos_audio_capturer_source.cc",
+      "ohos/ohos_audio_capturer_source.h",
     ]
 
     include_dirs = ohos_src_includes

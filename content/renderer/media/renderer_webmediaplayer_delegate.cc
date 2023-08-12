@@ -37,7 +37,11 @@ RendererWebMediaPlayerDelegate::RendererWebMediaPlayerDelegate(
           content::GetContentClient()->renderer()->IsIdleMediaSuspendEnabled()),
       tick_clock_(base::DefaultTickClock::GetInstance()) {
   idle_cleanup_interval_ = base::Seconds(5);
+#if BUILDFLAG(IS_OHOS)
+  idle_timeout_ = base::Seconds(100000);
+#else
   idle_timeout_ = base::Seconds(15);
+#endif
 
   is_low_end_ = base::SysInfo::IsLowEndDevice();
   idle_cleanup_timer_.SetTaskRunner(

@@ -222,7 +222,6 @@ void VideoCaptureDeviceClient::OnIncomingCapturedData(
   DFAKE_SCOPED_RECURSIVE_LOCK(call_from_producer_);
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
                "VideoCaptureDeviceClient::OnIncomingCapturedData");
-
   if (last_captured_pixel_format_ != format.pixel_format) {
     OnLog("Pixel format: " + VideoPixelFormatToString(format.pixel_format));
     last_captured_pixel_format_ = format.pixel_format;
@@ -343,6 +342,9 @@ void VideoCaptureDeviceClient::OnIncomingCapturedData(
     case PIXEL_FORMAT_MJPEG:
       fourcc_format = libyuv::FOURCC_MJPG;
       break;
+    case PIXEL_FORMAT_ABGR:
+      fourcc_format = libyuv::FOURCC_ABGR;
+      break;
     default:
       NOTREACHED();
   }
@@ -381,7 +383,7 @@ void VideoCaptureDeviceClient::OnIncomingCapturedData(
           format.frame_size.width(),
           (flip ? -1 : 1) * format.frame_size.height(), new_unrotated_width,
           new_unrotated_height, rotation_mode, fourcc_format) != 0) {
-    DLOG(WARNING) << "Failed to convert buffer's pixel format to I420 from "
+    LOG(DEBUG) << "Failed to convert buffer's pixel format to I420 from "
                   << VideoPixelFormatToString(format.pixel_format);
     receiver_->OnFrameDropped(
         VideoCaptureFrameDropReason::kDeviceClientLibyuvConvertToI420Failed);
@@ -563,6 +565,9 @@ VideoCaptureDeviceClient::ReserveOutputBuffer(const gfx::Size& frame_size,
   }
   if (reservation_result_code != ReserveResult::kSucceeded) {
     DVLOG(2) << __func__ << " reservation failed";
+#if BUILDFLAG(IS_OHOS)
+    LOG(ERROR) << __func__ << " reservation failed ";
+#endif
     return reservation_result_code;
   }
 
@@ -626,7 +631,6 @@ void VideoCaptureDeviceClient::OnIncomingCapturedBufferExt(
     gfx::Rect visible_rect,
     const VideoFrameMetadata& additional_metadata) {
   DFAKE_SCOPED_RECURSIVE_LOCK(call_from_producer_);
-
   VideoFrameMetadata metadata = additional_metadata;
   metadata.frame_rate = format.frame_rate;
   metadata.reference_time = reference_time;

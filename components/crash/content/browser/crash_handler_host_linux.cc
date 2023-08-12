@@ -426,13 +426,28 @@ void CrashHandlerHostLinux::WriteDumpFile(BreakpadInfo* info,
 
   base::FilePath dumps_path("/tmp");
   base::PathService::Get(base::DIR_TEMP, &dumps_path);
+
+#if BUILDFLAG(IS_OHOS)
+  dumps_path = dumps_path.Append("crashdmps");
+  if (!base::PathExists(dumps_path)) {
+    base::CreateDirectory(dumps_path);
+  }
+#endif  // BUILDFLAG(IS_OHOS)
+
+#if !BUILDFLAG(IS_OHOS)
   if (!info->upload)
     dumps_path = dumps_path_;
-  const std::string minidump_filename =
-      base::StringPrintf("%s/chromium-%s-minidump-%016" PRIx64 ".dmp",
-                         dumps_path.value().c_str(),
-                         process_type_.c_str(),
-                         base::RandUint64());
+#endif  // BUILDFLAG(IS_OHOS)
+
+#if BUILDFLAG(IS_OHOS)
+  const std::string minidump_filename = base::StringPrintf(
+      "%s/nweb-%s-minidump-%016" PRIx64 ".dmp", dumps_path.value().c_str(),
+      process_type_.c_str(), base::RandUint64());
+#else
+  const std::string minidump_filename = base::StringPrintf(
+      "%s/chromium-%s-minidump-%016" PRIx64 ".dmp", dumps_path.value().c_str(),
+      process_type_.c_str(), base::RandUint64());
+#endif  // BUILDFLAG(IS_OHOS)
 
   if (!google_breakpad::WriteMinidump(minidump_filename.c_str(),
                                       kMaxMinidumpFileSize,

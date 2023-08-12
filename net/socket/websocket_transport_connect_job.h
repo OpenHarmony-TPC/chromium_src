@@ -70,6 +70,10 @@ class NET_EXPORT_PRIVATE WebSocketTransportConnectJob : public ConnectJob {
   bool HasEstablishedConnection() const override;
   ResolveErrorInfo GetResolveErrorInfo() const override;
 
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int timeout_override) override;
+#endif
+
  private:
   friend class WebSocketTransportConnectSubJob;
 

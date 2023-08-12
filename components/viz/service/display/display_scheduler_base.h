@@ -54,6 +54,9 @@ class VIZ_SERVICE_EXPORT DisplaySchedulerBase
   virtual void ReportFrameTime(
       base::TimeDelta frame_time,
       base::flat_set<base::PlatformThreadId> thread_ids) = 0;
+#if BUILDFLAG(IS_OHOS)
+  virtual void SetShouldFrameSubmissionBeforeDraw(bool should) = 0;
+#endif
 
  protected:
   raw_ptr<DisplaySchedulerClient> client_ = nullptr;

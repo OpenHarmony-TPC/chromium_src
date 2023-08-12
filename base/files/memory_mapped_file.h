@@ -18,6 +18,10 @@
 #include "base/win/scoped_handle.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "ohos_adapter_helper.h"
+#endif
+
 namespace base {
 
 class FilePath;
@@ -116,10 +120,17 @@ class BASE_EXPORT MemoryMappedFile {
     if (IsValid() && !customizeData_) {
       CloseHandles();
     }
+    if (mapper_ == nullptr && data_ != nullptr) {
+      delete [] data_;
+      data_ = nullptr;
+    }
+    mapper_.reset();
     customizeData_ = true;
     data_ = data.release();
     length_ = length;
   }
+
+  void SetOhosFileMapper(std::unique_ptr<OHOS::NWeb::OhosFileMapper> &mapper);
 #endif
 
  private:
@@ -153,6 +164,7 @@ class BASE_EXPORT MemoryMappedFile {
   size_t length_;
 #if BUILDFLAG(IS_OHOS)
   bool customizeData_ = false;
+  std::unique_ptr<OHOS::NWeb::OhosFileMapper> mapper_;
 #endif
 
 #if BUILDFLAG(IS_WIN)

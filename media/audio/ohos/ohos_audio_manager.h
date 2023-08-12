@@ -6,6 +6,7 @@
 #define MEDIA_AUDIO_OHOS_AUDIO_MANAGER_H_
 
 #include "media/audio/audio_manager_base.h"
+#include "media/audio/ohos/ohos_audio_input_stream.h"
 #include "media/audio/ohos/ohos_audio_output_stream.h"
 
 namespace media {
@@ -23,6 +24,8 @@ class MEDIA_EXPORT OHOSAudioManager : public AudioManagerBase {
   bool HasAudioOutputDevices() override;
   bool HasAudioInputDevices() override;
   void GetAudioOutputDeviceNames(AudioDeviceNames* device_names) override;
+  void GetAudioInputDeviceNames(AudioDeviceNames* device_names) override;
+  void ReleaseInputStream(AudioInputStream* stream) override;
   const char* GetName() override;
 
   // Implementation of AudioManagerBase.
@@ -46,6 +49,14 @@ class MEDIA_EXPORT OHOSAudioManager : public AudioManagerBase {
   AudioParameters GetPreferredOutputStreamParameters(
       const std::string& output_device_id,
       const AudioParameters& input_params) override;
+
+  AudioParameters GetPreferredInputStreamParameters(
+      const std::string& input_device_id) override;
+
+  void SelectAudioDevice(const std::string& device_id, bool isInput);
+
+ private:
+    bool isCommunication_ = false;
 };
 
 }  // namespace media

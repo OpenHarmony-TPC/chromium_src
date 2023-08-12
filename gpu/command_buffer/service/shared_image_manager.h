@@ -112,7 +112,7 @@ class GPU_GLES2_EXPORT SharedImageManager {
   scoped_refptr<gfx::NativePixmap> GetNativePixmap(const gpu::Mailbox& mailbox);
 
   SharedImageBatchAccessManager* batch_access_manager() const {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
     return batch_access_manager_.get();
 #else
     return nullptr;
@@ -138,7 +138,7 @@ class GPU_GLES2_EXPORT SharedImageManager {
 
   const bool display_context_on_another_thread_;
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   std::unique_ptr<SharedImageBatchAccessManager> batch_access_manager_;
 #endif
 

@@ -20,6 +20,11 @@
 namespace OHOS::NWeb {
 NWebAccessRequestDelegate::NWebAccessRequestDelegate(CefRefPtr<CefAccessRequest> request)
     : request_(request) {}
+NWebAccessRequestDelegate::~NWebAccessRequestDelegate() {
+  if (request_ != nullptr) {
+    request_->ReportRequestResult(false);
+  }
+}
 
 std::string NWebAccessRequestDelegate::Origin() {
   if (request_ != nullptr) {
@@ -46,6 +51,35 @@ void NWebAccessRequestDelegate::Agree(int resourceId) {
 }
 
 void NWebAccessRequestDelegate::Refuse() {
+  if (request_ != nullptr) {
+    request_->ReportRequestResult(false);
+  }
+}
+
+NWebScreenCaptureAccessRequestDelegate::NWebScreenCaptureAccessRequestDelegate(CefRefPtr<CefScreenCaptureAccessRequest> request)
+    : request_(request) {}
+NWebScreenCaptureAccessRequestDelegate::~NWebScreenCaptureAccessRequestDelegate() {
+  if (request_ != nullptr) {
+    request_->ReportRequestResult(false);
+  }
+}
+
+std::string NWebScreenCaptureAccessRequestDelegate::Origin() {
+  if (request_ != nullptr) {
+    return request_->Origin();
+  }
+  return "";
+}
+
+void NWebScreenCaptureAccessRequestDelegate::Agree(const NWebScreenCaptureConfig& config) {
+  if (request_ != nullptr) {
+    request_->SetCaptureMode(config.mode);
+    request_->SetCaptureSourceId(config.sourceId);
+    request_->ReportRequestResult(true);
+  }
+}
+
+void NWebScreenCaptureAccessRequestDelegate::Refuse() {
   if (request_ != nullptr) {
     request_->ReportRequestResult(false);
   }

@@ -159,6 +159,9 @@ int SOCKSConnectJob::DoTransportConnect() {
   transport_connect_job_ = TransportConnectJob::CreateTransportConnectJob(
       socks_params_->transport_params(), priority(), socket_tag(),
       common_connect_job_params(), this, &net_log());
+#if BUILDFLAG(IS_OHOS)
+  transport_connect_job_->SetConnectTimeout(timeout_override_for_nested_job_);
+#endif
   return transport_connect_job_->Connect();
 }
 
@@ -216,5 +219,12 @@ void SOCKSConnectJob::ChangePriorityInternal(RequestPriority priority) {
   if (transport_connect_job_)
     transport_connect_job_->ChangePriority(priority);
 }
+
+#if BUILDFLAG(IS_OHOS)
+void SOCKSConnectJob::SetConnectTimeout(int timeout_override) {
+  timeout_override_for_nested_job_ = timeout_override;
+  timeout_override_ = base::TimeDelta();
+}
+#endif
 
 }  // namespace net

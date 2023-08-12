@@ -870,7 +870,11 @@ void MediaStreamManager::SendMessageToNativeLog(const std::string& message) {
         base::BindOnce(&MediaStreamManager::SendMessageToNativeLog, message));
     return;
   }
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << message;
+#else
   VLOG(1) << message;
+#endif
 
   MediaStreamManager* msm = g_media_stream_manager_tls_ptr.Pointer()->Get();
   if (!msm) {
@@ -1074,7 +1078,10 @@ void MediaStreamManager::GenerateStream(
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   SendLogMessage(GetGenerateStreamLogString(render_process_id, render_frame_id,
                                             requester_id, page_request_id));
-
+  LOG(INFO) << "MediaStreamManager::GenerateStream render_id " << render_process_id <<
+    ", frame_id: " << render_frame_id <<
+    ", requester_id " << requester_id <<
+    ", page_request_id " << page_request_id;
   DeviceRequest* request = new DeviceRequest(
       render_process_id, render_frame_id, requester_id, page_request_id,
       user_gesture, std::move(audio_stream_selection_info_ptr),

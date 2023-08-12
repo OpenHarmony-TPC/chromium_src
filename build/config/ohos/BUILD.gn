@@ -130,29 +130,35 @@ config("runtime_library") {
     defines = [ "__BUILD_LINUX_WITH_CLANG" ]
   }
   if (use_musl) {
-    ldflags += [ "-Wl,--dynamic-linker,/lib/ld-musl-arm.so.1" ]
+    dynamic_linker = "/lib/ld-musl-arm.so.1"
 
     if (current_cpu == "arm") {
       ldflags += [ "-L" + rebase_path("$ohos_sysroot/usr/lib/arm-linux-ohos",
                                       root_build_dir) ]
       ldflags +=
-          [ "-L" + rebase_path("$ohos_toolchain_root/lib/arm-linux-ohos/c++",
+          [ "-L" + rebase_path("$ohos_toolchain_root/lib/arm-linux-ohos",
                                root_build_dir) ]
       ldflags +=
           [ "-L" + rebase_path(
                 "$ohos_toolchain_root/lib/clang/current/lib/arm-linux-ohos",
                 root_build_dir) ]
       libclang_rt_file = "$ohos_toolchain_root/lib/clang/current/lib/arm-linux-ohos/libclang_rt.builtins.a"
+
+      if (is_asan) {
+        libasan_file = "$ohos_toolchain_root/lib/clang/current/lib/arm-linux-ohos/libclang_rt.asan.so"
+        libs += [ rebase_path(libasan_file) ]
+      }
     }
 
     if (current_cpu == "arm64") {
+      dynamic_linker = "/lib/ld-musl-aarch64.so.1"
       ldflags += [ "-Wl,-z,max-page-size=4096" ]
       ldflags += [ "-Wl,--hash-style=gnu" ]
       ldflags +=
           [ "-L" + rebase_path("$ohos_sysroot/usr/lib/aarch64-linux-ohos",
                                root_build_dir) ]
       ldflags += [ "-L" + rebase_path(
-                       "$ohos_toolchain_root/lib/aarch64-linux-ohos/c++",
+                       "$ohos_toolchain_root/lib/aarch64-linux-ohos",
                        root_build_dir) ]
       ldflags +=
           [ "-L" + rebase_path(
@@ -172,7 +178,7 @@ config("runtime_library") {
       ldflags += [ "-L" + rebase_path("$ohos_sysroot/usr/lib/x86_64-linux-ohos",
                                       root_build_dir) ]
       ldflags +=
-          [ "-L" + rebase_path("$ohos_toolchain_root/lib/x86_64-linux-ohos/c++",
+          [ "-L" + rebase_path("$ohos_toolchain_root/lib/x86_64-linux-ohos",
                                root_build_dir) ]
       ldflags +=
           [ "-L" + rebase_path(
@@ -181,6 +187,7 @@ config("runtime_library") {
       libclang_rt_file = "$ohos_toolchain_root/lib/clang/current/lib/x86_64-linux-ohos/libclang_rt.builtins.a"
     }
 
+    ldflags += [ "-Wl,--dynamic-linker,$dynamic_linker" ]
     libs += [
       rebase_path(libclang_rt_file),
       "c",

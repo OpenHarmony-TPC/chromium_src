@@ -49,6 +49,7 @@
 
 #if BUILDFLAG(IS_OHOS)
 #include "base/command_line.h"
+#include "base/files/file_util.h"
 #include "content/public/common/content_switches.h"
 #include "ohos_adapter_helper.h"
 #endif
@@ -494,12 +495,15 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
     return;
   }
 #if BUILDFLAG(IS_OHOS)
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(::switches::kOhosHapPath)) {
+  base::FilePath v8_snapshot_path;
+  const char* snapshot_filename = GetSnapshotFileName(snapshot_file_type);
+  GetV8FilePath(snapshot_filename, &v8_snapshot_path);
+  // If the hap package is not decompressed, the directory does not exist.
+  if (v8_snapshot_path.empty() || !base::PathExists(v8_snapshot_path)) {
     LoadV8SnapshotFromFileByHap(snapshot_file_type);
   } else {
     base::MemoryMappedFile::Region file_region;
-    base::File file =
-        OpenV8File(GetSnapshotFileName(snapshot_file_type), &file_region);
+    base::File file = OpenV8File(snapshot_filename, &file_region);
     LoadV8SnapshotFromFile(std::move(file), &file_region, snapshot_file_type);
   }
 #else
@@ -514,16 +518,18 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
 const char kSnapshotFileNameHap[] = "resources/rawfile/snapshot_blob.bin";
 // static
 int V8Initializer::LoadV8SnapshotFromFileByHap(V8SnapshotFileType snapshot_file_type) {
-  size_t length = 0;
-  std::unique_ptr<uint8_t[]> data;
   auto resourceInstance = OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter();
-  if (!resourceInstance->GetRawFileData(kSnapshotFileNameHap, length, data, true)) {
+
+  std::unique_ptr<OHOS::NWeb::OhosFileMapper> fileMapper = nullptr;
+  if (!resourceInstance->GetRawFileMapper(kSnapshotFileNameHap, fileMapper, true)) {
     LOG(FATAL) << "couldn't mmap snapshot_blob data file " << kSnapshotFileNameHap;
     return 1;
   }
-  LOG(INFO) << "snapshot_blob data file length: " << length;
+  LOG(INFO) << "snapshot_blob data file length: " << fileMapper->GetDataLen();
+
   std::unique_ptr<base::MemoryMappedFile> mmapped_file = std::make_unique<base::MemoryMappedFile>();
-  mmapped_file->SetDataAndLength(data, length);
+  mmapped_file->SetOhosFileMapper(fileMapper);
+
   g_mapped_snapshot = mmapped_file.release();
   g_snapshot_file_type = snapshot_file_type;
   return 0;

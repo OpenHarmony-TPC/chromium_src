@@ -21,7 +21,7 @@
 #include "gpu/command_buffer/service/shared_image_representation.h"
 #include "ui/gl/trace_util.h"
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 #include "gpu/command_buffer/service/shared_image_batch_access_manager.h"
 #endif
 
@@ -88,7 +88,7 @@ SharedImageManager::SharedImageManager(bool thread_safe,
   DCHECK(!display_context_on_another_thread || thread_safe);
   if (thread_safe)
     lock_.emplace();
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   batch_access_manager_ = std::make_unique<SharedImageBatchAccessManager>();
 #endif
 #if BUILDFLAG(IS_WIN)
@@ -433,7 +433,7 @@ scoped_refptr<gfx::NativePixmap> SharedImageManager::GetNativePixmap(
 }
 
 bool SharedImageManager::BeginBatchReadAccess() {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   return batch_access_manager_->BeginBatchReadAccess();
 #else
   return true;
@@ -441,7 +441,7 @@ bool SharedImageManager::BeginBatchReadAccess() {
 }
 
 bool SharedImageManager::EndBatchReadAccess() {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   return batch_access_manager_->EndBatchReadAccess();
 #else
   return true;

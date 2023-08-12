@@ -33,7 +33,6 @@
 #include "ohos_adapter_helper.h"
 #include "ohos_resource_adapter.h"
 
-#include <securec.h>
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -45,12 +44,6 @@ using namespace OHOS::NWeb;
 
 namespace ui {
 namespace {
-const std::string kImgTagPattern = "<img.*?data-ohos=.*?>";
-const std::string kImgTagSrcPattern = "src=*\"([^\"]+)";
-const std::string kImgTagSrcHead = "src=\"";
-const std::string kResourcePathPrefix = "resources/";
-const std::string kResourceResavePathPrefix =
-    "/data/storage/el2/base/cache/resource_resave/";
 
 using InstanceRegistry = std::set<const ClipboardOHOS*, std::less<>>;
 InstanceRegistry* GetInstanceRegistry() {
@@ -78,38 +71,7 @@ bool IsRegisteredInstance(const Clipboard* clipboard) {
   return base::Contains(*GetInstanceRegistry(), clipboard);
 }
 
-std::string RemoveFileSchemePerfix(const std::string img_src) {
-  GURL img_url(img_src);
-  if (img_url.SchemeIsFile()) {
-    return img_url.path();
-  }
-  return img_src;
-}
-
-std::string GetImgLocalPath(const char* img_src) {
-  if (!img_src) {
-    return "";
-  }
-  GURL img_url(img_src);
-  if (img_url.SchemeIsHTTPOrHTTPS() || img_url.SchemeIsWSOrWSS() ||
-      img_url.SchemeIsBlob()) {
-    return "";
-  }
-  if (img_url.SchemeIsOhosResource()) {
-    return std::string(img_src);
-  }
-  if (img_url.SchemeIsFile() &&
-      base::PathExists(base::FilePath(img_url.path()))) {
-    return std::string(img_src);
-  }
-  if (base::PathExists(base::FilePath(img_src))) {
-    return std::string(img_src);
-  }
-  return "";
-}
-
-ClipBoardImageAlphaType ImageToClipboardAlphaType(
-    SkAlphaType alpha_type) {
+ClipBoardImageAlphaType ImageToClipboardAlphaType(SkAlphaType alpha_type) {
   switch (alpha_type) {
     case kUnknown_SkAlphaType:
       return ClipBoardImageAlphaType::ALPHA_TYPE_UNKNOWN;
@@ -122,8 +84,7 @@ ClipBoardImageAlphaType ImageToClipboardAlphaType(
   }
 }
 
-ClipBoardImageColorType ImageToClipboardColorType(
-    SkColorType color_type) {
+ClipBoardImageColorType ImageToClipboardColorType(SkColorType color_type) {
   switch (color_type) {
     case kRGBA_8888_SkColorType:
       return ClipBoardImageColorType::COLOR_TYPE_RGBA_8888;
@@ -399,31 +360,6 @@ class ClipboardOHOSInternal {
     }
 
     result_list.push_back(record);
-    if (currentData->html_img_src_set().size() > 0) {
-      std::map<std::string, std::vector<int>>::const_iterator it;
-      for (it = currentData->html_img_src_set().cbegin();
-           it != currentData->html_img_src_set().cend(); it++) {
-        std::shared_ptr<PasteDataRecordAdapter> uri_record =
-            PasteDataRecordAdapter::NewRecord("text/uri");
-        PasteCustomData custom_data;
-        const uint8_t* offset_data =
-            reinterpret_cast<const uint8_t*>(it->second.data());
-        std::vector<uint8_t> offset_list(
-            offset_data, offset_data + it->second.size() * sizeof(int));
-        custom_data.insert(std::make_pair(it->first, offset_list));
-        std::string resave_path = it->first;
-        if (!ResaveResourceImg(it->first, resave_path)) {
-          continue;
-        }
-        if (uri_record->SetUri(RemoveFileSchemePerfix(resave_path)) &&
-            uri_record->SetCustomData(custom_data)) {
-          LOG(ERROR) << it->first;
-          result_list.push_back(uri_record);
-        } else {
-          LOG(ERROR) << "WriteHTML extra record failed";
-        }
-      }
-    }
     OhosAdapterHelper::GetInstance().GetPasteBoard().SetPasteData(result_list);
     sequence_number_ = ClipboardSequenceNumberToken();
     return previous_data;
@@ -473,43 +409,7 @@ class ClipboardOHOSInternal {
     return allFormat & static_cast<int>(format);
   }
 
-  bool ResaveResourceImg(const std::string& img_src, std::string& resave_path) {
-    GURL resource_img_src(img_src);
-    if (!resource_img_src.SchemeIsOhosResource()) {
-      LOG(INFO) << "no need to resave";
-      return true;
-    }
-
-    std::string img_path =
-        kResourcePathPrefix + resource_img_src.host() + resource_img_src.path();
-    if (!resource_adapter_ || !resource_adapter_->IsRawFileExist(img_path)) {
-      LOG(ERROR) << "resource_adapter is nullptr or " << img_path
-                 << " is not exists";
-      return false;
-    }
-    std::unique_ptr<uint8_t[]> data;
-    size_t length = 0;
-    if (!resource_adapter_->GetRawFileData(img_path, length, data, false)) {
-      LOG(ERROR) << "read " << img_path << " failed";
-      return false;
-    }
-    LOG(INFO) << img_path << " length:" << length;
-    base::FilePath resave_root_path(kResourceResavePathPrefix);
-    resave_root_path = resave_root_path.Append(base::FilePath(img_path));
-    LOG(ERROR) << "resave_root_path dir:" << resave_root_path.DirName();
-    if (!base::DirectoryExists(resave_root_path.DirName()) &&
-        !base::CreateDirectory(resave_root_path.DirName())) {
-      return false;
-    }
-    resave_path = resave_root_path.AsUTF8Unsafe();
-    if (base::WriteFile(resave_root_path, reinterpret_cast<char*>(data.get()),
-                        length) != length) {
-      LOG(ERROR) << "resave img resource failed";
-      return false;
-    }
-    return true;
-  }
-   std::shared_ptr<ClipBoardImageData> WriteBitmapToClipboard(
+  std::shared_ptr<ClipBoardImageData> WriteBitmapToClipboard(
       const SkBitmap& bitmap) {
     ClipBoardImageData imageInfo;
     imageInfo.colorType = ImageToClipboardColorType(bitmap.colorType());
@@ -560,7 +460,6 @@ class ClipboardDataBuilder {
     if (data) {
       data->set_markup_data(std::string(markup_data, markup_len));
       data->set_url(std::string(url_data, url_len));
-      WriteMixImgUriList(markup_data, markup_len);
     }
   }
 
@@ -592,79 +491,6 @@ class ClipboardDataBuilder {
     std::unique_ptr<ClipboardData> data = base::WrapUnique(GetCurrentData());
     current_data_ = nullptr;
     return data;
-  }
-
-  static void WriteMixImgUriList(const char* markup_data, size_t markup_len) {
-    ClipboardData* data = GetCurrentData();
-    if (!data || markup_len == 0 || !markup_data) {
-      return;
-    }
-    UErrorCode status = U_ZERO_ERROR;
-
-    const icu::UnicodeString img_regex(kImgTagPattern.c_str(),
-                                       kImgTagPattern.size());
-    const icu::UnicodeString img_src_regex(kImgTagSrcPattern.c_str(),
-                                           kImgTagSrcPattern.size());
-    std::unique_ptr<icu::RegexPattern> img_regex_pattern = base::WrapUnique(
-        icu::RegexPattern::compile(img_regex, UREGEX_CASE_INSENSITIVE, status));
-    std::unique_ptr<icu::RegexPattern> img_src_regex_pattern =
-        base::WrapUnique(icu::RegexPattern::compile(
-            img_src_regex, UREGEX_CASE_INSENSITIVE, status));
-
-    const icu::UnicodeString total_markup(markup_data);
-    std::map<std::string, std::vector<int>> img_src_set;
-    std::unique_ptr<icu::RegexMatcher> img_regex_matcher =
-        base::WrapUnique(img_regex_pattern->matcher(total_markup, status));
-    std::unique_ptr<icu::RegexMatcher> img_src_regex_matcher;
-    UBool img_matched = img_regex_matcher->find(0, status);
-    UBool img_src_matched;
-    while (img_matched) {
-      int start_index = img_regex_matcher->start(status);
-      int end_index = img_regex_matcher->end(status);
-      if (end_index <= start_index) {
-        LOG(ERROR) << "WriteMixImgUriList should exit";
-        break;
-      }
-      char img_tag[end_index - start_index + 1];
-      total_markup.extract(start_index, end_index - start_index, img_tag,
-                           end_index - start_index + 1);
-      const icu::UnicodeString img_tag_markup(img_tag);
-      img_src_regex_matcher = base::WrapUnique(
-          img_src_regex_pattern->matcher(img_tag_markup, status));
-      img_src_matched = img_src_regex_matcher->find(0, status);
-      if (img_src_matched) {
-        int src_start_index = img_src_regex_matcher->start(status);
-        int src_end_index = img_src_regex_matcher->end(status);
-        if (src_start_index + kImgTagSrcHead.length() < src_end_index) {
-          char img_src[src_end_index - src_start_index + 1];
-          img_tag_markup.extract(
-              src_start_index + kImgTagSrcHead.length(),
-              src_end_index - src_start_index - kImgTagSrcHead.length(),
-              img_src, src_end_index - src_start_index + 1);
-          AddImgUrlToSet(
-              img_src, img_src_set,
-              start_index + src_start_index + kImgTagSrcHead.length());
-        }
-      }
-      img_matched = img_regex_matcher->find(end_index, status);
-    }
-    data->set_html_img_src_set(img_src_set);
-  }
-
-  static void AddImgUrlToSet(
-      char* img_src,
-      std::map<std::string, std::vector<int>>& img_src_set,
-      int offset) {
-    std::string img_path = GetImgLocalPath(img_src);
-    if (!img_path.empty()) {
-      std::map<std::string, std::vector<int>>::iterator iter =
-          img_src_set.find(img_path);
-      if (iter != img_src_set.end()) {
-        img_src_set[img_path].push_back(offset);
-      } else {
-        img_src_set.insert(std::make_pair(img_path, std::vector<int>{offset}));
-      }
-    }
   }
 
   // This is a raw pointer instead of a std::unique_ptr to avoid adding a

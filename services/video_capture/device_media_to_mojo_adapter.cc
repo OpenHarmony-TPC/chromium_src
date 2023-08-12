@@ -90,7 +90,9 @@ void DeviceMediaToMojoAdapter::Start(
             kDeviceMediaToMojoAdapterEncounteredUnsupportedBufferType);
     return;
   }
-
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << "DeviceMediaToMojoAdapter::Start ";
+#endif
   // Create a dedicated buffer pool for the device usage session.
   scoped_refptr<media::VideoCaptureBufferPool> buffer_pool(
       new media::VideoCaptureBufferPoolImpl(requested_settings.buffer_type,

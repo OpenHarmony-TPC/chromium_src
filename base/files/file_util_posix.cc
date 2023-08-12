@@ -436,6 +436,12 @@ bool PathExists(const FilePath& path) {
     return ContentUriExists(path);
   }
 #endif
+#if BUILDFLAG(IS_OHOS)
+  if(path.IsDataShareUri()) {
+    File file = OpenDatashareUriForRead(path);
+    return file.IsValid();
+  }
+#endif
   return access(path.value().c_str(), F_OK) == 0;
 }
 

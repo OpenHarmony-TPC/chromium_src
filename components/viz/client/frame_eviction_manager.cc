@@ -13,12 +13,18 @@
 #include "base/memory/memory_pressure_monitor.h"
 #include "base/system/sys_info.h"
 #include "build/build_config.h"
+#if BUILDFLAG(IS_OHOS)
+#include "ohos_adapter_helper.h"
+#endif
 
 namespace viz {
 namespace {
 
 const int kModeratePressurePercentage = 50;
 const int kCriticalPressurePercentage = 10;
+#if BUILDFLAG(IS_OHOS)
+const int kMaxNumberOfSavedFrames = 100000;
+#endif
 
 }  // namespace
 
@@ -113,6 +119,19 @@ FrameEvictionManager::FrameEvictionManager()
       base::SysInfo::AmountOfPhysicalMemoryMB() < 1024 * 3.5f ? 1 : 5;
 #else
       std::min(5, 2 + (base::SysInfo::AmountOfPhysicalMemoryMB() / 256));
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  auto& system_properties_adapter = OHOS::NWeb::OhosAdapterHelper::GetInstance()
+                                        .GetSystemPropertiesInstance();
+  OHOS::NWeb::ProductDeviceType deviceType =
+      system_properties_adapter.GetProductDeviceType();
+
+  if (deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_PC ||
+      deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_TABLET) {
+    max_number_of_saved_frames_ = kMaxNumberOfSavedFrames;
+  }
+
 #endif
 }
 

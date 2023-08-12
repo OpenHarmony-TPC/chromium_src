@@ -373,15 +373,22 @@ void ResourceBundle::LoadSecondaryLocaleDataWithPakFileRegion(
 // static
 bool ResourceBundle::LocaleDataPakExists(const std::string& locale) {
 #if BUILDFLAG(IS_OHOS)
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kOhosHapPath)) {
+  const auto path = GetLocaleFilePath(locale);
+  // If the hap package is not decompressed, the directory does not exist.
+  if (path.empty() || !base::PathExists(path)) {
     if (locale == "zh-CN" || locale == "en-US" || locale == "resources" ||
         locale == "chrome_100_percent" || locale == "chrome_200_percent") {
       return true;
+    } else {
+      return false;
     }
+  } else {
+    return true;
   }
-#endif
-  const auto path = GetLocaleFilePath(locale);
+#else
+  const auto path = GetlocaleFilePath(locale);
   return !path.empty() && base::PathExists(path);
+#endif
 }
 #endif  // !BUILDFLAG(IS_ANDROID)
 

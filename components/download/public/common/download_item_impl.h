@@ -36,6 +36,10 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/supports_user_data.h"
+#endif  //  BUILDFLAG(IS_OHOS)
+
 namespace download {
 class DownloadFile;
 class DownloadItemImplDelegate;
@@ -174,6 +178,19 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadItemImpl
     base::Time end_time;
   };
 
+#if BUILDFLAG(IS_OHOS)
+struct COMPONENTS_DOWNLOAD_EXPORT RequestMethodData : public base::SupportsUserData::Data {
+  std::string request_method_;
+  RequestMethodData(std::string request_method) {
+    request_method_ = request_method;
+  }
+};
+
+struct COMPONENTS_DOWNLOAD_EXPORT NWebIdData : public base::SupportsUserData::Data {
+  int nweb_id_;
+  NWebIdData(int nweb_id) { nweb_id_ = nweb_id; }
+};
+#endif  //  BUILDFLAG(IS_OHOS)
   // The maximum number of attempts we will make to resume automatically.
   static const int kMaxAutoResumeAttempts;
 
@@ -415,7 +432,9 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadItemImpl
   size_t GetApproximateMemoryUsage() const;
 
   std::pair<int64_t, int64_t> GetRangeRequestOffset() const;
-
+#if BUILDFLAG(IS_OHOS)
+  bool IsBeforeInProgress() const;
+#endif  //  BUILDFLAG(IS_OHOS)
  private:
   // Fine grained states of a download.
   //

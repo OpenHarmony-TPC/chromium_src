@@ -19,8 +19,11 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include "cef/include/cef_drag_data.h"
 #include "cef/include/cef_render_handler.h"
 #include "display_manager_adapter.h"
+#include "nweb_delegate_interface.h"
+#include "nweb_drag_data.h"
 #include "nweb_handler.h"
 #include "nweb_inputmethod_client.h"
 #include "nweb_touch_handle_state_impl.h"
@@ -47,18 +50,19 @@ class NWebRenderHandler : public CefRenderHandler {
   void SetScreenInfo(const NWebScreenInfo& screen_info);
   int ContentHeight();
   void SetInputMethodClient(CefRefPtr<NWebInputMethodClient> client);
+  void SetNWebDelegateInterface(std::shared_ptr<NWebDelegateInterface> client);
 
   /* CefRenderHandler method begin */
-  virtual void GetViewRect(CefRefPtr<CefBrowser> browser,
-                           CefRect& rect) override;
+  void GetViewRect(CefRefPtr<CefBrowser> browser,
+                   CefRect& rect) override;
   bool GetScreenInfo(CefRefPtr<CefBrowser> browser,
                      CefScreenInfo& screen_info) override;
-  virtual void OnPaint(CefRefPtr<CefBrowser> browser,
-                       PaintElementType type,
-                       const RectList& dirty_rects,
-                       const void* buffer,
-                       int width,
-                       int height) override;
+  void OnPaint(CefRefPtr<CefBrowser> browser,
+               PaintElementType type,
+               const RectList& dirty_rects,
+               const void* buffer,
+               int width,
+               int height) override;
 
   void OnRootLayerChanged(CefRefPtr<CefBrowser> browser,
                           int height,
@@ -68,33 +72,52 @@ class NWebRenderHandler : public CefRenderHandler {
                              double x,
                              double y) override;
 
-  virtual void OnImeCompositionRangeChanged(
-      CefRefPtr<CefBrowser> browser,
-      const CefRange& selected_range,
-      const RectList& character_bounds) override;
+  void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser,
+                                    const CefRange& selected_range,
+                                    const RectList& character_bounds) override;
 
-  virtual void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
-                                      const CefString& selected_text,
-                                      const CefRange& selected_range) override;
+  void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
+                              const CefString& selected_text,
+                              const CefRange& selected_range) override;
 
-  virtual void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
-                                          TextInputMode input_mode,
-                                          bool show_keyboard) override;
+  void OnSelectionChanged(CefRefPtr<CefBrowser> browser,
+                          const CefString& text,
+                          const CefRange& selected_range) override;
+
+  void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
+                                  TextInputMode input_mode,
+                                  bool show_keyboard) override;
 
   void GetTouchHandleSize(CefRefPtr<CefBrowser> browser,
                           cef_horizontal_alignment_t orientation,
                           CefSize& size) override;
-  void OnTouchSelectionChanged(
-      const CefTouchHandleState& insert_handle,
-      const CefTouchHandleState& start_selection_handle,
-      const CefTouchHandleState& end_selection_handle,
-      bool need_report) override;
+  void OnTouchSelectionChanged(const CefTouchHandleState& insert_handle,
+                               const CefTouchHandleState& start_selection_handle,
+                               const CefTouchHandleState& end_selection_handle,
+                               bool need_report) override;
 
   bool StartDragging(CefRefPtr<CefBrowser> browser,
                      CefRefPtr<CefDragData> drag_data,
                      DragOperationsMask allowed_ops,
                      int x,
                      int y) override;
+
+  // update the cursor operation
+  void UpdateDragCursor(CefRefPtr<CefBrowser> browser,
+                        DragOperation operation) override;
+
+  // update the cursor cursor position
+  void OnCursorUpdate(CefRefPtr<CefBrowser> browser,
+                      const CefRect& rect) override;
+
+
+  void OnCompleteSwapWithNewSize() override;
+
+  void OnResizeNotWork() override;
+
+  void OnOverscroll(CefRefPtr<CefBrowser> browser,
+                    const float x,
+                    const float y) override;
   /* CefRenderHandler method end */
 
   std::shared_ptr<NWebTouchHandleState> GetTouchHandleState(
@@ -104,6 +127,8 @@ class NWebRenderHandler : public CefRenderHandler {
 
   float GetVirtualPixelRatio() const { return screen_info_.display_ratio; }
   float GetCefDeviceRatio() const { return cef_device_ratio_; }
+  void SetFocusStatus(bool focus_status);
+  void SetIrregularDragBackground(bool is_irregular_background);
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(NWebRenderHandler);
 
@@ -113,6 +138,7 @@ class NWebRenderHandler : public CefRenderHandler {
 
   std::function<void(const char*)> render_update_cb_ = nullptr;
   CefRefPtr<NWebInputMethodClient> inputmethod_client_ = nullptr;
+  std::shared_ptr<NWebDelegateInterface> delegate_interface_ = nullptr;
   uint32_t width_ = 0;
   uint32_t height_ = 0;
   int content_height_ = 0;
@@ -125,6 +151,8 @@ class NWebRenderHandler : public CefRenderHandler {
   CefTouchHandleState start_selection_handle_;
   CefTouchHandleState end_selection_handle_;
   CefRefPtr<CefDragData> drag_data_ = nullptr;
+  std::shared_ptr<NWebDragData> nweb_drag_data_ = nullptr;
+  bool is_irregular_drag_background_ = true;
 };
 }  // namespace OHOS::NWeb
 

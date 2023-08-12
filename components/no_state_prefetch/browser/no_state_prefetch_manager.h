@@ -122,6 +122,14 @@ class NoStatePrefetchManager : public content::RenderProcessHostObserver,
       content::SessionStorageNamespace* session_storage_namespace,
       const gfx::Size& size);
 
+#if BUILDFLAG(IS_OHOS)
+  std::unique_ptr<NoStatePrefetchHandle> StartOhPrefetchingFromOmnibox(
+      const GURL& url,
+      content::SessionStorageNamespace* session_storage_namespace,
+      const gfx::Size& size,
+      const std::string& extra_headers);
+#endif
+
   // Starts a prefetch for the prefetch url from NavigationPredictor on page
   // load, if NoStatePrefetch and prefetch_after_preconnect are true. Uses the
   // NavigationPredictor's browser context and the default
@@ -395,7 +403,12 @@ class NoStatePrefetchManager : public content::RenderProcessHostObserver,
       const content::Referrer& referrer,
       const absl::optional<url::Origin>& initiator_origin,
       const gfx::Rect& bounds,
-      content::SessionStorageNamespace* session_storage_namespace);
+      content::SessionStorageNamespace* session_storage_namespace
+#if BUILDFLAG(IS_OHOS)
+      ,
+      const std::string& extra_headers = std::string()
+#endif
+  );
 
   void StartSchedulingPeriodicCleanups();
   void StopSchedulingPeriodicCleanups();

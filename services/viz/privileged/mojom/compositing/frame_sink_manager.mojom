@@ -183,4 +183,8 @@ interface FrameSinkManagerClient {
   // when a surface of the provided |frame_sink_id| activates.
   OnFrameTokenChanged(FrameSinkId frame_sink_id, uint32 frame_token,
                       mojo_base.mojom.TimeTicks activation_time);
+
+  // Send vsync callback to host client
+  [EnableIf=is_ohos]
+  OnVsync(uint32 client_id, uint32 sink_id);
 };

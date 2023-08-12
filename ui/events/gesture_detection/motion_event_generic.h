@@ -48,6 +48,12 @@ struct GESTURE_DETECTION_EXPORT PointerProperties {
 // A generic MotionEvent implementation.
 class GESTURE_DETECTION_EXPORT MotionEventGeneric : public MotionEvent {
  public:
+ #ifdef OHOS_ENABLE_DRAG_DROP
+  MotionEventGeneric(Action action,
+                     base::TimeTicks event_time,
+                     const PointerProperties& pointer,
+                     bool is_lost_focus);
+#endif
   MotionEventGeneric(Action action,
                      base::TimeTicks event_time,
                      const PointerProperties& pointer);
@@ -115,6 +121,10 @@ class GESTURE_DETECTION_EXPORT MotionEventGeneric : public MotionEvent {
       const MotionEvent& event);
   static std::unique_ptr<MotionEventGeneric> CancelEvent(
       const MotionEvent& event);
+#ifdef OHOS_ENABLE_DRAG_DROP
+  bool IsCancelByLostFocus() const override;
+  void SetCancelByLostFocus(bool is_lost_focus) override;
+#endif
 
  protected:
   MotionEventGeneric();
@@ -134,6 +144,10 @@ class GESTURE_DETECTION_EXPORT MotionEventGeneric : public MotionEvent {
   int flags_;
   base::StackVector<PointerProperties, kTypicalMaxPointerCount> pointers_;
   std::vector<std::unique_ptr<MotionEvent>> historical_events_;
+  #ifdef OHOS_ENABLE_DRAG_DROP
+  bool cancel_by_lost_focus_;
+  #endif
+
 };
 
 }  // namespace ui

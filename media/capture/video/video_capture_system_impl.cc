@@ -88,6 +88,7 @@ void VideoCaptureSystemImpl::GetDeviceInfosAsync(
 
 VideoCaptureErrorOrDevice VideoCaptureSystemImpl::CreateDevice(
     const std::string& device_id) {
+  LOG(INFO) << "CreateDevice device_id: " << device_id;
   DCHECK(thread_checker_.CalledOnValidThread());
   const VideoCaptureDeviceInfo* device_info = LookupDeviceInfoFromId(device_id);
   if (!device_info) {
@@ -115,7 +116,6 @@ void VideoCaptureSystemImpl::DevicesInfoReady(
     std::vector<VideoCaptureDeviceInfo> devices_info) {
   DCHECK(thread_checker_.CalledOnValidThread());
   DCHECK(!device_enum_request_queue_.empty());
-
   // Only save metrics the first time device infos are populated.
   if (devices_info_cache_.empty()) {
     LogCaptureDeviceMetrics(devices_info);

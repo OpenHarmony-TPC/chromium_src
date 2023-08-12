@@ -62,7 +62,7 @@
 #include "ui/gfx/switches.h"
 #include "ui/gl/gl_switches.h"
 
-#if BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_OHOS)
 #include "mojo/public/cpp/bindings/sync_call_restrictions.h"
 #endif
 
@@ -442,6 +442,16 @@ void Compositor::DisableSwapUntilResize() {
 void Compositor::ReenableSwap() {
   if (should_disable_swap_until_resize_ && display_private_)
     display_private_->Resize(size_);
+}
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+void Compositor::SetShouldFrameSubmissionBeforeDraw(bool should) {
+  if (display_private_) {
+    TRACE_EVENT0("viz", "Compositor::SetShouldFrameSubmissionBeforeDraw");
+    mojo::SyncCallRestrictions::ScopedAllowSyncCall scoped_allow_sync_call;
+    display_private_->SetShouldFrameSubmissionBeforeDraw(should);
+  }
 }
 #endif
 
@@ -896,5 +906,15 @@ void Compositor::SetDelegatedInkPointRenderer(
   if (display_private_)
     display_private_->SetDelegatedInkPointRenderer(std::move(receiver));
 }
+
+#if BUILDFLAG(IS_OHOS)
+void Compositor::SetCurrentFrameSinkId(const viz::FrameSinkId& id) {
+  if (display_private_) {
+    display_private_->SetCurrentFrameSinkId(id);
+  } else {
+    LOG(ERROR) << "Compositor::SetCurrentDisplay display_private error";
+  }
+}
+#endif
 
 }  // namespace ui

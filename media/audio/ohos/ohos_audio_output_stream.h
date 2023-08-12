@@ -6,14 +6,35 @@
 #define MEDIA_AUDIO_OHOS_AUDIO_OUTPUT_STREAM_H_
 
 #include "audio_renderer_adapter.h"
+#include "base/feature_list.h"
 #include "base/logging.h"
+#include "base/task/task_runner.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "base/timer/timer.h"
+#include "content/browser/media/audio_output_stream_broker.h"
+#include "content/browser/media/session/media_session_impl.h"
+#include "content/public/browser/web_contents.h"
 #include "media/audio/ohos/ohos_audio_manager.h"
 
 namespace media {
 using namespace OHOS::NWeb;
 
 class OHOSAudioManager;
+
+class AudioRendererCallback : public AudioRendererCallbackAdapter {
+ public:
+  AudioRendererCallback(content::MediaSessionImpl* media_session);
+  ~AudioRendererCallback();
+  void OnSuspend() override;
+  void OnResume() override;
+  bool GetSuspendFlag();
+  void SetSuspendFlag(bool flag);
+
+ private:
+  content::MediaSessionImpl* media_session_;
+  time_t intervalSinceLastSuspend_ = 0.0;
+  bool suspendFlag_ = false;
+};
 
 class OHOSAudioOutputStream : public AudioOutputStream {
  public:
@@ -24,7 +45,8 @@ class OHOSAudioOutputStream : public AudioOutputStream {
 
   // Caller must ensure that manager outlives the stream.
   OHOSAudioOutputStream(OHOSAudioManager* manager,
-                        const AudioParameters& parameters);
+                        const AudioParameters& parameters,
+                        bool isCommunication);
 
   // AudioOutputStream interface.
   bool Open() override;
@@ -34,6 +56,8 @@ class OHOSAudioOutputStream : public AudioOutputStream {
   void SetVolume(double volume) override;
   void GetVolume(double* volume) override;
   void Close() override;
+  void SetInterruptMode(bool audioExclusive);
+  void Refresh();
 
  private:
   ~OHOSAudioOutputStream() override;
@@ -60,6 +84,8 @@ class OHOSAudioOutputStream : public AudioOutputStream {
   bool InitRender(const AudioAdapterRendererOptions& rendererOptions);
 
   bool StartRender();
+
+  void Erase(content::MediaSessionImpl* mediaSession);
 
   OHOSAudioManager* manager_;
 
@@ -91,6 +117,16 @@ class OHOSAudioOutputStream : public AudioOutputStream {
   SampleFormat sample_format_;
 
   std::unique_ptr<AudioRendererAdapter> audio_renderer_;
+
+  content::MediaSessionImpl* mediaSession_ = nullptr;
+
+  std::shared_ptr<AudioRendererCallback> rendererCallback_ = nullptr;
+
+  bool isRefreshing_ = false;
+
+  bool isCommunication_ = false;
+
+  scoped_refptr<base::SingleThreadTaskRunner> main_task_runner_;
 };
 
 }  // namespace media

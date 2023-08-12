@@ -22,7 +22,13 @@ std::condition_variable RenderRemoteProxy::browser_fd_cv_;
 bool RenderRemoteProxy::is_browser_fd_received_{false};
 bool RenderRemoteProxy::is_for_test_{false};
 
-void RenderRemoteProxy::NotifyBrowserFd(int32_t ipcFd, int32_t sharedFd) {
+void RenderRemoteProxy::NotifyBrowserFd(int32_t ipcFd,
+                                        int32_t sharedFd
+#if BUILDFLAG(IS_OHOS)
+                                        ,
+                                        int32_t crashFd
+#endif  // BUILDFLAG(IS_OHOS)
+) {
   base::GlobalDescriptors* g_fds = base::GlobalDescriptors::GetInstance();
   if (g_fds != nullptr) {
     int new_ipc_fd;
@@ -46,6 +52,19 @@ void RenderRemoteProxy::NotifyBrowserFd(int32_t ipcFd, int32_t sharedFd) {
       shared_fd_ = new_shared_fd;
       close(sharedFd);
     }
+
+#if BUILDFLAG(IS_OHOS)
+    int new_crash_id;
+    if ((new_crash_id = dup(crashFd)) < 0) {
+      LOG(ERROR) << "crashFd duplicate error";
+      g_fds->Set(kCrashDumpSignal, crashFd);
+      crash_id_ = crashFd;
+    } else {
+      g_fds->Set(kCrashDumpSignal, new_crash_id);
+      crash_id_ = new_crash_id;
+      close(crashFd);
+    }
+#endif  // BUILDFLAG(IS_OHOS)
   }
   RenderRemoteProxy::is_browser_fd_received_ = true;
   RenderRemoteProxy::browser_fd_cv_.notify_one();

@@ -273,6 +273,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkService
 
   static NetworkService* GetNetworkServiceForTesting();
 
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int seconds) override;
+#endif
+
  private:
   class DelayedDohProbeActivator;
 
@@ -390,6 +394,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkService
   // This is used only in tests. It avoids leaky SystemDnsConfigChangeNotifiers
   // leaking stale listeners between tests.
   std::unique_ptr<net::NetworkChangeNotifier> mock_network_change_notifier_;
+
+#if BUILDFLAG(IS_OHOS)
+  int timeout_override_ = 0;
+#endif
 };
 
 }  // namespace network

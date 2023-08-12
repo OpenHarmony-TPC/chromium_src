@@ -12,15 +12,16 @@ namespace ui {
 
 #if BUILDFLAG(IS_OHOS)
 constexpr int kOverlayScrollbarStrokeWidth = 0;
-constexpr int kOverlayScrollbarThumbWidthPressed = 32;
+constexpr int kOverlayScrollbarThumbWidthPressed = 36;
+constexpr base::TimeDelta kOverlayScrollbarFadeDelay = base::Milliseconds(300);
+constexpr base::TimeDelta kOverlayScrollbarFadeDuration = base::Milliseconds(20);
 #else
 constexpr int kOverlayScrollbarStrokeWidth = 1;
 constexpr int kOverlayScrollbarThumbWidthPressed = 10;
+constexpr base::TimeDelta kOverlayScrollbarFadeDelay = base::Milliseconds(500);
+constexpr base::TimeDelta kOverlayScrollbarFadeDuration = base::Milliseconds(200);
 #endif
 
-constexpr base::TimeDelta kOverlayScrollbarFadeDelay = base::Milliseconds(500);
-constexpr base::TimeDelta kOverlayScrollbarFadeDuration =
-    base::Milliseconds(200);
 // TODO(bokan): This is still undetermined. crbug.com/652520.
 constexpr base::TimeDelta kOverlayScrollbarThinningDuration =
     base::Milliseconds(200);

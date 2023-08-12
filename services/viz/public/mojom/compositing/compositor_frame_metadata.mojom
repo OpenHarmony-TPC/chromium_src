@@ -77,4 +77,8 @@ struct CompositorFrameMetadata {
   // be replaced by corresponding live render passes or cached textures in the
   // Viz process.
   bool has_shared_element_resources;
+
+  // Add for sliding response debug
+  [EnableIf=is_ohos]
+  bool is_scrolling;
 };

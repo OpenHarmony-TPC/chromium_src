@@ -50,7 +50,7 @@ void PrintManager::PrintingFailed(int32_t cookie) {
   if (!IsValidCookie(cookie))
     return;
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   PdfWritingDone(0);
 #endif
 }
@@ -93,7 +93,7 @@ content::RenderFrameHost* PrintManager::GetCurrentTargetFrame() {
 }
 
 void PrintManager::PrintingRenderFrameDeleted() {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   PdfWritingDone(0);
 #endif
 }

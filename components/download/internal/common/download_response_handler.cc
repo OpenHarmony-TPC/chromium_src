@@ -242,6 +242,10 @@ void DownloadResponseHandler::OnStartLoadingResponseBody(
 
 void DownloadResponseHandler::OnComplete(
     const network::URLLoaderCompletionStatus& status) {
+#if BUILDFLAG(IS_OHOS)
+  if (status.abort_due_to_cef_browser_destroyed)
+    return;
+#endif  //  BUILDFLAG(IS_OHOS)
   if (completed_)
     return;
 

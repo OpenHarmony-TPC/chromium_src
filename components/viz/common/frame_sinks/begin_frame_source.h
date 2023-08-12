@@ -16,6 +16,7 @@
 #include "build/build_config.h"
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
+#include "components/viz/common/surfaces/frame_sink_id.h"
 
 namespace perfetto {
 class EventContext;
@@ -432,6 +433,11 @@ class VIZ_COMMON_EXPORT ExternalBeginFrameSource : public BeginFrameSource {
   // Notifies when the refresh rate of the display is updated. |refresh_rate| is
   // the rate in frames per second.
   virtual void UpdateRefreshRate(float refresh_rate) {}
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  // Set Current display client Frame sink ID.
+  virtual void SetCurrentFrameSinkId(const FrameSinkId& frame_sink_id) {}
 #endif
 
   // Notifies the begin frame source of the desired frame interval for the

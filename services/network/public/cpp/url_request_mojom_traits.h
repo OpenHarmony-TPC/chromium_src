@@ -354,7 +354,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
       const network::ResourceRequest& request) {
     return request.target_ip_address_space;
   }
-
+  static bool is_download_request(const network::ResourceRequest& request) {
+    return request.is_download_request;
+  }
   static bool Read(network::mojom::URLRequestDataView data,
                    network::ResourceRequest* out);
 };

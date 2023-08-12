@@ -34,9 +34,9 @@ class NWebEventHandler {
 
   void SetBrowser(CefRefPtr<CefBrowser> browser);
   void SetIsFocus(bool isFocus) { isFocus_ = isFocus; }
-  void OnTouchPress(int32_t id, double x, double y);
-  void OnTouchMove(int32_t id, double x, double y);
-  void OnTouchRelease(int32_t id, double x, double y);
+  void OnTouchPress(int32_t id, double x, double y, bool from_overlay);
+  void OnTouchMove(int32_t id, double x, double y, bool from_overlay);
+  void OnTouchRelease(int32_t id, double x, double y, bool from_overlay);
   void OnTouchCancel();
   bool SendKeyEventFromAce(int32_t keyCode, int32_t keyAction);
   void SendMouseWheelEvent(double x, double y, double deltaX, double deltaY);
@@ -46,11 +46,14 @@ class NWebEventHandler {
   void SendKeyEventFromMMI(int32_t keyCode, int32_t keyAction);
   bool SendKeyEvent(int32_t keyCode, int32_t keyAction);
   bool IsCharInputEvent(CefKeyEvent& keyEvent);
+
+ private:
   CefRefPtr<CefBrowser> browser_ = nullptr;
   NWebInputDelegate input_delegate_;
   std::unique_ptr<MMIAdapter> mmi_adapter_ = nullptr;
   int32_t mmi_id_ = -1;
   bool isFocus_ = false;
+  double sum_deltaY_ = 0.0;
 };
 }  // namespace OHOS::NWeb
 

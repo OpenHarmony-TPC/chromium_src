@@ -315,7 +315,11 @@ void NativeThemeBase::Paint(cc::PaintCanvas* canvas,
     case kScrollbarHorizontalThumb:
     case kScrollbarVerticalThumb:
       PaintScrollbarThumb(canvas, part, state, rect,
-                          extra.scrollbar_thumb.scrollbar_theme, color_scheme);
+                          extra.scrollbar_thumb.scrollbar_theme, color_scheme
+#if BUILDFLAG(IS_OHOS)                  
+                          ,extra.scrollbar_thumb.scrollbar_color
+#endif
+                          );
       break;
     case kScrollbarHorizontalTrack:
     case kScrollbarVerticalTrack:
@@ -548,7 +552,11 @@ void NativeThemeBase::PaintScrollbarThumb(cc::PaintCanvas* canvas,
                                           State state,
                                           const gfx::Rect& rect,
                                           ScrollbarOverlayColorTheme,
-                                          ColorScheme color_scheme) const {
+                                          ColorScheme color_scheme
+#if BUILDFLAG(IS_OHOS)                  
+                                          ,SkColor scrollbar_color
+#endif
+                                          ) const {
   const bool hovered = state == kHovered;
   const int midx = rect.x() + rect.width() / 2;
   const int midy = rect.y() + rect.height() / 2;

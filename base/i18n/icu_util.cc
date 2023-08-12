@@ -189,6 +189,14 @@ std::unique_ptr<PfRegion> OpenIcuDataFile(const std::string& filename,
     return nullptr;
   }
 #endif  // !BUILDFLAG(IS_APPLE)
+
+#if BUILDFLAG(IS_OHOS)
+  // If the hap package is not decompressed, the directory does not exist.
+  if (data_path.empty() || !base::PathExists(data_path)) {
+    LOG(ERROR) << data_path << " not exists.";
+    return nullptr;
+  }
+#endif
   File file(data_path, File::FLAG_OPEN | File::FLAG_READ);
   if (file.IsValid()) {
     // TODO(brucedawson): http://crbug.com/445616.
@@ -277,19 +285,19 @@ int LoadIcuDataByHap(PlatformFile data_fd,
                      const MemoryMappedFile::Region& data_region,
                      std::unique_ptr<MemoryMappedFile>* out_mapped_data_file,
                      UErrorCode* out_error_code) {
-  size_t length = 0;
-  std::unique_ptr<uint8_t[]> data;
   auto resourceInstance = OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter();
-  if (!resourceInstance->GetRawFileData(kIcuDataFileNameHap, length, data, true)) {
+  std::unique_ptr<OHOS::NWeb::OhosFileMapper> fileMapper = nullptr;
+  if (!resourceInstance->GetRawFileMapper(kIcuDataFileNameHap, fileMapper, true)) {
     LOG(ERROR) << "Couldn't mmap icu data file by hap: " << kIcuDataFileNameHap;
     return 1;
   }
+  LOG(INFO) << "icu data file length: " << fileMapper->GetDataLen();
 
   *out_mapped_data_file = std::make_unique<MemoryMappedFile>();
   (*out_error_code) = U_ZERO_ERROR;
   InitializeExternalTimeZoneData();
-  (*out_mapped_data_file)->SetDataAndLength(data, length);
-  LOG(INFO) << "icu data file length: " << length;
+  (*out_mapped_data_file)->SetOhosFileMapper(fileMapper);
+
   udata_setCommonData(const_cast<uint8_t*>((*out_mapped_data_file)->data()), out_error_code);
   if (U_FAILURE(*out_error_code)) {
     LOG(ERROR) << "Failed to initialize ICU with data file: " << u_errorName(*out_error_code);
@@ -311,7 +319,7 @@ bool InitializeICUWithFileDescriptorInternal(
   std::unique_ptr<MemoryMappedFile> mapped_file;
   UErrorCode err;
 #if BUILDFLAG(IS_OHOS)
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kOhosHapPath)) {
+  if (data_fd == kInvalidPlatformFile) {
     g_debug_icu_load = LoadIcuDataByHap(data_fd, data_region, &mapped_file, &err);
   } else {
     g_debug_icu_load = LoadIcuData(data_fd, data_region, &mapped_file, &err);

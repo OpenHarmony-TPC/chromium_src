@@ -554,6 +554,18 @@ public:
      * Put whether enable vertical scroll bar, default value is false.
      */
     virtual void PutVerticalScrollBarAccess(bool flag) = 0;
+
+    /**
+     * Get the color of scrollbar.
+     *
+     * @see PutScrollbarColor
+     */
+    virtual uint32_t GetScrollBarColor() = 0;
+
+    /**
+     * Put the UX color of scrollbar.
+     */
+    virtual void PutScrollBarColor(uint32_t colorValue) = 0;
 };
 }  // namespace OHOS::NWeb
 #endif  // NWEB_PREFERENCE_H

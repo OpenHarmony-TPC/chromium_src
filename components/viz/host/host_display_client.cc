@@ -72,4 +72,10 @@ void HostDisplayClient::DidCompleteSwapWithNewSize(const gfx::Size& size) {
 }
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+void HostDisplayClient::DidCompleteSwapWithNewSizeOHOS(const gfx::Size& size) {
+  NOTIMPLEMENTED();
+}
+#endif
+
 }  // namespace viz

@@ -254,6 +254,9 @@ class NATIVE_THEME_EXPORT NativeTheme {
 
   struct ScrollbarThumbExtraParams {
     bool is_hovering;
+#if BUILDFLAG(IS_OHOS)
+    SkColor scrollbar_color;
+#endif    
     ScrollbarOverlayColorTheme scrollbar_theme;
   };
 

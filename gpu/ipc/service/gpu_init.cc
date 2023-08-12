@@ -262,9 +262,27 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,
     gl_use_swiftshader_ = true;
   }
 
+  if (!gl_use_swiftshader_) {
+    gl_use_swiftshader_ = EnableSwiftShaderIfNeeded(
+        command_line, gpu_feature_info_,
+        gpu_preferences_.disable_software_rasterizer, needs_more_info);
+  }
+
+  if (gl_initialized && gl_use_swiftshader_ &&
+      !gl::IsSoftwareGLImplementation(gl::GetGLImplementationParts())) {
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+    VLOG(1) << "Quit GPU process launch to fallback to SwiftShader cleanly "
+            << "on Linux";
+    return false;
+#else   // !(BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS))
+    SaveHardwareGpuInfoAndGpuFeatureInfo();
+    gl::init::ShutdownGL(true);
+    gl_initialized = false;
+#endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+  }
+
   bool enable_watchdog = !gpu_preferences_.disable_gpu_watchdog &&
-                         !command_line->HasSwitch(switches::kHeadless) &&
-                         !gl_use_swiftshader_;
+                         !command_line->HasSwitch(switches::kHeadless);
 
   // Disable the watchdog in debug builds because they tend to only be run by
   // developers who will not appreciate the watchdog killing the GPU process.
@@ -305,7 +323,10 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,
   // consuming has completed, otherwise the process is liable to be aborted.
   if (enable_watchdog && !delayed_watchdog_enable) {
     watchdog_thread_ = GpuWatchdogThread::Create(
-        gpu_preferences_.watchdog_starts_backgrounded, "GpuWatchdog");
+        gpu_preferences_.watchdog_starts_backgrounded,
+        gl_use_swiftshader_ ||
+            gl::IsSoftwareGLImplementation(gl::GetGLImplementationParts()),
+        "GpuWatchdog");
     watchdog_init.SetGpuWatchdogPtr(watchdog_thread_.get());
 
 #if BUILDFLAG(IS_WIN)
@@ -365,24 +386,6 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,
           ->GetSurfaceFactoryOzone()
           ->GetSupportedFormatsForTexturing();
 #endif
-
-  if (!gl_use_swiftshader_) {
-    gl_use_swiftshader_ = EnableSwiftShaderIfNeeded(
-        command_line, gpu_feature_info_,
-        gpu_preferences_.disable_software_rasterizer, needs_more_info);
-  }
-  if (gl_initialized && gl_use_swiftshader_ &&
-      !gl::IsSoftwareGLImplementation(gl::GetGLImplementationParts())) {
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-    VLOG(1) << "Quit GPU process launch to fallback to SwiftShader cleanly "
-            << "on Linux";
-    return false;
-#else
-    SaveHardwareGpuInfoAndGpuFeatureInfo();
-    gl::init::ShutdownGL(true);
-    gl_initialized = false;
-#endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-  }
 
   if (!gl_initialized) {
     // Pause watchdog. LoadLibrary in GLBindings may take long time.
@@ -467,8 +470,15 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,
 #else
         SaveHardwareGpuInfoAndGpuFeatureInfo();
         gl::init::ShutdownGL(true);
-        watchdog_thread_ = nullptr;
-        watchdog_init.SetGpuWatchdogPtr(nullptr);
+        if (watchdog_thread_.get()) {
+          // Recreate watchdog for software rasterizer.
+          watchdog_thread_ = nullptr;
+          watchdog_init.SetGpuWatchdogPtr(nullptr);
+          watchdog_thread_ = GpuWatchdogThread::Create(
+              gpu_preferences_.watchdog_starts_backgrounded,
+              /*software_rendering=*/true, "GpuWatchdog");
+          watchdog_init.SetGpuWatchdogPtr(watchdog_thread_.get());
+        }
         if (!gl::init::InitializeGLNoExtensionsOneOff(/*init_bindings*/ true)) {
           VLOG(1)
               << "gl::init::InitializeGLNoExtensionsOneOff with SwiftShader "
@@ -608,9 +618,7 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,
   UMA_HISTOGRAM_MEDIUM_TIMES("GPU.InitializeOneOffMediumTime",
                              initialize_one_off_time);
 
-  // Software GL is expected to run slowly, so disable the watchdog
-  // in that case.
-  // In SwiftShader case, the implementation is actually EGLGLES2.
+  bool recreate_watchdog = false;
   if (!gl_use_swiftshader_ && command_line->HasSwitch(switches::kUseGL)) {
     std::string use_gl = command_line->GetSwitchValueASCII(switches::kUseGL);
     std::string use_angle =
@@ -621,19 +629,27 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,
          (use_angle == gl::kANGLEImplementationSwiftShaderName ||
           use_angle == gl::kANGLEImplementationSwiftShaderForWebGLName))) {
       gl_use_swiftshader_ = true;
+      if (watchdog_thread_) {
+        recreate_watchdog = true;
+      }
     }
   }
   if (gl_use_swiftshader_ ||
       gl::IsSoftwareGLImplementation(gl::GetGLImplementationParts())) {
     gpu_info_.software_rendering = true;
-    watchdog_thread_ = nullptr;
-    watchdog_init.SetGpuWatchdogPtr(nullptr);
   } else if (gl_disabled) {
+    DCHECK(!recreate_watchdog);
     watchdog_thread_ = nullptr;
     watchdog_init.SetGpuWatchdogPtr(nullptr);
   } else if (enable_watchdog && delayed_watchdog_enable) {
-    watchdog_thread_ = GpuWatchdogThread::Create(
-        gpu_preferences_.watchdog_starts_backgrounded, "GpuWatchdog");
+    recreate_watchdog = true;
+  }
+  if (recreate_watchdog) {
+    watchdog_thread_ = nullptr;
+    watchdog_init.SetGpuWatchdogPtr(nullptr);
+    watchdog_thread_ =
+        GpuWatchdogThread::Create(gpu_preferences_.watchdog_starts_backgrounded,
+                                  gpu_info_.software_rendering, "GpuWatchdog");
     watchdog_init.SetGpuWatchdogPtr(watchdog_thread_.get());
   }
 

@@ -111,6 +111,9 @@ void DeviceFactoryMediaToMojoAdapter::CreateDevice(
     const std::string& device_id,
     mojo::PendingReceiver<mojom::Device> device_receiver,
     CreateDeviceCallback callback) {
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << "DeviceFactoryMediaToMojoAdapter::CreateDevice";
+#endif
   auto active_device_iter = active_devices_by_id_.find(device_id);
   if (active_device_iter != active_devices_by_id_.end()) {
     // The requested device is already in use.

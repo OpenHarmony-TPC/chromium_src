@@ -34,15 +34,45 @@ MemoryMappedFile::~MemoryMappedFile() {
     return;
   }
 
-  if (data_) {
+  if ((data_ != nullptr) && (mapper_ == nullptr)) {
     delete [] data_;
     data_ = nullptr;
   }
   length_ = 0;
+  mapper_.reset();
 #else
   CloseHandles();
 #endif
 }
+
+#if BUILDFLAG(IS_OHOS)
+void MemoryMappedFile::SetOhosFileMapper(std::unique_ptr<OHOS::NWeb::OhosFileMapper> &mapper) {
+  if (IsValid()) {
+    if (customizeData_) {
+      if (mapper_ == nullptr) {
+        delete [] data_;
+        data_ = nullptr;
+      } else {
+        mapper_ = nullptr;
+      }
+    } else {
+      CloseHandles();
+    }
+  }
+
+  customizeData_ = true;
+
+  if (!mapper->IsCompressed()) {
+    mapper_ = std::move(mapper);
+    data_ = reinterpret_cast<uint8_t *>(mapper_->GetDataPtr());
+    length_ = mapper_->GetDataLen();
+  } else {
+    std::unique_ptr<uint8_t[]> dest;
+    mapper->UnzipData(dest, length_);
+    data_ = dest.release();
+  }
+}
+#endif
 
 #if !BUILDFLAG(IS_NACL)
 bool MemoryMappedFile::Initialize(const FilePath& file_name, Access access) {

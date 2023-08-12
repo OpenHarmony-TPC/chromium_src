@@ -124,6 +124,7 @@
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/load_notification_details.h"
 #if BUILDFLAG(IS_OHOS)
+#include "content/browser/ohos/date_time_chooser_ohos.h"
 #include "content/public/browser/message_port_provider.h"
 #endif
 #include "content/public/browser/navigation_details.h"
@@ -1252,6 +1253,21 @@ std::string WebContentsImpl::GetTitleForMediaControls() {
   return delegate_->GetTitleForMediaControls(this);
 }
 
+#if BUILDFLAG(IS_OHOS)
+void WebContentsImpl::AddMediaPlayerAudibleCount() {
+  ++media_player_audible_count_;
+}
+
+void WebContentsImpl::DelMediaPlayerAudibleCount() {
+  if (media_player_audible_count_ > 0) {
+    --media_player_audible_count_;
+  }
+}
+
+bool WebContentsImpl::GetMediaPlayerCurrentAudible() {
+  return media_player_audible_count_ > 0;
+}
+#endif
 // Returns the NavigationController for the primary FrameTree, i.e. the one
 // whose URL is shown in the omnibox. With MPArch we can have multiple
 // FrameTrees in one WebContents and each has its own NavigationController.
@@ -2262,11 +2278,24 @@ void WebContentsImpl::OnAudioStateChanged() {
   OPTIONAL_TRACE_EVENT2("content", "WebContentsImpl::OnAudioStateChanged",
                         "is_currently_audible", is_currently_audible,
                         "was_audible", is_currently_audible_);
+#if BUILDFLAG(IS_OHOS)
+  bool is_ohos_currently_audible =
+      is_currently_audible || GetMediaPlayerCurrentAudible();
+  if (is_ohos_currently_audible != is_ohos_currently_audible_ && is_currently_audible == is_currently_audible_) {
+    is_ohos_currently_audible_ = is_ohos_currently_audible;
+    observers_.NotifyObservers(&WebContentsObserver::OnAudioStateChanged,
+                               is_ohos_currently_audible_);
+    return;
+  }
+#endif
   if (is_currently_audible == is_currently_audible_)
     return;
 
   // Update internal state.
   is_currently_audible_ = is_currently_audible;
+#if BUILDFLAG(IS_OHOS)
+  is_ohos_currently_audible_ = is_ohos_currently_audible;
+#endif
   was_ever_audible_ = was_ever_audible_ || is_currently_audible_;
 
   audible_power_mode_voter_->VoteFor(is_currently_audible_
@@ -2831,10 +2860,9 @@ const blink::web_pref::WebPreferences WebContentsImpl::ComputeWebPreferences() {
 
 #if defined(OHOS_NWEB_EX)
   if (command_line.HasSwitch(switches::kForBrowser)) {
-    bool is_win =
-        (user_agent_.find("Windows NT") != std::string::npos) &&
-        (user_agent_.find("Win64") != std::string::npos ||
-         user_agent_.find("WOW64") != std::string::npos);
+    bool is_win = (user_agent_.find("Windows NT") != std::string::npos) &&
+                  (user_agent_.find("Win64") != std::string::npos ||
+                   user_agent_.find("WOW64") != std::string::npos);
     prefs.viewport_meta_enabled = !is_win;
   }
 #endif
@@ -3085,6 +3113,10 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
 
 #if BUILDFLAG(IS_ANDROID)
   DateTimeChooserAndroid::CreateForWebContents(this);
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  DateTimeChooserOHOS::CreateForWebContents(this);
 #endif
 
   // BrowserPluginGuest::Init needs to be called after this WebContents has
@@ -4818,7 +4850,6 @@ void WebContentsImpl::Replace(const std::u16string& word) {
   auto* input_handler = GetFocusedFrameWidgetInputHandler();
   if (!input_handler)
     return;
-
   input_handler->Replace(word);
 }
 
@@ -6778,6 +6809,13 @@ void WebContentsImpl::ShowContextMenu(
     context_menu_client_.Bind(std::move(context_menu_client));
   }
 
+#if defined(OHOS_NWEB_EX)
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kForBrowser)) {
+    SetShouldShowFreeCopy(params.is_selectable);
+  }
+#endif
+
   ContextMenuParams context_menu_params(params);
   // Allow WebContentsDelegates to handle the context menu operation first.
   if (delegate_ &&
@@ -7033,6 +7071,20 @@ bool WebContentsImpl::IsFocusedElementEditable() {
 bool WebContentsImpl::IsShowingContextMenu() {
   return showing_context_menu_;
 }
+
+#if BUILDFLAG(IS_OHOS)
+void WebContentsImpl::NotifyContextMenuWillShow() {
+  SetShowingContextMenu(false);
+}
+
+void WebContentsImpl::OpenDateTimeChooser() {
+  observers_.NotifyObservers(&WebContentsObserver::OpenDateTimeChooser);
+}
+
+void WebContentsImpl::CloseDateTimeChooser() {
+  observers_.NotifyObservers(&WebContentsObserver::CloseDateTimeChooser);
+}
+#endif
 
 void WebContentsImpl::SetShowingContextMenu(bool showing) {
   OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::SetShowingContextMenu",
@@ -9363,10 +9415,29 @@ std::unique_ptr<PrerenderHandle> WebContentsImpl::StartPrerendering(
   return nullptr;
 }
 
-#if defined (OHOS_NWEB_EX)
+#if defined(OHOS_NWEB_EX)
 void WebContentsImpl::SetForceEnableZoom(bool forceEnableZoom) {
   if (force_enable_zoom_ != forceEnableZoom) {
     force_enable_zoom_ = forceEnableZoom;
+    OnWebPreferencesChanged();
+  }
+}
+
+void WebContentsImpl::SelectAndCopy() {
+  auto* input_handler = GetFocusedFrameWidgetInputHandler();
+  if (!input_handler)
+    return;
+  input_handler->SelectAndCopy();
+}
+
+void WebContentsImpl::SetShouldShowFreeCopy(bool is_selectable) {
+  is_selectable_ = is_selectable;
+}
+
+void WebContentsImpl::SetEnableBlankTargetPopupIntercept(
+    bool enableBlankTargetPopup) {
+  if (enable_blank_target_popup_intercept_ != enableBlankTargetPopup) {
+    enable_blank_target_popup_intercept_ = enableBlankTargetPopup;
     OnWebPreferencesChanged();
   }
 }
@@ -9384,4 +9455,11 @@ std::pair<int, int> WebContentsImpl::GetAvailablePointerAndHoverTypes() {
   return ui::GetAvailablePointerAndHoverTypes();
 }
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+void WebContentsImpl::ClearContextMenu() {
+  if (delegate_) {
+    delegate_->ClearContextMenu();
+  }
+}
+#endif //OHOS_ENABLE_DRAG_DROP
 }  // namespace content

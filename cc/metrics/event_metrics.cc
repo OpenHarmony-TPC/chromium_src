@@ -43,6 +43,9 @@ constexpr struct {
     EVENT_TYPE(GestureScrollEnd, ui::ET_GESTURE_SCROLL_END, false),
     EVENT_TYPE(GestureDoubleTap, ui::ET_GESTURE_DOUBLE_TAP),
     EVENT_TYPE(GestureLongPress, ui::ET_GESTURE_LONG_PRESS),
+#ifdef OHOS_ENABLE_DRAG_DROP
+    EVENT_TYPE(GestureDragLongPress, ui::ET_GESTURE_DRAG_LONG_PRESS),
+#endif
     EVENT_TYPE(GestureLongTap, ui::ET_GESTURE_LONG_TAP),
     EVENT_TYPE(GestureShowPress, ui::ET_GESTURE_SHOW_PRESS),
     EVENT_TYPE(GestureTap, ui::ET_GESTURE_TAP),

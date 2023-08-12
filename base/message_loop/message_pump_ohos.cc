@@ -8,9 +8,6 @@
 #include <unistd.h>
 #include <utility>
 
-#include <event_handler.h>
-#include <file_descriptor_listener.h>
-
 #include "base/callback_helpers.h"
 #include "base/check_op.h"
 #include "base/lazy_instance.h"
@@ -18,6 +15,7 @@
 #include "base/notreached.h"
 #include "base/run_loop.h"
 #include "build/build_config.h"
+#include "ohos_adapter_helper.h"
 #if defined(__MUSL__)
 #include <sys/timerfd.h>
 #endif
@@ -36,7 +34,7 @@ namespace base {
 namespace {
 
 class EventHandlerFileDescriptorListener
-    : public OHOS::AppExecFwk::FileDescriptorListener {
+    : public OHOS::NWeb::EventHandlerFDListenerAdapter {
  public:
   explicit EventHandlerFileDescriptorListener(MessagePumpForUI* pump,
                                               int non_delay_fd,
@@ -97,9 +95,10 @@ constexpr uint64_t kTryNativeTasksBeforeIdleBit = uint64_t(1) << 32;
 }  // namespace
 
 MessagePumpForUI::MessagePumpForUI() {
-  ohos_event_handler_ = OHOS::AppExecFwk::EventHandler::Current();
-  if (!ohos_event_handler_) {
-    LOG(ERROR) << "MessagePumpForUI get current event handler failed";
+  ohos_event_handler_adapter_ =
+      OHOS::NWeb::OhosAdapterHelper::GetInstance().GetEventHandlerAdapter();
+  if (!ohos_event_handler_adapter_) {
+    LOG(ERROR) << "MessagePumpForUI creat event handler adapter failed";
     return;
   }
 
@@ -116,17 +115,19 @@ MessagePumpForUI::MessagePumpForUI() {
 
   ohos_listener = std::make_shared<EventHandlerFileDescriptorListener>(
       this, non_delayed_fd_, delayed_fd_);
-  ohos_event_handler_->AddFileDescriptorListener(
-      non_delayed_fd_, OHOS::AppExecFwk::FILE_DESCRIPTOR_INPUT_EVENT,
-      ohos_listener);
-  ohos_event_handler_->AddFileDescriptorListener(
-      delayed_fd_, OHOS::AppExecFwk::FILE_DESCRIPTOR_INPUT_EVENT,
-      ohos_listener);
+  if (!ohos_event_handler_adapter_->AddFileDescriptorListener(
+          non_delayed_fd_, OHOS::NWeb::EventHandlerAdapter::INPUT_EVENT,
+          ohos_listener) ||
+      !ohos_event_handler_adapter_->AddFileDescriptorListener(
+          delayed_fd_, OHOS::NWeb::EventHandlerAdapter::INPUT_EVENT,
+          ohos_listener)) {
+    LOG(ERROR) << "MessagePumpForUI AddFileDescriptorListener failed";
+  };
 }
 
 MessagePumpForUI::~MessagePumpForUI() {
-  ohos_event_handler_->RemoveFileDescriptorListener(non_delayed_fd_);
-  ohos_event_handler_->RemoveFileDescriptorListener(delayed_fd_);
+  ohos_event_handler_adapter_->RemoveFileDescriptorListener(non_delayed_fd_);
+  ohos_event_handler_adapter_->RemoveFileDescriptorListener(delayed_fd_);
 
   close(non_delayed_fd_);
   close(delayed_fd_);

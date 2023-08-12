@@ -5,15 +5,14 @@
 #ifndef MEDIA_BASE_OHOS_MEDIA_PLAYER_BRIDGE_H_
 #define MEDIA_BASE_OHOS_MEDIA_PLAYER_BRIDGE_H_
 
-#include <player.h>
-#include <surface.h>
-#include <iconsumer_surface.h>
 #include <deque>
 
 #include "base/memory/weak_ptr.h"
+#include "base/task/single_thread_task_runner.h"
+#include "base/timer/timer.h"
+#include "graphic_adapter.h"
 #include "media/base/media_export.h"
-#include "media/base/ohos/ohos_media_player_callback.h"
-#include "media/base/ohos/ohos_media_player_listener.h"
+#include "media_adapter.h"
 #include "net/cookies/site_for_cookies.h"
 #include "url/gurl.h"
 #include "url/origin.h"
@@ -42,6 +41,11 @@ class MEDIA_EXPORT OHOSMediaPlayerBridge {
 
     // Called when video size has changed.
     virtual void OnVideoSizeChanged(int width, int height) = 0;
+
+    // Called when player InterruptEvent.
+    virtual void OnPlayerInterruptEvent(int32_t value) = 0;
+
+    virtual void OnAudioStateChanged(bool isAudible) = 0;
   };
 
   enum MediaErrorType {
@@ -70,15 +74,20 @@ class MEDIA_EXPORT OHOSMediaPlayerBridge {
   void Pause();
   void SeekTo(base::TimeDelta time);
   base::TimeDelta GetDuration();
-  void SetVolume(float volume);
+  void SetVolume(float volume, bool ismuted);
   base::TimeDelta GetMediaTime();
   void FinishPaint(int fd);
-  void SetPlaybackSpeed(OHOS::Media::PlaybackRateMode mode);
+  void SetPlaybackSpeed(OHOS::NWeb::PlaybackRateMode mode);
 
   void OnEnd();
   void OnError(int32_t errorCode);
-  void OnBufferAvailable(OHOS::sptr<OHOS::SurfaceBuffer> buffer);
-  void OnPlayerStateUpdate(OHOS::Media::PlayerStates player_state);
+  void OnBufferAvailable(
+      std::unique_ptr<OHOS::NWeb::SurfaceBufferAdapter> buffer);
+  void OnPlayerStateUpdate(
+      OHOS::NWeb::PlayerAdapter::PlayerStates player_state);
+  void OnVideoSizeChanged(int32_t width, int32_t height);
+  void OnPlayerInterruptEvent(int32_t value);
+  void SeekDone();
 
  private:
   int32_t SetFdSource(const std::string& path);
@@ -86,12 +95,13 @@ class MEDIA_EXPORT OHOSMediaPlayerBridge {
   void StartInternal();
   void SeekInternal(base::TimeDelta time);
   void PropagateDuration(base::TimeDelta duration);
+  bool IsAudible(float volume);
 
   const std::string surfaceFormat = "SURFACE_FORMAT";
-  std::shared_ptr<OHOS::Media::Player> player_ = nullptr;
-  std::deque<OHOS::sptr<OHOS::SurfaceBuffer>> cached_buffers_;
-  OHOS::sptr<OHOS::IConsumerSurface> consumer_surface_ = nullptr;
-  OHOS::sptr<OHOS::IBufferConsumerListener> listener_;
+  std::unique_ptr<OHOS::NWeb::PlayerAdapter> player_ = nullptr;
+  std::deque<std::unique_ptr<OHOS::NWeb::SurfaceBufferAdapter>> cached_buffers_;
+  std::unique_ptr<OHOS::NWeb::IConsumerSurfaceAdapter> consumer_surface_ =
+      nullptr;
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
   Client* client_;
   GURL url_;
@@ -99,16 +109,22 @@ class MEDIA_EXPORT OHOSMediaPlayerBridge {
   bool pending_play_;
   bool should_seek_on_prepare_;
   float volume_;
+  float current_volume_ = 0;
+  bool is_muted_ = false;
   bool should_set_volume_on_prepare_;
   base::TimeDelta duration_;
   base::TimeDelta pending_seek_;
-  OHOS::Media::PlayerStates player_state_;
+  OHOS::NWeb::PlayerAdapter::PlayerStates player_state_;
 
   // MediaPlayer is unable to handle Seek request when playback end. We should
   // pending the SeekTo request until its playback state changed.
   bool seeking_on_playback_complete_;
+#if defined(RK3568)
+  bool is_hls_;
+#endif
 
   base::WeakPtrFactory<OHOSMediaPlayerBridge> weak_factory_{this};
+  int32_t seek_done_count_ = 0;
 };
 }  // namespace media
 

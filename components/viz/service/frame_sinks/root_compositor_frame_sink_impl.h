@@ -70,6 +70,11 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
 #if BUILDFLAG(IS_WIN)
   void DisableSwapUntilResize(DisableSwapUntilResizeCallback callback) override;
 #endif
+#if BUILDFLAG(IS_OHOS)
+  void SetShouldFrameSubmissionBeforeDraw(
+      bool should,
+      SetShouldFrameSubmissionBeforeDrawCallback callback) override;
+#endif
   void Resize(const gfx::Size& size) override;
   void SetDisplayColorMatrix(const gfx::Transform& color_matrix) override;
   void SetDisplayColorSpaces(
@@ -115,6 +120,10 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
       mojom::CompositorFrameSinkType type) override;
 #if BUILDFLAG(IS_ANDROID)
   void SetThreadIds(const std::vector<int32_t>& thread_ids) override;
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  void SetCurrentFrameSinkId(const FrameSinkId& frame_sink_id) override;
 #endif
 
   base::ScopedClosureRunner GetCacheBackBufferCb();
@@ -189,7 +198,7 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
 
 // TODO(crbug.com/1052397): Revisit the macro expression once build flag switch
 // of lacros-chrome is complete.
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS) || BUILDFLAG(IS_OHOS)
   gfx::Size last_swap_pixel_size_;
 #endif
 

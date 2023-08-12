@@ -17,6 +17,7 @@
 #define OHOS_NWEB_SRC_NWEB_INPUTMETHOD_HANDLER_H_
 #include <chrono>
 #include <condition_variable>
+#include <unordered_map>
 #include "imf_adapter.h"
 
 #include "cef_delegate/nweb_inputmethod_client.h"
@@ -24,6 +25,10 @@
 namespace OHOS::NWeb {
 class NWebInputMethodHandler : public NWebInputMethodClient {
  public:
+  enum class ReattachType {
+    FROM_ONFOCUS,
+    FROM_CONTINUE,
+  };
   NWebInputMethodHandler();
   ~NWebInputMethodHandler();
   NWebInputMethodHandler(const NWebInputMethodHandler&) = delete;
@@ -31,33 +36,66 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
 
   void Attach(CefRefPtr<CefBrowser> browser, bool show_keyboard, cef_text_input_mode_t input_mode) override;
   void ShowTextInput() override;
-  void HideTextInput() override;
+  void HideTextInput(uint32_t nwebId = 0, HideTextinputType hideType = HideTextinputType::FROM_KERNEL) override;
   void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
                               const CefString& selected_text,
                               const CefRange& selected_range) override;
+  void OnCursorUpdate(const CefRect& rect) override;
+  void OnSelectionChanged(CefRefPtr<CefBrowser> browser,
+                          const CefString& text,
+                          const CefRange& selected_range) override;
+  void SetFocusStatus(bool focus_status) override;
 
+  bool Reattach(uint32_t nwebId, ReattachType type);
   void SetIMEStatus(bool status);
   void InsertText(const std::u16string& text);
   void DeleteBackward(int32_t length);
   void DeleteForward(int32_t length);
   void SendEnterKeyEvent();
   void MoveCursor(const IMFAdapterDirection direction);
+  void SetScreenOffSet(double x, double y);
+  void SetVirtualDeviceRatio(float device_pixel_ratio);
+  int32_t GetTextIndexAtCursor();
+  std::u16string GetLeftTextOfCursor(int32_t number);
+  std::u16string GetRightTextOfCursor(int32_t number);
 
  private:
   void SetIMEStatusOnUI(bool status);
   void InsertTextHandlerOnUI(const std::u16string& text);
   void DeleteBackwardHandlerOnUI(int32_t length);
   void DeleteForwardHandlerOnUI(int32_t length);
+  bool IsCorrectParam(int32_t number, int32_t& selectBegin, int32_t& selectEnd);
+  bool ResetTextSelectiondata();
 
+  static uint32_t lastAttachNWebId_;
+  uint32_t nweb_Id_ = 0;
   CefRefPtr<CefBrowser> browser_;
   bool ime_shown_ = false;
   bool ime_text_composing_ = false;
   std::u16string selected_text_;
   std::u16string composing_text_;
+  std::u16string whole_text_;
   int selected_from_;
   int selected_to_;
+  CefRect focus_rect_;
+  double offset_x_ = 0;
+  double offset_y_ = 0;
+  float device_pixel_ratio_;
+  bool focus_status_ = false;
+  bool focus_rect_status_ = false;
   std::unique_ptr<IMFAdapter> inputmethod_adapter_ = nullptr;
   std::shared_ptr<IMFTextListenerAdapter> inputmethod_listener_ = nullptr;
+  bool isAttached_ = false;
+  bool show_keyboard_ = false;
+  bool isNeedReattachOncontinue_ = false;
+  IMFAdapterTextInputType input_mode_ = IMFAdapterTextInputType::TEXT;
+  std::chrono::high_resolution_clock::time_point lastCloseInputMethodTime_;
+  bool isNeedReattachOnfocus_ = false;
+
+  int textCursorReady_ = 0;
+  std::mutex textCursorMutex_;
+  std::condition_variable textCursorCv_;
+  bool is_need_notify_all_ = false;
 
   IMPLEMENT_REFCOUNTING(NWebInputMethodHandler);
 };

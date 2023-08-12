@@ -431,7 +431,11 @@ void Surface::ActivateFrame(FrameData frame_data) {
 
   // Save root pass copy requests.
   std::vector<std::unique_ptr<CopyOutputRequest>> old_copy_requests;
-  if (active_frame_data_) {
+#if BUILDFLAG(IS_OHOS)
+  if (active_frame_data_ && !active_frame_data_->frame.render_pass_list.empty()) {
+#else
+  if (active_frame_data_ ) {
+#endif
     std::swap(old_copy_requests,
               active_frame_data_->frame.render_pass_list.back()->copy_requests);
   }

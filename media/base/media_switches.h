@@ -26,6 +26,11 @@ MEDIA_EXPORT extern const char kAudioServiceQuitTimeoutMs[];
 MEDIA_EXPORT extern const char kAutoplayPolicy[];
 
 MEDIA_EXPORT extern const char kDisableAudioOutput[];
+
+#if BUILDFLAG(IS_OHOS)
+MEDIA_EXPORT extern const char kDisableAudioInput[];
+#endif
+
 MEDIA_EXPORT extern const char kFailAudioStreamCreation[];
 
 MEDIA_EXPORT extern const char kVideoThreads[];

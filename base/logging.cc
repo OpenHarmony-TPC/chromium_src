@@ -80,7 +80,7 @@ typedef HANDLE FileHandle;
 #endif
 
 #if BUILDFLAG(IS_OHOS)
-#include "hilog/log.h"
+#include "hilog_adapter.h"
 #endif
 
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
@@ -594,22 +594,6 @@ LogMessage::LogMessage(const char* file, int line, const char* condition)
   stream_ << "Check failed: " << condition << ". ";
 }
 
-#if BUILDFLAG(IS_OHOS)
-extern "C" {
-    int HiLogPrintArgs(LogType type, LogLevel level, unsigned int domain, const char* tag, const char* fmt, va_list ap);
-}
-
-int HiLogPrintOHOS(LogType type, LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...)
-{
-    int ret;
-    va_list ap;
-    va_start(ap, fmt);
-    ret = HiLogPrintArgs(type, level, domain, tag, fmt, ap);
-    va_end(ap);
-    return ret;
-}
-#endif
-
 LogMessage::~LogMessage() {
   size_t stack_start = stream_.tellp();
 #if !defined(OFFICIAL_BUILD) && !BUILDFLAG(IS_NACL) && !defined(__UCLIBC__) && \
@@ -835,26 +819,28 @@ LogMessage::~LogMessage() {
     __android_log_write(priority, kAndroidLogTag, str_newline.c_str());
 #endif
 #elif BUILDFLAG(IS_OHOS)
-    LogLevel priority =
-        (severity_ < 0) ? LogLevel::LOG_DEBUG : LogLevel::LOG_LEVEL_MAX;
+    auto priority = (severity_ < 0) ? OHOS::NWeb::LogLevelAdapter::DEBUG
+                                    : OHOS::NWeb::LogLevelAdapter::LEVEL_MAX;
     switch (severity_) {
       case LOGGING_INFO:
-        priority = LogLevel::LOG_INFO;
+        priority = OHOS::NWeb::LogLevelAdapter::INFO;
         break;
       case LOGGING_WARNING:
-        priority = LogLevel::LOG_WARN;
+        priority = OHOS::NWeb::LogLevelAdapter::WARN;
         break;
       case LOGGING_ERROR:
-        priority = LogLevel::LOG_ERROR;
+        priority = OHOS::NWeb::LogLevelAdapter::ERROR;
         break;
       case LOGGING_FATAL:
-        priority = LogLevel::LOG_FATAL;
+        priority = OHOS::NWeb::LogLevelAdapter::FATAL;
         break;
       case LOGGING_DEBUG:
-        priority = LogLevel::LOG_DEBUG;
+        priority = OHOS::NWeb::LogLevelAdapter::DEBUG;
     }
     const char kOHOSLogTag[] = "chromium";
-    HiLogPrintOHOS(LOG_CORE, priority, 0xD004500, kOHOSLogTag, str_newline.c_str());
+    OHOS::NWeb::HiLogAdapter::PrintLog(priority, kOHOSLogTag,
+                                       "%{public}s",
+                                       str_newline.c_str());
 #elif BUILDFLAG(IS_FUCHSIA)
     // LogMessage() will silently drop the message if the logger is not valid.
     // Skip the final character of |str_newline|, since LogMessage() will add

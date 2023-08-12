@@ -146,6 +146,9 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
       const GURL& initiator_url,
       blink::mojom::NavigationBlockedReason reason) {}
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void NotifyContextMenuWillShow() {}
+#endif
   // Called when blink.mojom.LocalFrameHost::DidFinishLoad() is invoked.
   virtual void OnDidFinishLoad(RenderFrameHostImpl* render_frame_host,
                                const GURL& url) {}
@@ -661,6 +664,10 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
                                   bool is_hung) {}
 #endif
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+  // Notified to UI, contextmenu popup window should be dimissed
+  virtual void ClearContextMenu() {}
+#endif // OHOS_ENABLE_DRAG_DROP
  protected:
   virtual ~RenderFrameHostDelegate() = default;
 };

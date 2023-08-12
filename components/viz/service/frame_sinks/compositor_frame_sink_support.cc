@@ -37,6 +37,12 @@
 namespace viz {
 namespace {
 
+#if BUILDFLAG(IS_OHOS)
+  static uint32_t g_firstScrollingFrame = 0;
+  static bool g_isScrolling = false;
+  constexpr int g_scrolledFrameCount = 30;
+#endif
+
 void RecordShouldSendBeginFrame(const std::string& reason) {
   TRACE_EVENT1("viz", "ShouldNotSendBeginFrame", "reason", reason);
 }
@@ -325,6 +331,15 @@ void CompositorFrameSinkSupport::OnSurfacePresented(
     base::TimeTicks draw_start_timestamp,
     const gfx::SwapTimings& swap_timings,
     const gfx::PresentationFeedback& feedback) {
+#if BUILDFLAG(IS_OHOS)
+  if (g_firstScrollingFrame == frame_token) {
+    TRACE_EVENT1("viz", "CompositorFrameSinkSupport::OnSurfacePresented",
+      "sliding response end frame", frame_token);
+    LOG(DEBUG) << "CompositorFrameSinkSupport::OnSurfacePresented "
+      "sliding response end";
+  }
+#endif
+
   DidPresentCompositorFrame(frame_token, draw_start_timestamp, swap_timings,
                             feedback);
 }
@@ -528,6 +543,19 @@ SubmitResult CompositorFrameSinkSupport::MaybeSubmitCompositorFrame(
 
   CHECK(callback_received_begin_frame_);
   CHECK(callback_received_receive_ack_);
+
+#if BUILDFLAG(IS_OHOS)
+  if (g_isScrolling == false && frame.metadata.is_scrolling == true) {
+    g_firstScrollingFrame = frame.metadata.frame_token;
+    g_isScrolling = true;
+  }
+
+  if (g_isScrolling == true && frame.metadata.is_scrolling == false &&
+     (uint32_t)(frame.metadata.frame_token - g_firstScrollingFrame) >=
+      g_scrolledFrameCount) {
+    g_isScrolling = false;
+  }
+#endif
 
   begin_frame_tracker_.ReceivedAck(frame.metadata.begin_frame_ack);
   ++ack_pending_count_;

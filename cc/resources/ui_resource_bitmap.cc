@@ -75,7 +75,7 @@ UIResourceBitmap::UIResourceBitmap(const SkBitmap& skbitmap) {
   DCHECK(skbitmap.isImmutable());
 
   const SkBitmap* target = &skbitmap;
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   SkBitmap copy;
   if (features::IsDrDcEnabled()) {
     // TODO(vikassoni): Forcing everything to N32 while android backing cannot

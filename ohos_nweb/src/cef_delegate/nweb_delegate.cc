@@ -16,40 +16,131 @@
 #include "nweb_delegate.h"
 
 #include <thread>
+#include "base/strings/stringprintf.h"
+#include "cef/include/internal/cef_string_types.h"
 #include "nweb_application.h"
+#include "nweb_drag_data_impl.h"
 #include "nweb_handler_delegate.h"
 #include "nweb_history_list_impl.h"
 #include "nweb_render_handler.h"
 
+#include "base/command_line.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/trace_event/trace_event.h"
 #include "cef/include/base/cef_logging.h"
 #include "cef/include/cef_app.h"
 #include "cef/include/cef_base.h"
 #include "cef/include/cef_request_context.h"
+#include "cef/libcef/browser/navigation_state_serializer.h"
 #include "content/public/common/content_switches.h"
+#include "nweb_download_handler_delegate.h"
 #include "nweb_find_delegate.h"
 #include "nweb_preference_delegate.h"
 #include "url/gurl.h"
 
-#include "cef/libcef/browser/navigation_state_serializer.h"
-
 namespace OHOS::NWeb {
 
-static const float maxZoomFactor = 10.0;
+void ConvertCefValueToNWebMessage(CefRefPtr<CefValue> src, std::shared_ptr<NWebMessage> dst) {
+  int type = src->GetType();
+  LOG(INFO) << "OnMessage type:" << type;
+  switch (type) {
+    case VTYPE_STRING: {
+      dst->SetType(NWebValue::Type::STRING);
+      dst->SetString(src->GetString());
+      break;
+    }
+    case VTYPE_BINARY: {
+      CefRefPtr<CefBinaryValue> binValue = src->GetBinary();
+      size_t len = binValue->GetSize();
+      std::vector<uint8_t> arr(len);
+      binValue->GetData(&arr[0], len, 0);
+      dst->SetType(NWebValue::Type::BINARY);
+      dst->SetBinary(arr);
+      break;
+    }
+    case VTYPE_BOOL: {
+      dst->SetType(NWebValue::Type::BOOLEAN);
+      dst->SetBoolean(src->GetBool());
+      break;
+    }
+    case VTYPE_DOUBLE: {
+      dst->SetType(NWebValue::Type::DOUBLE);
+      dst->SetDouble(src->GetDouble());
+      break;
+    }
+    case VTYPE_INT: {
+      dst->SetType(NWebValue::Type::INTEGER);
+      dst->SetInt64(src->GetInt());
+      break;
+    }
+    case VTYPE_DICTIONARY: {
+      CefRefPtr<CefDictionaryValue> dict = src->GetDictionary();
+      dst->SetType(NWebValue::Type::ERROR);
+      dst->SetErrName(dict->GetString("Error.name"));
+      dst->SetErrMsg(dict->GetString("Error.message"));
+      break;
+    }
+    case VTYPE_LIST: {
+      CefRefPtr<CefListValue> listValue = src->GetList();
+      size_t len = listValue->GetSize();
+      std::vector<std::string> string_arr;
+      std::vector<bool> bool_arr;
+      std::vector<double> double_arr;
+      std::vector<int64_t> int64_arr;
+      CefValueType elem_type;
+      for (size_t i = 0; i < len; i++) {
+        CefRefPtr<CefValue> elem = listValue->GetValue(i);
+        if (elem->GetType() == VTYPE_STRING) {
+          elem_type = VTYPE_STRING;
+          string_arr.push_back(elem->GetString());
+        } else if (elem->GetType() == VTYPE_BOOL) {
+          elem_type = VTYPE_BOOL;
+          bool_arr.push_back(elem->GetBool());
+        } else if (elem->GetType() == VTYPE_DOUBLE) {
+          elem_type = VTYPE_DOUBLE;
+          double_arr.push_back(elem->GetDouble());
+        } else if (elem->GetType() == VTYPE_INT) {
+          elem_type = VTYPE_INT;
+          int64_arr.push_back(elem->GetInt());
+        }
+      }
+      if (elem_type == VTYPE_STRING) {
+        dst->SetType(NWebValue::Type::STRINGARRAY);
+        dst->SetStringArray(string_arr);
+      } else if (elem_type == VTYPE_BOOL) {
+        dst->SetType(NWebValue::Type::BOOLEANARRAY);
+        dst->SetBooleanArray(bool_arr);
+      } else if (elem_type == VTYPE_DOUBLE) {
+        dst->SetType(NWebValue::Type::DOUBLEARRAY);
+        dst->SetDoubleArray(double_arr);
+      } else if (elem_type == VTYPE_INT) {
+        dst->SetType(NWebValue::Type::INT64ARRAY);
+        dst->SetInt64Array(int64_arr);
+      }
+      break;
+    }
+    default: {
+      LOG(ERROR) << "OnMessage not support type";
+      break;
+    }
+  }
+}
 
 class JavaScriptResultCallbackImpl : public CefJavaScriptResultCallback {
  public:
   JavaScriptResultCallbackImpl(
-      std::shared_ptr<NWebValueCallback<std::string>> callback)
+      std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback)
       : callback_(callback){};
-  void OnJavaScriptExeResult(const CefString& result) override {
+  void OnJavaScriptExeResult(CefRefPtr<CefValue> result) override {
     if (callback_ != nullptr) {
-      callback_->OnReceiveValue(result.ToString());
+      auto data = std::make_shared<OHOS::NWeb::NWebMessage>(NWebValue::Type::NONE);
+      ConvertCefValueToNWebMessage(result, data);
+      callback_->OnReceiveValue(data);
     }
   }
 
  private:
-  std::shared_ptr<NWebValueCallback<std::string>> callback_;
+  std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback_;
 
   IMPLEMENT_REFCOUNTING(JavaScriptResultCallbackImpl);
 };
@@ -60,22 +151,10 @@ class CefWebMessageReceiverImpl : public CefWebMessageReceiver {
       std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback)
       : callback_(callback){};
   void OnMessage(CefRefPtr<CefValue> message) override {
+    LOG(INFO) << "OnMessage in nweb delegate";
     if (callback_ != nullptr) {
         auto data = std::make_shared<OHOS::NWeb::NWebMessage>(NWebValue::Type::NONE);
-        if (message->GetType() == VTYPE_STRING) {
-          data->SetType(NWebValue::Type::STRING);
-          data->SetString(message->GetString());
-        } else if (message->GetType() == VTYPE_BINARY) {
-          CefRefPtr<CefBinaryValue> binValue = message->GetBinary();
-          size_t len = binValue->GetSize();
-          std::vector<uint8_t> arr(len);
-          binValue->GetData(&arr[0], len, 0);
-          data->SetType(NWebValue::Type::BINARY);
-          data->SetBinary(arr);
-        } else {
-          LOG(ERROR) << "OnMessage not support type";
-          return;
-        }
+        ConvertCefValueToNWebMessage(message, data);
         callback_->OnReceiveValue(data);
     }
   }
@@ -150,6 +229,8 @@ class NavigationEntryVisitorImpl : public CefNavigationEntryVisitor {
   IMPLEMENT_REFCOUNTING(NavigationEntryVisitorImpl);
 };
 
+std::set<uint32_t> NWebDelegate::focus_nweb_id_{};
+
 NWebDelegate::NWebDelegate(int argc, const char* argv[])
     : argc_(argc), argv_(argv) {}
 
@@ -159,8 +240,33 @@ NWebDelegate::~NWebDelegate() {
   }
 }
 
-bool NWebDelegate::Init(bool is_enhance_surface, void* window, bool popup) {
+bool NWebDelegate::HasBackgroundColorWithInit(int32_t& backgroundColor) {
+  for (int i = 0; i < argc_; i++) {
+    if (argv_[i] == nullptr) {
+      continue;
+    }
+
+    if (!strncmp(argv_[i], "--init-background-color=", strlen("--init-background-color="))) {
+      const char* value = argv_[i] + strlen("--init-background-color=");
+      backgroundColor = atoi(value);
+      LOG(INFO) << "HasBackgroundColorWithInit, background color = " << backgroundColor;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool NWebDelegate::Init(bool is_enhance_surface,
+                        void* window,
+                        bool popup,
+                        uint32_t nweb_id) {
   preference_delegate_ = std::make_shared<NWebPreferenceDelegate>();
+  int32_t backgroundColor;
+  if (preference_delegate_ && HasBackgroundColorWithInit(backgroundColor)) {
+    // background color should set when init in case of first white screen flash
+    preference_delegate_->SetBackgroundColor(backgroundColor);
+  }
   find_delegate_ = std::make_shared<NWebFindDelegate>();
   is_enhance_surface_ = is_enhance_surface;
   display_manager_adapter_ =
@@ -192,7 +298,7 @@ bool NWebDelegate::Init(bool is_enhance_surface, void* window, bool popup) {
   }
 
   std::string url_for_init = "";
-  InitializeCef(url_for_init, is_enhance_surface_, window, popup);
+  InitializeCef(url_for_init, is_enhance_surface_, window, popup, nweb_id);
 
   std::shared_ptr<DisplayAdapter> display =
       display_manager_adapter_->GetDefaultDisplay();
@@ -245,6 +351,49 @@ void NWebDelegate::RegisterFindListener(
     return;
   }
   find_delegate_->SetListener(find_listener);
+}
+
+void NWebDelegate::RegisterWebDownloadDelegateListener(
+    std::shared_ptr<NWebDownloadDelegateCallback> downloadDelegateListener) {
+  if (handler_delegate_ == nullptr) {
+    LOG(ERROR) << "fail to register download delegate listener, NWEB handler "
+                  "is nullptr";
+    return;
+  }
+  CefRefPtr<NWebDownloadHandlerDelegate> delegate =
+      new NWebDownloadHandlerDelegate(preference_delegate_);
+  delegate->RegisterWebDownloadDelegateListener(downloadDelegateListener);
+  CefSetDownloadHandler(delegate);
+}
+
+void NWebDelegate::StartDownload(const char* url) {
+  if (handler_delegate_ == nullptr) {
+    LOG(ERROR) << "fail to start download, NWEB handler is nullptr";
+    return;
+  }
+  auto browser = GetBrowser();
+  if (browser != nullptr && browser->GetHost() != nullptr) {
+    browser->GetHost()->StartDownload(url);
+  }
+}
+
+void NWebDelegate::ResumeDownload(
+    std::shared_ptr<NWebDownloadItem> web_download) {
+  LOG(INFO) << "NWebDelegate::ResumeDownload";
+  auto browser = GetBrowser();
+
+  if (web_download == nullptr) {
+    LOG(ERROR) << "fail to resume download, NWEB DownloadItem is nullptr";
+    return;
+  }
+  if (browser != nullptr && browser->GetHost() != nullptr) {
+    browser->GetHost()->ResumeDownload(
+        web_download->url, web_download->full_path,
+        web_download->received_bytes, web_download->total_bytes,
+        web_download->etag, web_download->mime_type,
+        web_download->last_modified,
+        web_download->received_slices);
+  }
 }
 
 void NWebDelegate::FindAllAsync(const std::string& search_string) const {
@@ -313,6 +462,16 @@ void NWebDelegate::SetInputMethodClient(
   render_handler_->SetInputMethodClient(client);
 }
 
+void NWebDelegate::SetNWebDelegateInterface(
+    std::shared_ptr<NWebDelegateInterface> client) {
+  if (render_handler_ == nullptr) {
+    LOG(ERROR)
+        << "fail to register NWebDelegateInterface client, render handler is nullptr";
+    return;
+  }
+  render_handler_->SetNWebDelegateInterface(client);
+}
+
 void NWebDelegate::RegisterRenderCb(
     std::function<void(const char*)> render_update_cb) {
   if (render_handler_ != nullptr) {
@@ -321,37 +480,59 @@ void NWebDelegate::RegisterRenderCb(
 }
 
 void NWebDelegate::Resize(uint32_t width, uint32_t height) {
+  if (width == width_ && height == height_) {
+    render_handler_->OnResizeNotWork();
+    return;
+  }
+
+  TRACE_EVENT2("base", "NWebDelegate::Resize", "width", width, "height",
+               height);
+  width_ = width;
+  height_ = height;
   if (render_handler_ != nullptr) {
     render_handler_->Resize(width, height);
   }
+
   auto browser = GetBrowser();
   if (browser != nullptr && browser->GetHost() != nullptr) {
-    if (width != width_ || height != height_) {
-      width_ = width;
-      height_ = height;
-      browser->GetHost()->WasResized();
-    }
+    browser->GetHost()->WasResized();
   }
 }
 
-void NWebDelegate::OnTouchPress(int32_t id, double x, double y) {
+void NWebDelegate::OnTouchPress(int32_t id,
+                                double x,
+                                double y,
+                                bool from_overlay) {
   if (event_handler_ != nullptr) {
     event_handler_->OnTouchPress(id, x / default_virtual_pixel_ratio_,
-                                 y / default_virtual_pixel_ratio_);
+                                 y / default_virtual_pixel_ratio_,
+                                 from_overlay);
+  }
+
+  if (render_handler_ != nullptr) {
+    render_handler_->SetIrregularDragBackground(true);
   }
 }
 
-void NWebDelegate::OnTouchRelease(int32_t id, double x, double y) {
+void NWebDelegate::OnTouchRelease(int32_t id,
+                                  double x,
+                                  double y,
+                                  bool from_overlay) {
   if (event_handler_ != nullptr) {
     event_handler_->OnTouchRelease(id, x / default_virtual_pixel_ratio_,
-                                   y / default_virtual_pixel_ratio_);
+                                   y / default_virtual_pixel_ratio_,
+                                   from_overlay);
   }
 }
 
-void NWebDelegate::OnTouchMove(int32_t id, double x, double y) {
+void NWebDelegate::OnTouchMove(int32_t id,
+                               double x,
+                               double y,
+                               bool from_overlay) {
   if (event_handler_ != nullptr) {
     event_handler_->OnTouchMove(id, x / default_virtual_pixel_ratio_,
-                                y / default_virtual_pixel_ratio_);
+                                y / default_virtual_pixel_ratio_,
+                                from_overlay);
   }
 }
 
@@ -390,6 +571,10 @@ void NWebDelegate::SendMouseEvent(int x,
     event_handler_->SendMouseEvent(x / default_virtual_pixel_ratio_,
                                    y / default_virtual_pixel_ratio_, button,
                                    action, count);
+  }
+
+  if (render_handler_ != nullptr) {
+    render_handler_->SetIrregularDragBackground(false);
   }
 }
 
@@ -449,6 +634,7 @@ int NWebDelegate::Load(const std::string& url) {
   LOG(INFO) << "NWebDelegate::Load url=" << url;
   auto browser = GetBrowser();
   if (browser == nullptr) {
+    LOG(ERROR) << "NWebDelegate::Load browser is nullptr";
     return NWEB_ERR;
   }
   browser->GetMainFrame()->LoadURL(CefString(url));
@@ -600,12 +786,9 @@ int NWebDelegate::Zoom(float zoomFactor) const {
     LOG(ERROR) << "JSAPI Zoom can not get browser";
     return NWEB_ERR;
   }
-  double curFactor = GetBrowser()->GetHost()->GetZoomLevel();
-  if (zoomFactor + curFactor > maxZoomFactor || zoomFactor + curFactor < 0) {
-    LOG(ERROR) << "JSAPI Zoom can no more zoom";
-    return NWEB_ERR;
-  }
-  GetBrowser()->GetHost()->SetZoomLevel(zoomFactor + curFactor);
+  GetBrowser()->GetHost()->ZoomBy(zoomFactor,
+                                  width_ / default_virtual_pixel_ratio_,
+                                  height_ / default_virtual_pixel_ratio_);
   return NWEB_OK;
 }
 
@@ -621,12 +804,9 @@ int NWebDelegate::ZoomIn() const {
     LOG(ERROR) << "JSAPI ZoomIn can not get browser";
     return NWEB_ERR;
   }
-  double curFactor = GetBrowser()->GetHost()->GetZoomLevel();
-  if (zoom_in_factor_ + curFactor > maxZoomFactor) {
-    LOG(ERROR) << "JSAPI ZoomIn can no more zoom in";
-    return NWEB_ERR;
-  }
-  GetBrowser()->GetHost()->SetZoomLevel(zoom_in_factor_ + curFactor);
+  GetBrowser()->GetHost()->ZoomBy(zoom_in_factor_,
+                                  width_ / default_virtual_pixel_ratio_,
+                                  height_ / default_virtual_pixel_ratio_);
   return NWEB_OK;
 }
 
@@ -642,12 +822,9 @@ int NWebDelegate::ZoomOut() const {
     LOG(ERROR) << "JSAPI ZoomOut can not get browser";
     return NWEB_ERR;
   }
-  double curFactor = GetBrowser()->GetHost()->GetZoomLevel();
-  if (zoom_in_factor_ + curFactor < 0) {
-    LOG(ERROR) << "JSAPI ZoomOut can no more zoom out";
-    return NWEB_ERR;
-  }
-  GetBrowser()->GetHost()->SetZoomLevel(zoom_out_factor_ + curFactor);
+  GetBrowser()->GetHost()->ZoomBy(zoom_out_factor_,
+                                  width_ / default_virtual_pixel_ratio_,
+                                  height_ / default_virtual_pixel_ratio_);
   return NWEB_OK;
 }
 
@@ -686,20 +863,24 @@ void NWebDelegate::ExecuteJavaScript(const std::string& code) const {
 
 void NWebDelegate::ExecuteJavaScript(
     const std::string& code,
-    std::shared_ptr<NWebValueCallback<std::string>> callback) const {
+    std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback,
+    bool extention) const {
   LOG(INFO) << "NWebDelegate::ExecuteJavaScript with callback";
 
   if (GetBrowser().get()) {
     CefRefPtr<JavaScriptResultCallbackImpl> JsResultCb =
         new JavaScriptResultCallbackImpl(callback);
-    GetBrowser()->GetHost()->ExecuteJavaScript(code, JsResultCb);
+    GetBrowser()->GetHost()->ExecuteJavaScript(code, JsResultCb, extention);
   }
 }
 
 void NWebDelegate::PutBackgroundColor(int color) const {
-  LOG(INFO) << "NWebDelegate::PutBackgroundColor";
+  LOG(INFO) << "NWebDelegate::PutBackgroundColor color: " << (uint32_t)color;
   if (GetBrowser().get()) {
     GetBrowser()->GetHost()->SetBackgroundColor(color);
+  }
+  if (preference_delegate_) {
+    preference_delegate_->SetBackgroundColor(color);
   }
 }
 
@@ -722,12 +903,16 @@ void NWebDelegate::OnPause() {
 
   // Remove focus from the browser.
   GetBrowser()->GetHost()->SetFocus(false);
+  if (focus_nweb_id_.find(nweb_id_) != focus_nweb_id_.end()) {
+    focus_nweb_id_.erase(nweb_id_);
+  }
 
   if (!hidden_) {
     // Set the browser as hidden.
     GetBrowser()->GetHost()->WasHidden(true);
     hidden_ = true;
   }
+  is_onPause_ = true;
 }
 
 void NWebDelegate::OnContinue() {
@@ -743,13 +928,28 @@ void NWebDelegate::OnContinue() {
   }
 
   // Give focus to the browser.
-  GetBrowser()->GetHost()->SetFocus(true);
+  if (handler_delegate_ && handler_delegate_->GetContinueNeedFocus()) {
+    if (is_onPause_) {
+      GetBrowser()->GetHost()->SetFocus(true);
+      focus_nweb_id_.insert(nweb_id_);
+      handler_delegate_->SetContinueNeedFocus(false);
+    }
+  }
+  is_onPause_ = false;
+}
+
+void NWebDelegate::OnContextInitializeComplete(const std::string& url,
+                                               void* window) {
+  // Create browser after context initialzed complete.
+  NWebApplication::GetDefault()->CreateBrowser(preference_delegate_, url,
+                                               handler_delegate_, window);
 }
 
 void NWebDelegate::InitializeCef(std::string url,
                                  bool is_enhance_surface,
                                  void* window,
-                                 bool popup) {
+                                 bool popup,
+                                 uint32_t nweb_id) {
   if (popup) {
     LOG(DEBUG) << "pop windows";
     handler_delegate_ = NWebHandlerDelegate::Create(
@@ -761,16 +961,20 @@ void NWebDelegate::InitializeCef(std::string url,
   handler_delegate_ = NWebHandlerDelegate::Create(
       preference_delegate_, render_handler_, event_handler_, find_delegate_,
       is_enhance_surface, window);
-  nweb_app_ =
-      new NWebApplication(preference_delegate_, url, handler_delegate_, window);
+
+#if defined(REPORT_SYS_EVENT)
+  handler_delegate_->SetNWebId(nweb_id);
+#endif
 
   CefMainArgs mainargs(argc_, const_cast<char**>(argv_));
-  int exitcode = CefExecuteProcess(mainargs, nweb_app_, NULL);
-  if (exitcode >= 0) {
-    LOG(INFO) << "CefExecuteProcess returned : " << exitcode;
-    return;
+  base::CommandLine::StringVector argv;
+  for (int i = 0; i < argc_; i++) {
+    argv.push_back(argv_[i]);
   }
-
+  if (base::CommandLine::ForCurrentProcess()) {
+    base::CommandLine cl(argv);
+    base::CommandLine::ForCurrentProcess()->AppendArguments(cl, false);
+  }
   CefSettings settings;
   settings.windowless_rendering_enabled = true;
   settings.log_severity = LOGSEVERITY_INFO;
@@ -781,16 +985,16 @@ void NWebDelegate::InitializeCef(std::string url,
   settings.no_sandbox = true;
 #endif
 
-  static bool is_initialized = false;
-  static std::mutex init_mtx;
-  std::unique_lock<std::mutex> lk(init_mtx);
+  bool is_initialized = NWebApplication::GetDefault()->HasInitializedCef();
   if (is_initialized) {
-    return nweb_app_->CreateBrowser();
-  }
-  if (!CefInitialize(mainargs, settings, nweb_app_, NULL)) {
-    LOG(ERROR) << "CefInitialize failed";
+    NWebApplication::GetDefault()->CreateBrowser(preference_delegate_, url,
+                                                 handler_delegate_, window);
   } else {
-    is_initialized = true;
+    // Create browser when context initialized.
+    NWebApplication::GetDefault()->RunAfterContextInitialized(
+        base::BindOnce(&NWebDelegate::OnContextInitializeComplete,
+                       base::Unretained(this), url, window));
+    NWebApplication::GetDefault()->InitializeCef(mainargs, settings);
   }
 }
 
@@ -854,6 +1058,85 @@ void NWebDelegate::ClosePort(std::string& portHandle) {
   GetBrowser()->GetHost()->ClosePort(handleCef);
 }
 
+void NWebDelegate::ConvertNWebMsgToCefValue(std::shared_ptr<NWebMessage> data, CefRefPtr<CefValue> message) {
+  switch (data->GetType()) {
+    case NWebValue::Type::STRING: {
+      message->SetString(data->GetString());
+      break;
+    }
+    case NWebValue::Type::BINARY: {
+      std::vector<uint8_t> vecBinary = data->GetBinary();
+      CefRefPtr<CefBinaryValue> value = CefBinaryValue::Create(vecBinary.data(), vecBinary.size());
+      message->SetBinary(value);
+      break;
+    }
+    case NWebValue::Type::BOOLEAN: {
+      message->SetBool(data->GetBoolean());
+      break;
+    }
+
+    case NWebValue::Type::DOUBLE: {
+      message->SetDouble(data->GetDouble());
+      break;
+    }
+
+    case NWebValue::Type::INTEGER: {
+      message->SetInt(data->GetInt64());
+      break;
+    }
+
+    case NWebValue::Type::STRINGARRAY: {
+      CefRefPtr<CefListValue> value = CefListValue::Create();
+      for (size_t i = 0; i < data->GetStringArray().size(); i++) {
+        CefString msgCef;
+        msgCef.FromString(data->GetStringArray()[i]);
+        value->SetString(i, msgCef);
+      }
+      message->SetList(value);
+      break;
+    }
+
+    case NWebValue::Type::BOOLEANARRAY: {
+      CefRefPtr<CefListValue> value = CefListValue::Create();
+      for (size_t i = 0; i < data->GetBooleanArray().size(); i++) {
+        value->SetBool(i, data->GetBooleanArray()[i]);
+      }
+      message->SetList(value);
+      break;
+    }
+    case NWebValue::Type::DOUBLEARRAY: {
+      CefRefPtr<CefListValue> value = CefListValue::Create();
+      for (size_t i = 0; i < data->GetDoubleArray().size(); i++) {
+        value->SetDouble(i, data->GetDoubleArray()[i]);
+      }
+      message->SetList(value);
+      break;
+    }
+
+    case NWebValue::Type::INT64ARRAY: {
+      CefRefPtr<CefListValue> value = CefListValue::Create();
+      for (size_t i = 0; i < data->GetInt64Array().size(); i++) {
+        value->SetInt(i, data->GetInt64Array()[i]);
+      }
+      message->SetList(value);
+      break;
+    }
+
+    case NWebValue::Type::ERROR: {
+      CefRefPtr<CefDictionaryValue> dict = CefDictionaryValue::Create();
+      dict->SetString("Error.name", data->GetErrName());
+      dict->SetString("Error.message", data->GetErrMsg());
+      message->SetDictionary(dict);
+      break;
+    }
+
+    default: {
+      LOG(ERROR) << "PostPortMessage not support type" << (int)data->GetType();
+      break;
+    }
+  }
+}
+
 void NWebDelegate::PostPortMessage(std::string& portHandle, std::shared_ptr<NWebMessage> data) {
   if (!GetBrowser().get()) {
     LOG(ERROR) << "JSAPI PostPortMessage can not get browser";
@@ -862,14 +1145,9 @@ void NWebDelegate::PostPortMessage(std::string& portHandle, std::shared_ptr<NWeb
   CefString handleCef;
   handleCef.FromString(portHandle);
 
+  LOG(INFO) << "JSAPI PostPortMessage in nweb delegate";
   CefRefPtr<CefValue> message = CefValue::Create();
-  if (data->GetType() == NWebValue::Type::STRING) {
-    message->SetString(data->GetString());
-  } else if (data->GetType() == NWebValue::Type::BINARY) {
-    std::vector<uint8_t> vecBinary = data->GetBinary();
-    CefRefPtr<CefBinaryValue> value = CefBinaryValue::Create(vecBinary.data(), vecBinary.size());
-    message->SetBinary(value);
-  }
+  ConvertNWebMsgToCefValue(data, message);
 
   GetBrowser()->GetHost()->PostPortMessage(handleCef, message);
 }
@@ -1049,14 +1327,20 @@ void NWebDelegate::RegisterNWebJavaScriptCallBack(
   handler_delegate_->RegisterNWebJavaScriptCallBack(callback);
 }
 
-void NWebDelegate::OnFocus() const {
+bool NWebDelegate::OnFocus(const FocusReason& focusReason) const {
   if (!GetBrowser().get()) {
     LOG(ERROR) << "NWebDelegate::OnFocus GetBrowser().get() fail";
-    return;
+    return false;
   }
-  if (handler_delegate_ && !handler_delegate_->GetFocusState()) {
-    GetBrowser()->GetHost()->SetFocus(true);
+  if (focusReason == FocusReason::FOCUS_DEFAULT && !focus_nweb_id_.empty() &&
+      focus_nweb_id_.find(nweb_id_) == focus_nweb_id_.end()) {
+    LOG(DEBUG) << "There is already web capture, and there is no need for "
+                  "capture when loading this web page.";
+    return false;
   }
+  GetBrowser()->GetHost()->SetFocus(true);
+  focus_nweb_id_.insert(nweb_id_);
+  return true;
 }
 
 void NWebDelegate::OnBlur() const {
@@ -1065,9 +1349,15 @@ void NWebDelegate::OnBlur() const {
     return;
   }
 
-  if (handler_delegate_ && handler_delegate_->GetFocusState()) {
+  if (handler_delegate_) {
     handler_delegate_->SetFocusState(false);
     GetBrowser()->GetHost()->SetFocus(false);
+    if (focus_nweb_id_.find(nweb_id_) != focus_nweb_id_.end()) {
+      focus_nweb_id_.erase(nweb_id_);
+    }
+    if (is_onPause_) {
+      handler_delegate_->SetContinueNeedFocus(true);
+    }
   }
 }
 
@@ -1099,6 +1389,27 @@ void NWebDelegate::SetNWebId(uint32_t nwebId) {
 }
 #endif
 
+std::shared_ptr<NWebDragData> NWebDelegate::GetOrCreateDragData() {
+  if (!render_handler_) {
+    LOG(ERROR) << "render_handler is nullptr";
+    return nullptr;
+  }
+  return std::make_shared<NWebDragDataImpl>(render_handler_->GetDragData());
+}
+
+void NWebDelegate::ClearDragData() const {
+    if (!render_handler_) {
+        return;
+    }
+    auto drag_data = render_handler_->GetDragData();
+    if (drag_data) {
+        drag_data->SetFragmentText("");
+        drag_data->SetLinkURL("");
+        drag_data->SetFragmentHtml("");
+    }
+}
+
+// 往chromium内核发送拖拽数据
 void NWebDelegate::SendDragEvent(const DelegateDragEvent& dragEvent) const {
   if (!GetBrowser().get() || !render_handler_) {
     LOG(ERROR) << "browser or render_handler is nullptr";
@@ -1111,34 +1422,53 @@ void NWebDelegate::SendDragEvent(const DelegateDragEvent& dragEvent) const {
   event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
   switch (dragEvent.action) {
     case DelegateDragAction::DRAG_START:
+      LOG(INFO) << "DragDrop event SendDragEvent start";
       break;
     case DelegateDragAction::DRAG_ENTER:
       if (render_handler_) {
-        LOG(INFO) << "SendDragEvent enter";
+        LOG(INFO) << "DragDrop event DRAG_ENTER SendDragEvent enter, send dragdata to chromium";
+        ClearDragData();
+	auto drag_data = render_handler_->GetDragData();
         GetBrowser()->GetHost()->DragTargetDragEnter(
-            render_handler_->GetDragData(), event, DRAG_OPERATION_MOVE);
+            drag_data, event, DRAG_OPERATION_EVERY);
+      } else {
+        LOG(ERROR) << "DragDrop drag data render_handler_ nullptr";
       }
       break;
     case DelegateDragAction::DRAG_LEAVE:
-      LOG(INFO) << "SendDragEvent leave";
+      LOG(INFO) << "DragDrop event SendDragEvent leave";
       GetBrowser()->GetHost()->DragTargetDragLeave();
       break;
     case DelegateDragAction::DRAG_OVER:
-      GetBrowser()->GetHost()->DragTargetDragOver(event, DRAG_OPERATION_MOVE);
+      GetBrowser()->GetHost()->DragTargetDragOver(event, DRAG_OPERATION_EVERY);
       break;
     case DelegateDragAction::DRAG_DROP:
       event.modifiers = EVENTFLAG_NONE;
-      LOG(INFO) << "SendDragEvent drop";
+      LOG(INFO) << "DragDrop event SendDragEvent drop";
+      if (render_handler_) {
+        auto drag_data1 = render_handler_->GetDragData();
+        auto fragment1 = drag_data1->GetFragmentText();
+        LOG(INFO) << "DragDrop drag data GetFragmentText:" << fragment1.ToString();
+        auto link_url1 = drag_data1->GetLinkURL();
+        LOG(INFO) << "DragDrop drag data GetLinkURL:" << link_url1.ToString();
+        auto link_html1 = drag_data1->GetFragmentHtml();
+        LOG(INFO) << "DragDrop drag data GetFragmentHtml:" << link_html1.ToString();
+      } else {
+        LOG(ERROR) << "DragDrop drag data render_handler_ nullptr";
+      }
+
       GetBrowser()->GetHost()->DragTargetDrop(event);
       break;
     case DelegateDragAction::DRAG_END:
-      LOG(INFO) << "SendDragEvent end";
+      ClearDragData();
+      LOG(INFO) << "DragDrop event SendDragEvent end";
       GetBrowser()->GetHost()->DragSourceEndedAt(event.x, event.y,
-                                                 DRAG_OPERATION_MOVE);
+                                                 DRAG_OPERATION_COPY);
       GetBrowser()->GetHost()->DragSourceSystemDragEnded();
       break;
     case DelegateDragAction::DRAG_CANCEL:
-      LOG(INFO) << "SendDragEvent cancel";
+      ClearDragData();
+      LOG(INFO) << "DragDrop event SendDragEvent cancel";
       GetBrowser()->GetHost()->DragSourceSystemDragEnded();
       break;
     default:
@@ -1320,6 +1650,39 @@ bool NWebDelegate::GetCertChainDerDataInner(CefRefPtr<CefX509Certificate> cert,
   return true;
 }
 
+void NWebDelegate::SetAudioMuted(bool muted) {
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "SetAudioMuted can not get browser";
+    return;
+  }
+
+  GetBrowser()->GetHost()->SetAudioMuted(muted);
+}
+
+void NWebDelegate::NotifyPopupWindowResult(bool result) {
+  if (handler_delegate_) {
+    handler_delegate_->NotifyPopupWindowResult(result);
+  }
+}
+
+void NWebDelegate::PrefetchPage(
+    std::string& url,
+    std::map<std::string, std::string> additionalHttpHeaders) {
+  CefString urlCef;
+  urlCef.FromString(url);
+  std::string output;
+  for (auto& header : additionalHttpHeaders) {
+    base::StringAppendF(&output, "%s: %s\r\n", header.first.c_str(),
+                        header.second.c_str());
+  }
+  output.append("\r\n");
+  CefString additionalHttpHeadersCef;
+  additionalHttpHeadersCef.FromString(output);
+  if (GetBrowser().get()) {
+    GetBrowser()->PrefetchPage(urlCef, additionalHttpHeadersCef);
+  }
+}
+
 #if defined (OHOS_NWEB_EX)
 void NWebDelegate::SetForceEnableZoom(bool forceEnableZoom) {
   LOG(INFO) << "NWebDelegate::SetForceEnableZoom " << forceEnableZoom;
@@ -1334,5 +1697,60 @@ bool NWebDelegate::GetForceEnableZoom() {
   }
   return false;
 }
+
+void NWebDelegate::SelectAndCopy() {
+  if (GetBrowser().get()) {
+    GetBrowser()->SelectAndCopy();
+  }
+}
+
+bool NWebDelegate::ShouldShowFreeCopy() {
+  if (GetBrowser().get()) {
+    return GetBrowser()->ShouldShowFreeCopy();
+  }
+  return false;
+}
+
+void NWebDelegate::SetEnableBlankTargetPopupIntercept(
+    bool enableBlankTargetPopup) {
+  LOG(INFO) << "NWebDelegate::SetEnableBlankTargetPopupIntercept "
+            << enableBlankTargetPopup;
+  if (GetBrowser().get()) {
+    GetBrowser()->SetEnableBlankTargetPopupIntercept(enableBlankTargetPopup);
+  }
+  if (preference_delegate_) {
+    // When GetBrowser() may return nullptr, we cannot set enableBlankTargetPopup
+    // only. Set enableBlankTargetPopup in NWebPreferenceDelegate first, and
+    // then set it in NWebHandlerDelegate::OnAfterCreated when browser is
+    // created.
+    LOG(INFO) << "NWebDelegate::SetEnableBlankTargetPopupIntercept to "
+                 "preference_delegate_ "<< enableBlankTargetPopup;
+    preference_delegate_->SetEnableBlankTargetPopupIntercept(enableBlankTargetPopup);
+  }
+}
 #endif
+
+void NWebDelegate::SetShouldFrameSubmissionBeforeDraw(bool should) {
+  if (GetBrowser().get()) {
+    GetBrowser()->GetHost()->SetShouldFrameSubmissionBeforeDraw(should);
+  }
+}
+
+void NWebDelegate::SetAudioResumeInterval(int32_t resumeInterval) {
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "SetAudioResumeInterval can not get browser";
+    return;
+  }
+
+  GetBrowser()->GetHost()->SetAudioResumeInterval(resumeInterval);
+}
+
+void NWebDelegate::SetAudioExclusive(bool audioExclusive) {
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "SetAudioExclusive can not get browser";
+    return;
+  }
+
+  GetBrowser()->GetHost()->SetAudioExclusive(audioExclusive);
+}
 }  // namespace OHOS::NWeb

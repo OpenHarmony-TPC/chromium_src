@@ -30,6 +30,9 @@ class GESTURE_DETECTION_EXPORT GestureDetector {
     ~Config();
 
     base::TimeDelta longpress_timeout;
+#ifdef OHOS_ENABLE_DRAG_DROP
+    base::TimeDelta draglongpress_timeout;
+#endif
     base::TimeDelta showpress_timeout;
     base::TimeDelta double_tap_timeout;
 
@@ -116,6 +119,13 @@ class GESTURE_DETECTION_EXPORT GestureDetector {
   void set_longpress_enabled(bool enabled) { longpress_enabled_ = enabled; }
   void set_showpress_enabled(bool enabled) { showpress_enabled_ = enabled; }
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+  void set_draglongpress_enabled(bool enabled) {
+    draglongpress_enabled_ = enabled;
+  }
+  void StopDragLongPressGesture();
+#endif
+
   // Returns the event storing the initial position of the pointer with given
   // pointer ID. This returns nullptr if the source event isn't
   // current_down_event_ or secondary_pointer_down_event_.
@@ -128,6 +138,12 @@ class GESTURE_DETECTION_EXPORT GestureDetector {
   void Init(const Config& config);
   void OnShowPressTimeout();
   void OnLongPressTimeout();
+#ifdef OHOS_ENABLE_DRAG_DROP
+  void OnDragLongPressTimeout();
+  void Cancel(bool is_lost_focus);
+  void CancelTaps(bool is_lost_focus);
+  void ActivateLongPressKeepDragTimeout(const MotionEvent& ev);
+#endif
   void OnTapTimeout();
   void ActivateLongPressGesture(const MotionEvent& ev);
   void Cancel();
@@ -193,6 +209,9 @@ class GESTURE_DETECTION_EXPORT GestureDetector {
   bool stylus_button_accelerated_longpress_enabled_;
   bool deep_press_accelerated_longpress_enabled_;
   bool longpress_enabled_;
+#ifdef OHOS_ENABLE_DRAG_DROP
+  bool draglongpress_enabled_;
+#endif
   bool showpress_enabled_;
   bool swipe_enabled_;
   bool two_finger_tap_enabled_;

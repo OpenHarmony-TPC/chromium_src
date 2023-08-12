@@ -189,13 +189,9 @@ std::unordered_map<ui::ResourceScaleFactor, std::string> kPakFileNameHapMap = {
     {ui::ResourceScaleFactor::k200Percent,
      "resources/rawfile/chrome_200_percent.pak"}};
 
-bool IsPathFromHap(ui::ResourceScaleFactor factor,
-                   const base::FilePath& path,
-                   std::string& pathHap) {
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kOhosHapPath)) {
-    LOG(INFO) << "not has switch kOhosHapPath, hap is decompress";
-    return false;
-  }
+bool GetPathFromHap(ui::ResourceScaleFactor factor,
+                    const base::FilePath& path,
+                    std::string& pathHap) {
   auto iter = kPakFileNameHapMap.find(factor);
   if (iter == kPakFileNameHapMap.end()) {
     LOG(ERROR) << "kPakFileNameHapMap not find path: " << path;
@@ -322,39 +318,43 @@ DataPack::~DataPack() {}
 bool DataPack::LoadFromPath(const base::FilePath& path) {
 #if BUILDFLAG(IS_OHOS)
   std::string pathHap;
-  if (IsPathFromHap(resource_scale_factor_, path, pathHap)) {
-    size_t length = 0;
-    std::unique_ptr<uint8_t[]> data;
-    auto resourceInstance =
-        OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter();
-    if (!resourceInstance->GetRawFileData(pathHap, length, data, true)) {
-      LOG(ERROR) << "DataPack::LoadFromPath couldn't data file: "
-                 << pathHap.c_str();
-      return false;
-    }
+  // If the hap package is not decompressed, the directory does not exist.
+  if (path.empty() || !base::PathExists(path)) {
+    if (GetPathFromHap(resource_scale_factor_, path, pathHap)) {
+      auto resourceInstance =
+          OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter();
 
-    LOG(INFO) << "DataPack::LoadFromPath " << pathHap.c_str()
-              << ", data file length: " << length;
-    std::unique_ptr<base::MemoryMappedFile> mmap =
-        std::make_unique<base::MemoryMappedFile>();
-    mmap->SetDataAndLength(data, length);
-    if (MmapHasGzipHeader(mmap.get())) {
-      base::StringPiece compressed(reinterpret_cast<char*>(mmap->data()),
-                                   mmap->length());
-      std::string data;
-      if (!compression::GzipUncompress(compressed, &data)) {
-        LOG(ERROR) << "Failed to unzip compressed datapack: "
+      std::unique_ptr<OHOS::NWeb::OhosFileMapper> fileMapper = nullptr;
+      if (!resourceInstance->GetRawFileMapper(pathHap, fileMapper, true)) {
+        LOG(ERROR) << "DataPack::LoadFromPath couldn't data file: "
                    << pathHap.c_str();
-        LogDataPackError(UNZIP_FAILED);
         return false;
       }
-      return LoadImpl(std::make_unique<StringDataSource>(std::move(data)));
+
+      LOG(INFO) << "DataPack::LoadFromPath " << pathHap.c_str()
+                << ", data file length: " << fileMapper->GetDataLen();
+
+      std::unique_ptr<base::MemoryMappedFile> mmap =
+          std::make_unique<base::MemoryMappedFile>();
+      mmap->SetOhosFileMapper(fileMapper);
+      if (MmapHasGzipHeader(mmap.get())) {
+        base::StringPiece compressed(reinterpret_cast<char*>(mmap->data()),
+                                     mmap->length());
+        std::string data;
+        if (!compression::GzipUncompress(compressed, &data)) {
+          LOG(ERROR) << "Failed to unzip compressed datapack: "
+                     << pathHap.c_str();
+          LogDataPackError(UNZIP_FAILED);
+          return false;
+        }
+        return LoadImpl(std::make_unique<StringDataSource>(std::move(data)));
+      }
+      return LoadImpl(
+          std::make_unique<MemoryMappedDataSource>(std::move(mmap)));
+    } else {
+      LOG(ERROR) << "LoadFromPath failed file not exist";
+      return false;
     }
-    return LoadImpl(std::make_unique<MemoryMappedDataSource>(std::move(mmap)));
-  }
-  if (!base::PathExists(path)) {
-    LOG(ERROR) << "LoadFromPath file not exist";
-    return false;
   }
 #endif
   std::unique_ptr<base::MemoryMappedFile> mmap =

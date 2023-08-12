@@ -189,7 +189,12 @@ bool TouchHandle::WillHandleTouchEvent(const MotionEvent& event) {
       // the drawable area. This makes it easier to interact with the line of
       // text above the drawable.
       if (touch_point.y() < drawable_bounds.y() ||
+#if BUILDFLAG(IS_OHOS)
+          !RectIntersectsCircle(drawable_bounds, touch_point, touch_radius) ||
+          !event.FromOverlay()) {
+#else
           !RectIntersectsCircle(drawable_bounds, touch_point, touch_radius)) {
+#endif
         EndDrag();
         return false;
       }

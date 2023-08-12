@@ -134,6 +134,10 @@ class NET_EXPORT_PRIVATE SSLConnectJob : public ConnectJob,
   // connections regardless of whether or not there is a proxy in use.
   static base::TimeDelta HandshakeTimeoutForTesting();
 
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int timeout_override) override;
+#endif
+
  private:
   enum State {
     STATE_TRANSPORT_CONNECT,
@@ -205,6 +209,11 @@ class NET_EXPORT_PRIVATE SSLConnectJob : public ConnectJob,
   // lifetime and the aliases can no longer be retrieved from there by by the
   // time that the aliases are needed to be passed in SetSocket.
   std::set<std::string> dns_aliases_;
+
+#if BUILDFLAG(IS_OHOS)
+  // Only for transport_connect_job
+  int timeout_override_for_nested_job_{0};
+#endif
 };
 
 }  // namespace net

@@ -194,6 +194,10 @@
 #include "third_party/blink/public/mojom/lock_screen/lock_screen.mojom.h"
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
+#if BUILDFLAG(IS_OHOS)
+#include "content/browser/ohos/date_time_chooser_ohos.h"
+#endif  // BUILDFLAG(IS_OHOS)
+
 namespace blink {
 class StorageKey;
 }  // namespace blink
@@ -412,6 +416,18 @@ void BindTextSuggestionHostForFrame(
     return;
 
   view->text_suggestion_host()->BindTextSuggestionHost(std::move(receiver));
+}
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+void BindDateTimeChooserForFrame(
+    RenderFrameHost* host,
+    mojo::PendingReceiver<blink::mojom::DateTimeChooser> receiver) {
+  auto* date_time_chooser = DateTimeChooserOHOS::FromWebContents(
+      WebContents::FromRenderFrameHost(host));
+  if (date_time_chooser) {
+    date_time_chooser->OnDateTimeChooserReceiver(std::move(receiver));
+  }
 }
 #endif
 
@@ -1095,6 +1111,11 @@ void PopulateBinderMapWithContext(
   map->Add<blink::mojom::TextSuggestionHost>(base::BindRepeating(
       &EmptyBinderForFrame<blink::mojom::TextSuggestionHost>));
 #endif  // BUILDFLAG(IS_ANDROID)
+
+#if BUILDFLAG(IS_OHOS)
+  map->Add<blink::mojom::DateTimeChooser>(
+      base::BindRepeating(&BindDateTimeChooserForFrame));
+#endif
 
   map->Add<blink::mojom::ClipboardHost>(
       base::BindRepeating(&ClipboardHostImpl::Create));

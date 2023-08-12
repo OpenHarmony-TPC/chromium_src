@@ -1004,10 +1004,12 @@ const char kEnableSpeechDispatcher[] = "enable-speech-dispatcher";
 
 #if BUILDFLAG(IS_OHOS)
 const char kOhosHapPath[] = "user-hap-path";
+const char kOhosAppApiVersion[] = "user-api-version";
 const char kEnableMultiRendererProcess[] = "enable-multi-renderer-process";
 const char kForBrowser[] = "for-browser";
 const char kOhosCustomScheme[] = "ohos-custom-scheme";
 const char kOhosHanceSurface[] = "ohos-enhance-surface";
+const char kOhosEnableDrDc[] = "ohos-enable-drdc";
 #endif
 
 #if BUILDFLAG(IS_WIN)

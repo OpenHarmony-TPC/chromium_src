@@ -230,7 +230,7 @@ void PdfPrintManager::SetAccessibilityTree(
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 void PdfPrintManager::PdfWritingDone(int page_count) {}
 #endif
 

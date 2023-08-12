@@ -37,7 +37,12 @@ public:
         STRING,
         BINARY,
         DICTIONARY,
-        LIST
+        LIST,
+        ERROR,
+        STRINGARRAY,
+        BOOLEANARRAY,
+        DOUBLEARRAY,
+        INT64ARRAY
     };
 
     explicit NWebValue(Type type) : type_(type) {}

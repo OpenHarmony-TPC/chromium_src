@@ -333,6 +333,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   // human-readable name.
   std::string GetTitleForMediaControls();
 
+#if BUILDFLAG(IS_OHOS)
+  void AddMediaPlayerAudibleCount();
+  void DelMediaPlayerAudibleCount();
+  bool GetMediaPlayerCurrentAudible();
+#endif
+
   // WebContents ------------------------------------------------------
   WebContentsDelegate* GetDelegate() override;
   void SetDelegate(WebContentsDelegate* delegate) override;
@@ -385,14 +391,24 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   bool GetTouchInsertHandleMenuShow() override {
     return touch_insert_handle_menu_show_;
   }
+  void OpenDateTimeChooser() override;
+  void CloseDateTimeChooser() override;
 
-#if defined (OHOS_NWEB_EX)
-void SetForceEnableZoom(bool forceEnableZoom) override;
+#if defined(OHOS_NWEB_EX)
+  void SetForceEnableZoom(bool forceEnableZoom) override;
 
-bool GetForceEnableZoom() override {
-  return force_enable_zoom_;
-}
-#endif // OHOS_NWEB_EX
+  bool GetForceEnableZoom() override { return force_enable_zoom_; }
+  void SelectAndCopy() override;
+  void SetShouldShowFreeCopy(bool is_selectable);
+
+  bool ShouldShowFreeCopy() override { return is_selectable_; };
+
+  void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) override;
+  bool GetEnableBlankTargetPopupIntercept() override {
+    return enable_blank_target_popup_intercept_;
+  }
+#endif  // OHOS_NWEB_EX
+
 #endif
   void UpdateTitleForEntry(NavigationEntry* entry,
                            const std::u16string& title) override;
@@ -610,6 +626,9 @@ bool GetForceEnableZoom() override {
       blink::mojom::NavigationBlockedReason reason) override;
   void OnDidFinishLoad(RenderFrameHostImpl* render_frame_host,
                        const GURL& url) override;
+#if BUILDFLAG(IS_OHOS)
+  void NotifyContextMenuWillShow() override;
+#endif
   void OnManifestUrlChanged(const PageImpl& page) override;
   void RenderFrameCreated(RenderFrameHostImpl* render_frame_host) override;
   void RenderFrameDeleted(RenderFrameHostImpl* render_frame_host) override;
@@ -880,6 +899,10 @@ bool GetForceEnableZoom() override {
       const GURL& prerendering_url,
       PrerenderTriggerType trigger_type,
       const std::string& embedder_histogram_suffix) override;
+
+#ifdef OHOS_ENABLE_DRAG_DROP
+  void ClearContextMenu() override;
+#endif // OHOS_ENABLE_DRAG_DROP
 
   // NavigatorDelegate ---------------------------------------------------------
 
@@ -2209,6 +2232,10 @@ bool GetForceEnableZoom() override {
   bool is_spatial_navigation_disabled_ = false;
 
   bool is_currently_audible_ = false;
+#if BUILDFLAG(IS_OHOS)
+  int media_player_audible_count_ = 0;
+  bool is_ohos_currently_audible_ = false;
+#endif
   bool was_ever_audible_ = false;
 
   // Helper variable for resolving races in UpdateTargetURL / ClearTargetURL.
@@ -2315,10 +2342,12 @@ bool GetForceEnableZoom() override {
 
   VisibleTimeRequestTrigger visible_time_request_trigger_;
 
-#if defined (OHOS_NWEB_EX)
+#if defined(OHOS_NWEB_EX)
   bool force_enable_zoom_;
+  bool is_selectable_;
   std::string user_agent_{""};
-#endif // OHOS_NWEB_EX
+  bool enable_blank_target_popup_intercept_ = true;
+#endif  // OHOS_NWEB_EX
 
   base::WeakPtrFactory<WebContentsImpl> loading_weak_factory_{this};
   base::WeakPtrFactory<WebContentsImpl> weak_factory_{this};

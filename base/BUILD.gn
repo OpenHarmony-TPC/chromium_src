@@ -163,12 +163,7 @@ if (is_fuchsia) {
 if (is_ohos) {
   import("//build/config/ohos/config.gni")
   config("ohos_system_libs") {
-    libs = [
-      "hilog",
-      "utils.z",
-      "eventhandler.z",
-      "hitrace_meter",
-    ]
+    libs = [ "nweb_ohos_adapter.z" ]
 
     include_dirs = ohos_src_includes
     lib_dirs = ohos_libs_dir
@@ -1618,11 +1613,13 @@ mixed_component("base") {
       "nix/xdg_util.cc",
       "nix/xdg_util.h",
       "system/sys_info_linux.cc",
+      "memory/platform_shared_memory_region_ohos.cc",
     ]
     deps += [
       "//base/third_party/symbolize",
       "//base/third_party/xdg_mime",
       "//base/third_party/xdg_user_dirs",
+      "//third_party/ashmem",
     ]
 
     # Add this build flag in gn file to enable stack trace dump
@@ -2419,7 +2416,7 @@ mixed_component("base") {
 
   # Android and MacOS have their own custom shared memory handle
   # implementations. e.g. due to supporting both POSIX and native handles.
-  if (is_posix && !is_android && !is_mac) {
+  if (is_posix && !is_android && !is_mac && !is_ohos) {
     sources += [ "memory/platform_shared_memory_region_posix.cc" ]
   }
 

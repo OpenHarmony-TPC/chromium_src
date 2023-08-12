@@ -86,6 +86,10 @@ class GESTURE_DETECTION_EXPORT MotionEvent {
   virtual base::TimeTicks GetEventTime() const = 0;
 
   virtual Classification GetClassification() const;
+#if BUILDFLAG(IS_OHOS)
+  virtual bool FromOverlay() const { return false; };
+  virtual void SetFromOverlay(bool from_overlay) {};
+#endif
 
   // Optional historical data, default implementation provides an empty history.
   virtual size_t GetHistorySize() const;
@@ -111,6 +115,10 @@ class GESTURE_DETECTION_EXPORT MotionEvent {
 
   float GetTouchMajor() const { return GetTouchMajor(0); }
   float GetTouchMinor() const { return GetTouchMinor(0); }
+#ifdef OHOS_ENABLE_DRAG_DROP
+  virtual bool IsCancelByLostFocus() const;
+  virtual void SetCancelByLostFocus(bool is_lost_focus);
+#endif
 
   // Returns the orientation in radians. The meaning is overloaded:
   // * For a touch screen or pad, it's the orientation of the major axis

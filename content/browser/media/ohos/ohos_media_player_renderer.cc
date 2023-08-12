@@ -8,6 +8,8 @@
 
 #include "base/bind.h"
 #include "base/callback_helpers.h"
+#include "content/browser/media/ohos/ohos_media_player_renderer_web_contents_observer.h"
+#include "content/browser/media/session/media_session_impl.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -23,6 +25,14 @@ namespace content {
 
 namespace {
 const float kDefaultVolume = 1.0;
+enum InterruptHint {
+  INTERRUPT_HINT_NONE = 0,
+  INTERRUPT_HINT_RESUME,
+  INTERRUPT_HINT_PAUSE,
+  INTERRUPT_HINT_STOP,
+  INTERRUPT_HINT_DUCK,
+  INTERRUPT_HINT_UNDUCK
+};
 }  // namespace
 
 OHOSMediaPlayerRenderer::OHOSMediaPlayerRenderer(
@@ -34,10 +44,28 @@ OHOSMediaPlayerRenderer::OHOSMediaPlayerRenderer(
     : client_extension_(std::move(client_extension_remote)),
       has_error_(false),
       volume_(kDefaultVolume),
+      web_contents_(web_contents),
       renderer_extension_receiver_(this,
-                                   std::move(renderer_extension_receiver)) {}
+                                   std::move(renderer_extension_receiver)) {
+  WebContentsImpl* web_contents_impl =
+      static_cast<WebContentsImpl*>(web_contents);
+  web_contents_muted_ = web_contents_impl && web_contents_impl->IsAudioMuted();
 
-OHOSMediaPlayerRenderer::~OHOSMediaPlayerRenderer() {}
+  if (web_contents) {
+    OHOSMediaPlayerRendererWebContentsObserver::CreateForWebContents(
+        web_contents);
+    web_contents_observer_ =
+        OHOSMediaPlayerRendererWebContentsObserver::FromWebContents(
+            web_contents);
+    if (web_contents_observer_)
+      web_contents_observer_->AddMediaPlayerRenderer(this);
+  }
+}
+
+OHOSMediaPlayerRenderer::~OHOSMediaPlayerRenderer() {
+  if (web_contents_observer_)
+    web_contents_observer_->RemoveMediaPlayerRenderer(this);
+}
 
 void OHOSMediaPlayerRenderer::Initialize(
     media::MediaResource* media_resource,
@@ -70,6 +98,7 @@ void OHOSMediaPlayerRenderer::CreateMediaPlayer(
   } else {
     initialized_ = true;
     std::move(init_cb_).Run(media::PIPELINE_OK);
+    LOG(INFO) << "media player Initialize ok";
   }
 }
 
@@ -95,17 +124,17 @@ void OHOSMediaPlayerRenderer::SetPlaybackRate(double playback_rate) {
   if (playback_rate <= 0) {
     media_player_->Pause();
   } else {
-    OHOS::Media::PlaybackRateMode mode;
+    OHOS::NWeb::PlaybackRateMode mode;
     if (playback_rate < 1) {
-      mode = OHOS::Media::SPEED_FORWARD_0_75_X;
+      mode = OHOS::NWeb::PlaybackRateMode::SPEED_FORWARD_0_75_X;
     } else if (playback_rate < 1.25) {
-      mode = OHOS::Media::SPEED_FORWARD_1_00_X;
+      mode = OHOS::NWeb::PlaybackRateMode::SPEED_FORWARD_1_00_X;
     } else if (playback_rate < 1.75) {
-      mode = OHOS::Media::SPEED_FORWARD_1_25_X;
+      mode = OHOS::NWeb::PlaybackRateMode::SPEED_FORWARD_1_25_X;
     } else if (playback_rate < 2) {
-      mode = OHOS::Media::SPEED_FORWARD_1_75_X;
+      mode = OHOS::NWeb::PlaybackRateMode::SPEED_FORWARD_1_75_X;
     } else {
-      mode = OHOS::Media::SPEED_FORWARD_2_00_X;
+      mode = OHOS::NWeb::PlaybackRateMode::SPEED_FORWARD_2_00_X;
     }
     media_player_->SetPlaybackSpeed(mode);
     media_player_->Start();
@@ -180,6 +209,42 @@ void OHOSMediaPlayerRenderer::OnVideoSizeChanged(int width, int height) {
   }
 }
 
+void OHOSMediaPlayerRenderer::OnUpdateAudioMutingState(bool muted) {
+  web_contents_muted_ = muted;
+  UpdateVolume();
+}
+
+void OHOSMediaPlayerRenderer::OnWebContentsDestroyed() {
+  web_contents_observer_ = nullptr;
+}
+
+void OHOSMediaPlayerRenderer::OnPlayerInterruptEvent(int32_t value) {
+  if (web_contents_ == nullptr) {
+    LOG(ERROR) << "web contents is nullptr";
+    return;
+  }
+  MediaSessionImpl* mediaSession = MediaSessionImpl::Get(web_contents_);
+  if (mediaSession == nullptr) {
+    LOG(ERROR) << "get mediaSession is nullptr";
+    return;
+  }
+  LOG(INFO) << "On Player InterruptEvent value:" << value;
+  if (value == static_cast<int32_t>(INTERRUPT_HINT_PAUSE) ||
+      value == static_cast<int32_t>(INTERRUPT_HINT_STOP)) {
+    if (mediaSession->audioResumeInterval_ > 0) {
+      intervalSinceLastSuspend_ = std::time(nullptr);
+    }
+    mediaSession->Suspend(content::MediaSession::SuspendType::kSystem);
+  } else if (value == INTERRUPT_HINT_RESUME) {
+    if (mediaSession->audioResumeInterval_ > 0 &&
+        std::time(nullptr) - intervalSinceLastSuspend_ <=
+            static_cast<double>(mediaSession->audioResumeInterval_) &&
+        mediaSession->IsSuspended()) {
+      mediaSession->Resume(content::MediaSession::SuspendType::kSystem);
+    }
+  }
+}
+
 void OHOSMediaPlayerRenderer::SetVolume(float volume) {
   volume_ = volume;
   UpdateVolume();
@@ -187,7 +252,19 @@ void OHOSMediaPlayerRenderer::SetVolume(float volume) {
 
 void OHOSMediaPlayerRenderer::UpdateVolume() {
   if (media_player_)
-    media_player_->SetVolume(volume_);
+    media_player_->SetVolume(volume_, web_contents_muted_);
+}
+
+void OHOSMediaPlayerRenderer::OnAudioStateChanged(bool isAudible) {
+  WebContentsImpl* web_contents_impl =
+      static_cast<WebContentsImpl*>(web_contents_);
+  if (isAudible) {
+    web_contents_impl->AddMediaPlayerAudibleCount();
+    web_contents_->OnAudioStateChanged();
+  } else {
+    web_contents_impl->DelMediaPlayerAudibleCount();
+    web_contents_->OnAudioStateChanged();
+  }
 }
 
 base::TimeDelta OHOSMediaPlayerRenderer::GetMediaTime() {

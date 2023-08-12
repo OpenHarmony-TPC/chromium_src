@@ -16,10 +16,11 @@
 #include "nweb_input_delegate.h"
 #include "cef/include/base/cef_logging.h"
 #include "cef/include/internal/cef_types_wrappers.h"
+#include "mmi_keyevent_adapter.h"
 #include "nweb_inputmethod_handler.h"
 
 using namespace OHOS::NWeb;
-using namespace OHOS::MMI;
+using OHOS::NWeb::MMIAdapter::KeyEvent;
 
 namespace OHOS::NWeb {
 NWebInputEventHandle<int, int> NWebInputDelegate::keyEventHandle_;
@@ -33,16 +34,7 @@ const int32_t MIDDLE_BUTTON = 4;
 const int32_t BACK_BUTTON = 8;
 const int32_t FORWARD_BUTTON = 16;
 
-const std::vector<unsigned int> mmiKeyEvent {
-    KeyEvent::KEYCODE_SHIFT_LEFT,
-    KeyEvent::KEYCODE_SHIFT_RIGHT,
-    KeyEvent::KEYCODE_CTRL_LEFT,
-    KeyEvent::KEYCODE_CTRL_RIGHT,
-    KeyEvent::KEYCODE_ALT_LEFT,
-    KeyEvent::KEYCODE_ALT_RIGHT,
-    KeyEvent::KEYCODE_ESCAPE,
-    KeyEvent::KEYCODE_CAPS_LOCK
-};
+const std::vector<unsigned int> mmiKeyEvent {};
 
 const std::unordered_map<int, int> keycodeConverter = {
     {KeyEvent::KEYCODE_0, ui::VKEY_0},
@@ -478,7 +470,6 @@ uint32_t NWebInputDelegate::GetModifiers(cef_mouse_button_type_t button) {
       result |= EVENTFLAG_FORWARD_MOUSE_BUTTON;
       break;
     default:
-      LOG(INFO) << "invalid button type " << button;
       break;
   }
   return result;

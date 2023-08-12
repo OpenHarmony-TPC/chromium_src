@@ -334,6 +334,10 @@ class NET_EXPORT ClientSocketPool : public LowerLayeredPool {
 
   static base::TimeDelta used_idle_socket_timeout();
   static void set_used_idle_socket_timeout(base::TimeDelta timeout);
+#if BUILDFLAG(IS_OHOS)
+  void SetConnectTimeout(int timeout_override);
+  int GetConnectTimeout();
+#endif
 
  protected:
   ClientSocketPool(bool is_for_websockets,
@@ -354,6 +358,9 @@ class NET_EXPORT ClientSocketPool : public LowerLayeredPool {
       RequestPriority request_priority,
       SocketTag socket_tag,
       ConnectJob::Delegate* delegate);
+#if BUILDFLAG(IS_OHOS)
+  int timeout_override_{0};
+#endif
 
  private:
   const bool is_for_websockets_;

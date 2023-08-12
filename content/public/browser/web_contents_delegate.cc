@@ -91,6 +91,11 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
   return false;
 }
 
+#ifdef OHOS_ENABLE_DRAG_DROP
+void WebContentsDelegate::ClearContextMenu() {
+}
+#endif
+
 KeyboardEventProcessingResult WebContentsDelegate::PreHandleKeyboardEvent(
     WebContents* source,
     const NativeWebKeyboardEvent& event) {

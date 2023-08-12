@@ -19,8 +19,9 @@
 #include <functional>
 #include <string>
 #include "capi/nweb_app_client_extension_callback.h"
-#include "cef_delegate/nweb_inputmethod_client.h"
+#include "capi/nweb_download_delegate_callback.h"
 #include "cef/include/cef_client.h"
+#include "cef_delegate/nweb_inputmethod_client.h"
 #include "display_manager_adapter.h"
 #include "nweb_download_callback.h"
 #include "nweb_find_callback.h"
@@ -48,7 +49,7 @@ struct DelegateDragEvent {
 using WebState = std::shared_ptr<std::vector<uint8_t>>;
 
 class NWebDelegateInterface
-  : public std::enable_shared_from_this<NWebDelegateInterface>{
+    : public std::enable_shared_from_this<NWebDelegateInterface> {
  public:
   virtual ~NWebDelegateInterface() = default;
 
@@ -65,18 +66,42 @@ class NWebDelegateInterface
       std::shared_ptr<NWebAppClientExtensionCallback>
           web_app_client_extension_listener) = 0;
   virtual void UnRegisterWebAppClientExtensionListener() = 0;
+  virtual void RegisterWebDownloadDelegateListener(
+      std::shared_ptr<NWebDownloadDelegateCallback>
+          downloadDelegateListener) = 0;
+  virtual void StartDownload(const char* url) = 0;
+  virtual void ResumeDownload(
+      std::shared_ptr<NWebDownloadItem> web_download) = 0;
   virtual void SetInputMethodClient(
       CefRefPtr<NWebInputMethodClient> client) = 0;
+  virtual void SetNWebDelegateInterface(
+      std::shared_ptr<NWebDelegateInterface> client) = 0;
 
   /* event interface */
   virtual void Resize(uint32_t width, uint32_t height) = 0;
-  virtual void OnTouchPress(int32_t id, double x, double y) = 0;
-  virtual void OnTouchRelease(int32_t id, double x, double y) = 0;
-  virtual void OnTouchMove(int32_t id, double x, double y) = 0;
+  virtual void OnTouchPress(int32_t id,
+                            double x,
+                            double y,
+                            bool from_overlay) = 0;
+  virtual void OnTouchRelease(int32_t id,
+                              double x,
+                              double y,
+                              bool from_overlay) = 0;
+  virtual void OnTouchMove(int32_t id,
+                           double x,
+                           double y,
+                           bool from_overlay) = 0;
   virtual void OnTouchCancel() = 0;
   virtual bool SendKeyEvent(int32_t keyCode, int32_t keyAction) = 0;
-  virtual void SendMouseWheelEvent(double x, double y, double deltaX, double deltaY) = 0;
-  virtual void SendMouseEvent(int x, int y, int button, int action, int count) = 0;
+  virtual void SendMouseWheelEvent(double x,
+                                   double y,
+                                   double deltaX,
+                                   double deltaY) = 0;
+  virtual void SendMouseEvent(int x,
+                              int y,
+                              int button,
+                              int action,
+                              int count) = 0;
   virtual void NotifyScreenInfoChanged(RotationType rotation,
                                        OrientationType orientation) = 0;
 
@@ -99,7 +124,8 @@ class NWebDelegateInterface
   virtual void ExecuteJavaScript(const std::string& code) const = 0;
   virtual void ExecuteJavaScript(
       const std::string& code,
-      std::shared_ptr<NWebValueCallback<std::string>> callback) const = 0;
+      std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback,
+      bool extention) const = 0;
   virtual void PutBackgroundColor(int color) const = 0;
   virtual void InitialScale(float scale) const = 0;
   virtual void OnPause() = 0;
@@ -107,7 +133,9 @@ class NWebDelegateInterface
   virtual std::shared_ptr<NWebPreference> GetPreference() const = 0;
   virtual std::string Title() = 0;
   virtual void CreateWebMessagePorts(std::vector<std::string>& ports) = 0;
-  virtual void PostWebMessage(std::string& message, std::vector<std::string>& ports, std::string& targetUri) = 0;
+  virtual void PostWebMessage(std::string& message,
+                              std::vector<std::string>& ports,
+                              std::string& targetUri) = 0;
   virtual void ClosePort(std::string& portHandle) = 0;
   virtual void PostPortMessage(std::string& portHandle, std::shared_ptr<NWebMessage> data) = 0;
   virtual void SetPortMessageCallback(std::string& portHandle,
@@ -135,7 +163,7 @@ class NWebDelegateInterface
       const std::vector<std::string>& method_list) const = 0;
   virtual void RegisterNWebJavaScriptCallBack(
       std::shared_ptr<NWebJavaScriptResultCallBack> callback) = 0;
-  virtual void OnFocus() const = 0;
+  virtual bool OnFocus(const FocusReason& focusReason = FocusReason::FOCUS_DEFAULT) const = 0;
   virtual void OnBlur() const = 0;
   virtual void RegisterFindListener(
       std::shared_ptr<NWebFindCallback> find_listener) = 0;
@@ -155,7 +183,8 @@ class NWebDelegateInterface
 
   virtual void SetBrowserUserAgentString(const std::string& user_agent) = 0;
 
-  virtual void SendDragEvent(const DelegateDragEvent& dragEvent) const  = 0;
+  virtual void SendDragEvent(const DelegateDragEvent& dragEvent) const = 0;
+  virtual std::shared_ptr<NWebDragData> GetOrCreateDragData() = 0;
   virtual std::string GetUrl() const = 0;
   virtual const std::string GetOriginalUrl() = 0;
   virtual bool GetFavicon(const void** data, size_t& width, size_t& height,
@@ -175,11 +204,23 @@ class NWebDelegateInterface
   virtual void ScrollBy(float delta_x, float delta_y) = 0;
   virtual void SlideScroll(float vx, float vy) = 0;
   virtual bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) = 0;
+  virtual void SetAudioMuted(bool muted) = 0;
+  virtual void PrefetchPage(
+      std::string& url,
+      std::map<std::string, std::string> additionalHttpHeaders) = 0;
 
 #if defined (OHOS_NWEB_EX)
   virtual void SetForceEnableZoom(bool forceEnableZoom) = 0;
   virtual bool GetForceEnableZoom() = 0;
+  virtual void SelectAndCopy() = 0;
+  virtual bool ShouldShowFreeCopy() = 0;
+  virtual void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) = 0;
 #endif
+
+  virtual void SetShouldFrameSubmissionBeforeDraw(bool should) = 0;
+  virtual void SetAudioResumeInterval(int32_t resumeInterval) = 0;
+  virtual void SetAudioExclusive(bool audioExclusive) = 0;
+  virtual void NotifyPopupWindowResult(bool result) = 0;
 };
 }  // namespace OHOS::NWeb
 

@@ -278,6 +278,17 @@ target(link_target_type, "gles2_sources") {
     "wrapped_sk_image.h",
   ]
 
+  if (is_ohos) {
+    sources += [
+      "shared_image_backing_factory_egl.h",
+      "shared_image_backing_factory_egl.cc",
+      "shared_image_backing_egl_image.cc",
+      "shared_image_backing_egl_image.h",
+      "shared_image_batch_access_manager.cc",
+      "shared_image_batch_access_manager.h",
+    ]
+  }
+
   if (use_dawn) {
     sources += [
       "dawn_platform.cc",
@@ -448,7 +459,6 @@ target(link_target_type, "gles2_sources") {
       "//third_party/dawn/src/dawn:dawncpp",
     ]
   }
-
   if (is_android) {
     if (!is_debug) {
       # On Android optimize more since this component can be a bottleneck.

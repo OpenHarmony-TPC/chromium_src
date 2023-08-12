@@ -1625,6 +1625,13 @@ bool ThreadedInputHandler::IsInitialScrollHitTestReliable(
            first_scrolling_layer_or_scrollbar->scroll_tree_index();
   }
 
+#if BUILDFLAG(IS_OHOS)
+  if (first_scrolling_layer_or_scrollbar->IsScrollbarLayer() &&
+      !layer_impl->IsScrollbarLayer()) {
+    return closest_scroll_node->id ==
+           first_scrolling_layer_or_scrollbar->scroll_tree_index();
+  }
+#endif
   return false;
 }
 

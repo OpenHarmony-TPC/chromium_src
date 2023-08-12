@@ -48,7 +48,6 @@ void BindStreamFactoryFromUIThread(
 }
 
 }  // namespace
-
 ForwardingAudioStreamFactory::Core::Core(
     base::WeakPtr<ForwardingAudioStreamFactory> owner,
     media::UserInputMonitorBase* user_input_monitor,

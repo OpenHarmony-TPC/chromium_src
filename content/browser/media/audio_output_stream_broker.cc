@@ -16,8 +16,11 @@
 #include "media/audio/audio_logging.h"
 #include "media/mojo/mojom/audio_data_pipe.mojom.h"
 
-namespace content {
+#if BUILDFLAG(IS_OHOS)
+#include "base/logging.h"
+#endif
 
+namespace content {
 namespace {
 
 // Used in Media.Audio.Render.StreamBrokerDisconnectReason2 histogram, matches
@@ -71,12 +74,20 @@ AudioOutputStreamBroker::AudioOutputStreamBroker(
     mojo::PendingRemote<media::mojom::AudioOutputStreamProviderClient> client)
     : AudioStreamBroker(render_process_id, render_frame_id),
       output_device_id_(output_device_id),
+#if !BUILDFLAG(IS_OHOS)
       params_(params),
+#endif
       group_id_(group_id),
       deleter_(std::move(deleter)),
       client_(std::move(client)),
       observer_(render_process_id, render_frame_id, stream_id),
       observer_receiver_(&observer_) {
+#if BUILDFLAG(IS_OHOS)
+  media::AudioParameters preParams = params;
+  preParams.set_render_process_id(render_process_id);
+  preParams.set_render_frame_id(render_frame_id);
+  params_ = preParams;
+#endif
   DCHECK(client_);
   DCHECK(deleter_);
   DCHECK(group_id_);

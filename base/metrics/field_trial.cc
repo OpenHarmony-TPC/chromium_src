@@ -852,7 +852,7 @@ int FieldTrialList::GetFieldTrialDescriptor() {
   if (!global_ || !global_->readonly_allocator_region_.IsValid())
     return -1;
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   return global_->readonly_allocator_region_.GetPlatformHandle();
 #else
   return global_->readonly_allocator_region_.GetPlatformHandle().fd;

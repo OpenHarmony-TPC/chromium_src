@@ -61,6 +61,11 @@ class VIZ_SERVICE_EXPORT DisplayScheduler
   // DynamicBeginFrameDeadlineOffsetSource:
   base::TimeDelta GetDeadlineOffset(base::TimeDelta interval) const override;
 
+#if BUILDFLAG(IS_OHOS)
+  void SetShouldFrameSubmissionBeforeDraw(bool should) override;
+  void ResetShouldFrameSubmissionBeforeDraw();
+#endif
+
  protected:
   class BeginFrameObserver;
   class BeginFrameRequestObserverImpl;
@@ -152,6 +157,12 @@ class VIZ_SERVICE_EXPORT DisplayScheduler
   const absl::optional<double> dynamic_scheduler_deadlines_percentile_;
 
   base::WeakPtrFactory<DisplayScheduler> weak_ptr_factory_{this};
+
+#if BUILDFLAG(IS_OHOS)
+private:
+  bool wait_render_frame_submission_before_draw_ = false;
+  base::CancelableOnceClosure wait_render_frame_submission_deadline_callback_;
+#endif
 };
 
 }  // namespace viz

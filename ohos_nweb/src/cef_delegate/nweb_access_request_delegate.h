@@ -23,7 +23,7 @@ namespace OHOS::NWeb {
 class NWebAccessRequestDelegate : public NWebAccessRequest {
  public:
   explicit NWebAccessRequestDelegate(CefRefPtr<CefAccessRequest> request);
-  ~NWebAccessRequestDelegate() = default;
+  ~NWebAccessRequestDelegate();
 
   std::string Origin() override;
 
@@ -35,6 +35,21 @@ class NWebAccessRequestDelegate : public NWebAccessRequest {
 
  private:
   CefRefPtr<CefAccessRequest> request_ = nullptr;
+};
+
+class NWebScreenCaptureAccessRequestDelegate : public NWebScreenCaptureAccessRequest {
+ public:
+  explicit NWebScreenCaptureAccessRequestDelegate(CefRefPtr<CefScreenCaptureAccessRequest> request);
+  ~NWebScreenCaptureAccessRequestDelegate();
+
+  std::string Origin() override;
+
+  void Agree(const NWebScreenCaptureConfig& config) override;
+
+  void Refuse() override;
+
+ private:
+  CefRefPtr<CefScreenCaptureAccessRequest> request_ = nullptr;
 };
 }  // namespace OHOS::NWeb
 

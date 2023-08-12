@@ -99,7 +99,8 @@ RootCompositorFrameSinkImpl::Create(
             /*requires_align_with_java=*/false);
 #elif BUILDFLAG(IS_OHOS)
     external_begin_frame_source =
-        std::make_unique<ExternalBeginFrameSourceOHOS>(restart_id);
+        std::make_unique<ExternalBeginFrameSourceOHOS>(restart_id,
+                                                       frame_sink_manager);
 #else
     if (params->disable_frame_rate_limit) {
       synthetic_begin_frame_source =
@@ -221,6 +222,19 @@ void RootCompositorFrameSinkImpl::SetDisplayVisible(bool visible) {
 void RootCompositorFrameSinkImpl::DisableSwapUntilResize(
     DisableSwapUntilResizeCallback callback) {
   display_->DisableSwapUntilResize(std::move(callback));
+}
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+void RootCompositorFrameSinkImpl::SetShouldFrameSubmissionBeforeDraw(
+    bool should,
+    SetShouldFrameSubmissionBeforeDrawCallback callback) {
+  TRACE_EVENT1(
+      "viz", "RootCompositorFrameSinkImpl::SetShouldFrameSubmissionBeforeDraw",
+      "should", should);
+  display_->SetShouldFrameSubmissionBeforeDraw(should);
+  if (callback)
+    std::move(callback).Run();
 }
 #endif
 
@@ -533,15 +547,26 @@ void RootCompositorFrameSinkImpl::DisplayDidCompleteSwapWithSize(
     display_client_->DidCompleteSwapWithSize(pixel_size);
 // TODO(crbug.com/1052397): Revisit the macro expression once build flag switch
 // of lacros-chrome is complete.
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
+#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS) || BUILDFLAG(IS_OHOS)
   if (display_client_ && pixel_size != last_swap_pixel_size_) {
     last_swap_pixel_size_ = pixel_size;
+#if BUILDFLAG(IS_OHOS)
+    display_client_->DidCompleteSwapWithNewSizeOHOS(last_swap_pixel_size_);
+#else
     display_client_->DidCompleteSwapWithNewSize(last_swap_pixel_size_);
+#endif
   }
 #else
   NOTREACHED();
 #endif
 }
+
+#if BUILDFLAG(IS_OHOS)
+void RootCompositorFrameSinkImpl::SetCurrentFrameSinkId(
+    const FrameSinkId& frame_sink_id) {
+  external_begin_frame_source_->SetCurrentFrameSinkId(frame_sink_id);
+};
+#endif
 
 void RootCompositorFrameSinkImpl::SetWideColorEnabled(bool enabled) {
 #if BUILDFLAG(IS_ANDROID)

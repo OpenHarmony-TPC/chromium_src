@@ -218,6 +218,9 @@ void NoStatePrefetchContents::StartPrerendering(
   load_url_params.referrer = referrer_;
   load_url_params.initiator_origin = initiator_origin_;
   load_url_params.transition_type = ui::PAGE_TRANSITION_LINK;
+#if BUILDFLAG(IS_OHOS)
+  load_url_params.extra_headers = start_prerendering_extra_headers_;
+#endif
   if (origin_ == ORIGIN_OMNIBOX) {
     load_url_params.transition_type = ui::PageTransitionFromInt(
         ui::PAGE_TRANSITION_TYPED | ui::PAGE_TRANSITION_FROM_ADDRESS_BAR);

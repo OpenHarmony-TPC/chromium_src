@@ -23,6 +23,7 @@
 #include "nweb_export.h"
 
 #include "nweb_download_callback.h"
+#include "nweb_drag_data.h"
 #include "nweb_find_callback.h"
 #include "nweb_history_list.h"
 #include "nweb_javascript_result_callback.h"
@@ -114,12 +115,18 @@ enum class BlurReason : int32_t {
     FRAME_DESTROY = 2,
 };
 
+enum class FocusReason : int32_t {
+    FOCUS_DEFAULT = 0,
+    EVENT_REQUEST = 1,
+};
+
 struct OHOS_NWEB_EXPORT NWebDOHConfig {
   int doh_mode = -1;
   std::string doh_config = "";
 };
 
 using WebState = std::shared_ptr<std::vector<uint8_t>>;
+using SetKeepScreenOn = std::function<void(bool)>;
 
 class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
     public:
@@ -134,13 +141,13 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
     virtual void OnDestroy() = 0;
 
     /* focus event */
-    virtual void OnFocus() const = 0;
+    virtual void OnFocus(const FocusReason& focusReason = FocusReason::FOCUS_DEFAULT) const = 0;
     virtual void OnBlur(const BlurReason& blurReason) const = 0;
 
     /* event interface */
-    virtual void OnTouchPress(int32_t id, double x, double y) = 0;
-    virtual void OnTouchRelease(int32_t id, double x = 0, double y = 0) = 0;
-    virtual void OnTouchMove(int32_t id, double x, double y) = 0;
+    virtual void OnTouchPress(int32_t id, double x, double y, bool fromOverlay = false) = 0;
+    virtual void OnTouchRelease(int32_t id, double x = 0, double y = 0, bool fromOverlay = false) = 0;
+    virtual void OnTouchMove(int32_t id, double x, double y, bool fromOverlay = false) = 0;
     virtual void OnTouchCancel() = 0;
     virtual void OnNavigateBack() = 0;
     virtual bool SendKeyEvent(int32_t keyCode, int32_t keyAction) = 0;
@@ -248,7 +255,8 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      */
     virtual void ExecuteJavaScript(
             const std::string& code,
-            std::shared_ptr<NWebValueCallback<std::string>> callback) const = 0;
+            std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback,
+            bool extention) const = 0;
     /**
      * Gets the NWebPreference object used to control the settings for this
      * NWeb.
@@ -637,7 +645,7 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * @param vx horizontal slide speed.
      * @param vy vertical slide speed.
     */
-   virtual void SlideScroll(float vx, float vy) = 0;
+    virtual void SlideScroll(float vx, float vy) = 0;
 
     /**
      * Get current website certificate.
@@ -647,7 +655,96 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      *                     false if get certificate chain of the website.
      * @return true if get certificate successfully, otherwise false.
     */
-   virtual bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) = 0;
+    virtual bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) = 0;
+
+    /**
+     * Set screen offset.
+     *
+     * @param x the offset in x direction.
+     * @param y the offset in y direction.
+    */
+    virtual void SetScreenOffSet(double x, double y) = 0;
+
+    /**
+     * Set audio muted.
+     *
+     * @param muted Aduio mute state.
+     */
+    virtual void SetAudioMuted(bool muted) = 0;
+
+    /**
+     * Set should frame submission before draw.
+     *
+     * @param should whether wait render frame submission.
+    */
+    virtual void SetShouldFrameSubmissionBeforeDraw(bool should) = 0;
+
+    /**
+     * Notify whether the popup window is initialized successfully.
+     *
+     * @param result whether success.
+     */
+    virtual void NotifyPopupWindowResult(bool result) = 0;
+
+    /**
+     * Set audio resume interval.
+     *
+     * @param resumeInterval Aduio resume interval.
+     */
+    virtual void SetAudioResumeInterval(int32_t resumeInterval) = 0;
+
+    /**
+     * Set audio exclusive state.
+     *
+     * @param audioExclusive Aduio exclusive state.
+     */
+    virtual void SetAudioExclusive(bool audioExclusive) = 0;
+
+    /**
+     * Rigest the keep srceen on interface.
+     *
+     * @param windowId the window id.
+     * @param SetKeepScreenOn the screenon handle.
+     */
+    virtual void RegisterScreenLockFunction(int32_t windowId, const SetKeepScreenOn&& handle) = 0;
+
+    /**
+     * UnRigest the keep srceen on interface.
+     *
+     * @param windowId the window id.
+     */
+    virtual void UnRegisterScreenLockFunction(int32_t windowId) = 0;
+
+    /**
+     * Notify memory level.
+     *
+     * @param level the memory level.
+     */
+    virtual void NotifyMemoryLevel(int32_t level) = 0;
+
+    /**
+     * Notify webview window status.
+     */
+    virtual void OnWebviewHide() const = 0;
+    virtual void OnWebviewShow() const = 0;
+
+    /**
+     * Get drag data.
+     *
+     * @return the drag data.
+     */
+    virtual std::shared_ptr<NWebDragData> GetOrCreateDragData() = 0;
+
+    /**
+     * Prefetch the resources required by the page, but will not execute js or
+     * render the page.
+     *
+     * @param url  String: Which url to preresolve/preconnect.
+     * @param additionalHttpHeaders Additional HTTP request header of the URL.
+     */
+    virtual void PrefetchPage(
+        std::string& url,
+        std::map<std::string, std::string> additionalHttpHeaders) = 0;
 };
 }  // namespace OHOS::NWeb
 

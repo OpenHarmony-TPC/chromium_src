@@ -429,7 +429,6 @@ void RenderViewContextMenuBase::OnMenuWillShow(ui::SimpleMenuModel* source) {
   // Ignore notifications from submenus.
   if (source != &menu_model_)
     return;
-
   source_web_contents_->SetShowingContextMenu(true);
 
   NotifyMenuShown();

@@ -20,8 +20,12 @@
 #include <cstring>
 
 #include "base/logging.h"
+#include "cef/libcef/common/drag_data_impl.h"
+#include "content/public/common/drop_data.h"
+#include "nweb_delegate_interface.h"
+#include "nweb_drag_data.h"
+#include "nweb_drag_data_impl.h"
 #include "nweb_touch_handle_state_impl.h"
-
 #include "ohos_adapter_helper.h"
 
 namespace {
@@ -59,6 +63,7 @@ cef_screen_orientation_type_t ConvertOrientationType(
 uint16_t ConvertRotationAngel(OHOS::NWeb::RotationType type,
                               bool default_portrait) {
   // Notice: 90 and 270 is reverse.
+
   switch (type) {
     case OHOS::NWeb::RotationType::ROTATION_0:
       return default_portrait ? 0 : 90;
@@ -98,6 +103,11 @@ void NWebRenderHandler::RegisterNWebHandler(
 void NWebRenderHandler::SetInputMethodClient(
     CefRefPtr<NWebInputMethodClient> client) {
   inputmethod_client_ = client;
+}
+
+void NWebRenderHandler::SetNWebDelegateInterface(
+    std::shared_ptr<NWebDelegateInterface> client) {
+  delegate_interface_ = client;
 }
 
 void NWebRenderHandler::Resize(uint32_t width, uint32_t height) {
@@ -159,7 +169,7 @@ void NWebRenderHandler::OnPaint(CefRefPtr<CefBrowser> browser,
   if (render_update_cb_ == nullptr) {
     return;
   }
-  if (width != width_ || height != height_) {
+  if ((uint32_t)width != width_ || (uint32_t)height != height_) {
     LOG(INFO) << "frame size(" << width << "*" << height
               << ") is not identical to request size (" << width_ << "*"
               << height_ << "), drop this frame";
@@ -210,19 +220,31 @@ void NWebRenderHandler::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
   }
 }
 
+void NWebRenderHandler::OnSelectionChanged(CefRefPtr<CefBrowser> browser,
+                                           const CefString& text,
+                                           const CefRange& selected_range) {
+  if (inputmethod_client_) {
+    inputmethod_client_->OnSelectionChanged(browser, text, selected_range);
+  }
+}
+
 void NWebRenderHandler::OnVirtualKeyboardRequested(
     CefRefPtr<CefBrowser> browser,
     TextInputMode input_mode,
     bool show_keyboard) {
   LOG(INFO) << "NWebRenderHandler::OnVirtualKeyboardRequested input_mode = "
             << input_mode << ", show_keyboard = " << show_keyboard;
+  if (!inputmethod_client_) {
+    LOG(ERROR) << "inputmethod_client_ is nullptr.";
+    return;
+  }
 
-  if (inputmethod_client_) {
-    if (input_mode != CEF_TEXT_INPUT_MODE_NONE) {
+  if (input_mode != CEF_TEXT_INPUT_MODE_NONE) {
+    if (delegate_interface_->OnFocus()) {
       inputmethod_client_->Attach(browser, show_keyboard, input_mode);
-    } else {
-      inputmethod_client_->HideTextInput();
     }
+  } else {
+    inputmethod_client_->HideTextInput();
   }
 }
 
@@ -238,24 +260,24 @@ void NWebRenderHandler::GetTouchHandleSize(
                << screen_info_.display_ratio;
     return;
   }
-  if (screen_info_.display_ratio <= 1) {
-    return;
-  } else if (screen_info_.display_ratio > 1 &&
-             screen_info_.display_ratio < 1.7) {
-    // rk
-    size.width = 30 / screen_info_.display_ratio;
-    size.height = 30 / screen_info_.display_ratio;
-  } else if (screen_info_.display_ratio >= 1.7 &&
-             screen_info_.display_ratio < 2.5) {
-    // wgr
-    size.width = 40 / screen_info_.display_ratio;
-    size.height = 40 / screen_info_.display_ratio;
-  } else {
-    // phone
-    size.width = 60 / screen_info_.display_ratio;
-    size.height = 60 / screen_info_.display_ratio;
+  if (auto handler = handler_.lock()) {
+    TouchHandleHotZone hot_zone;
+    handler->OnGetTouchHandleHotZone(hot_zone);
+    if (hot_zone.width > 0 && hot_zone.height > 0) {
+      size.width = static_cast<int>(hot_zone.width) + 1;
+      size.height = static_cast<int>(hot_zone.height) + 1;
+    }
   }
   LOG(INFO) << "GetTouchHandleSize " << size.width << " " << size.height;
+}
+
+void NWebRenderHandler::OnCursorUpdate(CefRefPtr<CefBrowser> browser,
+                                       const CefRect& rect) {
+  if (!inputmethod_client_) {
+    LOG(ERROR) << "NWebRenderHandler::OnCursorUpdate inputmethod_client_ is nullptr";
+    return;
+  }
+  inputmethod_client_->OnCursorUpdate(rect);
 }
 
 std::shared_ptr<NWebTouchHandleState> NWebRenderHandler::GetTouchHandleState(
@@ -299,7 +321,8 @@ void NWebRenderHandler::OnTouchSelectionChanged(
     const CefTouchHandleState& end_selection_handle,
     bool need_report) {
   insert_handle_ = ConvertTouchHandleDisplayRatio(insert_handle);
-  start_selection_handle_ = ConvertTouchHandleDisplayRatio(start_selection_handle);
+  start_selection_handle_ =
+      ConvertTouchHandleDisplayRatio(start_selection_handle);
   end_selection_handle_ = ConvertTouchHandleDisplayRatio(end_selection_handle);
   if (!need_report) {
     return;
@@ -312,69 +335,96 @@ void NWebRenderHandler::OnTouchSelectionChanged(
   }
 }
 
+// chromium内核上报的拖拽数据
 bool NWebRenderHandler::StartDragging(CefRefPtr<CefBrowser> browser,
                                       CefRefPtr<CefDragData> drag_data,
                                       DragOperationsMask allowed_ops,
                                       int x,
                                       int y) {
-  LOG(INFO) << "received start dragging callback, operation = " << allowed_ops
-            << ", x = " << x << ", y = " << y;
+  LOG(INFO) << "DragDrop StartDragging received dragData from chromium start "
+               "dragging callback, operation = "
+            << allowed_ops << ", x = " << x << ", y = " << y;
   if (!drag_data && !drag_data->HasImage()) {
     LOG(ERROR) << "drag data invalid";
     return false;
   }
 
-  auto image = drag_data->GetImage();
-  if (!image) {
-    LOG(ERROR) << "drag data image invalid";
-    return false;
-  }
+  auto fragment = drag_data->GetFragmentText();
+  LOG(INFO) << "DragDrop drag data GetFragmentText:" << fragment.ToString();
+  auto link_url = drag_data->GetLinkURL();
+  LOG(INFO) << "DragDrop drag data GetLinkURL:" << link_url.ToString();
+  auto link_html = drag_data->GetFragmentHtml();
+  LOG(INFO) << "DragDrop drag data GetFragmentHtml:" << link_html.ToString();
 
-  int width;
-  int height;
-  auto bitmap = image->GetAsBitmap(1, CEF_COLOR_TYPE_BGRA_8888,
-                                   CEF_ALPHA_TYPE_OPAQUE, width, height);
-  if (!bitmap) {
-    LOG(ERROR) << "drag data bitmap invalid";
-    return false;
-  }
+  CefPoint drag_touch_point(x, y);
 
-  size_t data_size = bitmap->GetSize();
-  void* buffer = calloc(1, data_size);
-  if (!buffer) {
-    LOG(ERROR) << "calloc failed";
-    return false;
-  }
-  size_t read_size = bitmap->GetData(buffer, data_size, 0);
-  if (read_size != data_size) {
-    free(buffer);
-    LOG(ERROR) << "get data from bitmap failed";
-    return false;
-  }
+  std::vector<CefPoint> start_edge {CefPoint(start_selection_handle_.origin.x, start_selection_handle_.origin.y - start_selection_handle_.edge_height),
+    CefPoint(start_selection_handle_.origin.x, start_selection_handle_.origin.y)};
+  std::vector<CefPoint> end_edge {CefPoint(end_selection_handle_.origin.x, end_selection_handle_.origin.y - end_selection_handle_.edge_height),
+    CefPoint(end_selection_handle_.origin.x, end_selection_handle_.origin.y)};
 
-  LOG(INFO) << "drag image width : " << width << ", height : " << height
-            << ", buffer size : " << read_size;
+  nweb_drag_data_ = std::make_shared<NWebDragDataImpl>(drag_data, drag_touch_point, start_edge, end_edge,
+    screen_info_.display_ratio, is_irregular_drag_background_);
+
   auto handler = handler_.lock();
   if (handler == nullptr) {
     LOG(ERROR) << "can't get strong ptr with handler";
-    free(buffer);
     return false;
   }
+  return handler->OnDragAndDropDataUdmf(nweb_drag_data_);
+}
 
-  ImageOptions opt;
-  opt.colorType = ImageColorType::COLOR_TYPE_BGRA_8888;
-  opt.alphaType = ImageAlphaType::ALPHA_TYPE_OPAQUE;
-  opt.width = width;
-  opt.height = height;
-  bool isNeedDrag = handler->OnDragAndDropData(buffer, read_size, opt);
-  if (isNeedDrag) {
-    drag_data_ = drag_data;
+void NWebRenderHandler::UpdateDragCursor(CefRefPtr<CefBrowser> browser,
+                                         DragOperation operation) {
+  auto handler = handler_.lock();
+  if (handler == nullptr) {
+    LOG(ERROR) << "DragDrop can't get strong ptr with handler";
+    return;
   }
-  free(buffer);
-  return isNeedDrag;
+  handler->UpdateDragCursor(static_cast<NWebDragData::DragOperation>(operation));
 }
 
 CefRefPtr<CefDragData> NWebRenderHandler::GetDragData() {
-  return drag_data_;
+  if (!nweb_drag_data_) {
+    LOG(ERROR) << "DragDrop GetDragData nullptrnullptrnullptrnullptrnullptrnullptr";
+    content::DropData drop_data;
+    CefRefPtr<CefDragDataImpl> drag_data(
+        new CefDragDataImpl(drop_data));
+    nweb_drag_data_ = std::make_shared<NWebDragDataImpl>(drag_data.get());
+  } else {
+    LOG(ERROR) << "DragDrop GetDragData not nullptrnullptrnullptrnullptrnullptr";
+  }
+
+  return std::static_pointer_cast<NWebDragDataImpl>(nweb_drag_data_)->GetDragData();
+}
+
+void NWebRenderHandler::OnCompleteSwapWithNewSize() {
+  if (auto handler = handler_.lock()) {
+    handler->OnCompleteSwapWithNewSize();
+  }
+}
+
+void NWebRenderHandler::OnResizeNotWork() {
+  if (auto handler = handler_.lock()) {
+    handler->OnResizeNotWork();
+  }
+}
+
+void NWebRenderHandler::SetFocusStatus(bool focus_status) {
+  if (inputmethod_client_) {
+    inputmethod_client_->SetFocusStatus(focus_status);
+  }
+}
+
+void NWebRenderHandler::OnOverscroll(CefRefPtr<CefBrowser> browser,
+                                     const float x,
+                                     const float y) {
+  if (auto handler = handler_.lock()) {
+    handler->OnOverScroll(x, y);
+  }
+}
+
+void NWebRenderHandler::SetIrregularDragBackground(bool is_irregular_background) {
+  is_irregular_drag_background_ = is_irregular_background;
 }
 }  // namespace OHOS::NWeb

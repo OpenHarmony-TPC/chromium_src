@@ -52,6 +52,10 @@ class COMPONENT_EXPORT(NETWORK_CPP_BASE)
     return status.exists_in_cache;
   }
 
+  static bool abort_due_to_cef_browser_destroyed(const network::URLLoaderCompletionStatus& status) {
+    return status.abort_due_to_cef_browser_destroyed;
+  }
+
   static const base::TimeTicks& completion_time(
       const network::URLLoaderCompletionStatus& status) {
     return status.completion_time;

@@ -86,6 +86,9 @@ ClientSocketPool* ClientSocketPoolManagerImpl::GetSocketPool(
         pool_type_ == HttpNetworkSession::WEBSOCKET_SOCKET_POOL,
         &common_connect_job_params_);
   }
+#if BUILDFLAG(IS_OHOS)
+  new_pool->SetConnectTimeout(timeout_override_);
+#endif
 
   std::pair<SocketPoolMap::iterator, bool> ret =
       socket_pools_.insert(std::make_pair(proxy_server, std::move(new_pool)));
@@ -111,5 +114,14 @@ ClientSocketPoolManagerImpl::SocketPoolInfoToValue() const {
 
   return std::move(list);
 }
+
+#if BUILDFLAG(IS_OHOS)
+void ClientSocketPoolManagerImpl::SetConnectTimeout(int seconds) {
+  timeout_override_ = seconds;
+  for (const auto& it : socket_pools_) {
+    it.second->SetConnectTimeout(seconds);
+  }
+}
+#endif
 
 }  // namespace net

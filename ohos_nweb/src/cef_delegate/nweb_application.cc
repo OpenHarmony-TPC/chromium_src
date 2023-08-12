@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <thread>
 
+#include "cef/include/cef_values.h"
 #include "cef/include/wrapper/cef_closure_task.h"
 #include "cef/include/wrapper/cef_helpers.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -26,21 +27,54 @@
 #include "nweb_handler_delegate.h"
 #include "nweb_impl.h"
 
+namespace {
+  const char kNWebId[] = "nweb_id";
+  CefRefPtr<OHOS::NWeb::NWebApplication> g_application = nullptr;
+  static bool is_initialized = false;
+  static std::mutex init_mtx;
+}
+
 namespace OHOS::NWeb {
-NWebApplication::NWebApplication(
-    std::shared_ptr<NWebPreferenceDelegate> preference_delegate,
-    std::string url,
-    CefRefPtr<NWebHandlerDelegate> handler_delegate,
-    void* window)
-    : preference_delegate_(preference_delegate),
-      url_(url),
-      handler_delegate_(handler_delegate),
-      window_(window){}
 
-NWebApplication::~NWebApplication() {}
+// static
+CefRefPtr<OHOS::NWeb::NWebApplication> NWebApplication::GetDefault() {
+  if (!g_application) {
+    new NWebApplication();
+  }
+  return g_application;
+}
 
-std::string NWebApplication::GetURL() {
-  return url_;
+NWebApplication::NWebApplication() {
+  g_application = this;
+}
+
+NWebApplication::~NWebApplication() {
+  g_application = nullptr;
+}
+
+bool NWebApplication::HasInitializedCef() {
+  return is_initialized;
+}
+
+void NWebApplication::InitializeCef(const CefMainArgs& mainargs,
+                                    const CefSettings& settings) {
+  if (is_initialized) {
+    LOG(INFO) << "has initialized cef.";
+    return;
+  }
+  int exitcode =
+      CefExecuteProcess(mainargs, NWebApplication::GetDefault(), NULL);
+  if (exitcode >= 0) {
+    LOG(INFO) << "CefExecuteProcess returned : " << exitcode;
+    return;
+  }
+
+  std::unique_lock<std::mutex> lk(init_mtx);
+  if (!CefInitialize(mainargs, settings, NWebApplication::GetDefault(), NULL)) {
+    LOG(ERROR) << "CefInitialize failed";
+  } else {
+    is_initialized = true;
+  }
 }
 
 /* CefApp methods begin */
@@ -97,9 +131,11 @@ void NWebApplication::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> regi
 
 /* CefBrowserProcessHandler methods begin */
 void NWebApplication::OnContextInitialized() {
-  LOG(INFO) << "NWebApplication::OnContextInitialized";
   CEF_REQUIRE_UI_THREAD();
-  CreateBrowser();
+  if (complete_callback_) {
+    std::move(complete_callback_).Run();
+  }
+
   auto runWebInitedCallback = OhosAdapterHelper::GetInstance().GetInitWebAdapter()->GetRunWebInitedCallback();
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&NWebApplication::RunWebInitedCallback, this,
@@ -148,7 +184,8 @@ void NWebApplication::OnWebKitInitialized() {
 
 CefRefPtr<CefClient> NWebApplication::GetDefaultClient() {
   // Called when a new browser window is created via the Chrome runtime UI
-  return handler_delegate_;
+  // OHOS not use it.
+  return nullptr;
 }
 
 void NWebApplication::PopulateCreateSettings(
@@ -162,26 +199,31 @@ void NWebApplication::PopulateCreateSettings(
   }
 }
 
-void NWebApplication::CreateBrowser() {
+void NWebApplication::RunAfterContextInitialized(
+    base::OnceCallback<void()> complete_callback) {
+  complete_callback_ = std::move(complete_callback);
+}
+
+void NWebApplication::CreateBrowser(
+    std::shared_ptr<NWebPreferenceDelegate> preference_delegate,
+    const std::string& url,
+    CefRefPtr<NWebHandlerDelegate> handler_delegate,
+    void* window) {
   CefRefPtr<CefCommandLine> command_line =
       CefCommandLine::GetGlobalCommandLine();
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
   PopulateCreateSettings(command_line, browser_settings);
-  browser_settings.background_color = 0xffffffff;
-  preference_delegate_->ComputeBrowserSettings(browser_settings);
+  preference_delegate->ComputeBrowserSettings(browser_settings);
 
   if (command_line->HasSwitch(switches::kForTest)) {
-    preference_delegate_->PutHasInternetPermission(true);
-    preference_delegate_->PutBlockNetwork(false);
+    preference_delegate->PutHasInternetPermission(true);
+    preference_delegate->PutBlockNetwork(false);
   }
 
-  std::string url;
-  url = command_line->GetSwitchValue(switches::kUrl);
-  if (url.empty()) {
-    url = GetURL();
-  }
+  std::string url_from_command_line;
+  url_from_command_line = command_line->GetSwitchValue(switches::kUrl);
 
   // Information used when creating the native window.
   CefWindowInfo window_info;
@@ -189,14 +231,19 @@ void NWebApplication::CreateBrowser() {
   window_info.SetAsWindowless(handle);
 
   // Create the first browser window.
-  CefBrowserHost::CreateBrowser(window_info, handler_delegate_, url,
-                                browser_settings, nullptr, nullptr);
-  if (handler_delegate_ == nullptr) {
+  if (handler_delegate == nullptr) {
     return;
   }
-  auto browser = handler_delegate_->GetBrowser();
+  CefRefPtr<CefDictionaryValue> extra_info = CefDictionaryValue::Create();
+  int nweb_id = int(handler_delegate->GetNWebId());
+  extra_info->SetInt(kNWebId, nweb_id);
+  CefBrowserHost::CreateBrowser(
+      window_info, handler_delegate,
+      url_from_command_line.empty() ? url : url_from_command_line,
+      browser_settings, extra_info, nullptr);
+  auto browser = handler_delegate->GetBrowser();
   if (browser && browser->GetHost()) {
-    browser->GetHost()->SetNativeWindow(window_);
+    browser->GetHost()->SetNativeWindow(window);
   }
 }
 }  // namespace OHOS::NWeb

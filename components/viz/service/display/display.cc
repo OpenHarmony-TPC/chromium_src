@@ -518,6 +518,12 @@ void Display::DisableSwapUntilResize(
     std::move(no_pending_swaps_callback).Run();
 }
 
+#if BUILDFLAG(IS_OHOS)
+void Display::SetShouldFrameSubmissionBeforeDraw(bool should) {
+  scheduler_->SetShouldFrameSubmissionBeforeDraw(should);
+}
+#endif
+
 void Display::SetColorMatrix(const skia::Matrix44& matrix) {
   if (output_surface_)
     output_surface_->set_color_matrix(matrix);

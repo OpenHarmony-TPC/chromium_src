@@ -415,6 +415,10 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
       features::ShouldUseSetPresentDuration();
 #endif  // BUILDFLAG(IS_WIN)
 
+#if BUILDFLAG(IS_OHOS)
+  root_params->send_swap_size_notifications = true;
+#endif
+
   // Connects the viz process end of CompositorFrameSink message pipes. The
   // browser compositor may request a new CompositorFrameSink on context loss,
   // which will destroy the existing CompositorFrameSink.

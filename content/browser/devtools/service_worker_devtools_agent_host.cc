@@ -315,14 +315,11 @@ void ServiceWorkerDevToolsAgentHost::UpdateProcessHost() {
     process_observation_.Observe(rph);
 }
 
-// TODO(caseq): this is only relevant for shutdown, where a RPH may
-// go along with StoragePartition and we won't receive any signals from
-// the DevToolsWorkerManager, so agents would be still attached and
-// may access the storage partition. This is meant to be a temporary
-// workaround, the proper fix is likely to have ServiceWorkerInstance
-// deleted in such case.
 void ServiceWorkerDevToolsAgentHost::RenderProcessHostDestroyed(
     RenderProcessHost* host) {
+  scoped_refptr<DevToolsAgentHost> retain_this;
+  if (context_wrapper_->process_manager()->IsShutdown())
+    retain_this = ForceDetachAllSessionsImpl();
   GetRendererChannel()->SetRenderer(mojo::NullRemote(), mojo::NullReceiver(),
                                     ChildProcessHost::kInvalidUniqueID);
   process_observation_.Reset();

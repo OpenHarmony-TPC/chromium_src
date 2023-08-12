@@ -489,6 +489,7 @@ void BroadcastingReceiver::OnLog(const std::string& message) {
 }
 
 void BroadcastingReceiver::OnStarted() {
+  LOG(ERROR) << __func__;
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   for (auto& client : clients_) {
     client.second.OnStarted();
