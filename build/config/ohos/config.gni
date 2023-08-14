@@ -89,8 +89,8 @@ if (is_ohos) {
         ohos_build_root = "//ohos_ndk_x86"
         ohos_ndk_root = "//ohos_ndk_x86"
       } else {
-        ohos_build_root = "//ohos_ndk"
-        ohos_ndk_root = "//ohos_ndk"
+        ohos_build_root = "//third_party/ohos_ndk"
+        ohos_ndk_root = "//third_party/ohos_ndk"
       }
       ohos_toolchain_root = "$ohos_ndk_root/toolchains/llvm"
       ohos_sysroot = "$ohos_ndk_root/sysroot"

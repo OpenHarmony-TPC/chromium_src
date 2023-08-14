@@ -110,12 +110,12 @@ group("gn_all") {
       "//ohos_browser_shell",
       "//ohos_nweb_ex/browser_service",
       "//ohos_nweb_ex/test:ohos_nweb_ex_unittests",
-      "//ohos_nweb_hap",
+      "//third_party/ohos_nweb_hap",
     ]
   }  # endif // OHOS_NWEB_EX
 
   if (defined(enable_ohos_nweb_hap) && enable_ohos_nweb_hap) {
-    deps += [ "//ohos_nweb_hap" ]
+    deps += [ "//third_party/ohos_nweb_hap" ]
   }
 
   if (!is_component_build) {

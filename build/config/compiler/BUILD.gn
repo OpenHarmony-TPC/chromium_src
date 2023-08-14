@@ -1492,7 +1492,8 @@ config("default_warnings") {
         "-Wno-unused-but-set-variable",
         "-Wno-deprecated-declarations",
         "-Wno-unqualified-std-cast-call",
-        "-Wno-error=invalid-offsetof"
+        "-Wno-error=invalid-offsetof",
+        "-Wno-switch"
       ]
     } else {
       cflags += [
