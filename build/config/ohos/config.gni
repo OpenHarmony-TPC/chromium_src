@@ -99,8 +99,8 @@ if (is_ohos) {
     }
 
     if (use_ohos_sdk_sysroot) {
-      import("//ohos_sdk/ohos_sdk.gni")
-      ohos_sdk_root = "//ohos_sdk"
+      import("//third_party/ohos_sdk/ohos_sdk.gni")
+      ohos_sdk_root = "//third_party/ohos_sdk"
       ohos_sysroot = "$ohos_sdk_root/native/$ohos_sdk_version/sysroot/"
     }
 
