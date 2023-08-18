@@ -82,6 +82,10 @@ vs-chromium-project.txt
 #/ash/webui/media_app_ui/resources/pkg
 #/ash/webui/projector_app/resources/prod
 #/base/base_unittests_run.xml
+/buildtools/clang_format/script
+/buildtools/third_party/libc++/trunk
+/buildtools/third_party/libc++abi/trunk
+/buildtools/third_party/libunwind/trunk
 # See build/.gitignore for entries covering src/build.
 
 # The Chrome OS build creates a /c and /c_icu symlink due to http://crbug.com/54866.
