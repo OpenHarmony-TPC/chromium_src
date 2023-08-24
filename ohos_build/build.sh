@@ -222,8 +222,8 @@ else
 fi
 
 # Extract ohos-sdk.
-if [ -f "src/third_party/ohos_sdk/.install" ]; then
-  bash "src/third_party/ohos_sdk/.install"
+if [ -f "src/ohos_sdk/.install" ]; then
+  bash "src/ohos_sdk/.install"
   if [ $? -ne 0 ]; then
     echo "ERROR: Failed to install ohos-sdk, abort!"
     exit 1
