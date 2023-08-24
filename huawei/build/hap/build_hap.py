@@ -191,7 +191,7 @@ def main():
                       help='Path to the root director of HAP project',
                       required=False)
   parser.add_argument('--sdk-root',
-                      default=os.path.join(project_root, '../third_party/ohos_sdk/'),
+                      default=os.path.join(project_root, '../ohos_sdk/'),
                       help='Path to the root director of OHOS SDK',
                       required=False)
   parser.add_argument('--node-root',
