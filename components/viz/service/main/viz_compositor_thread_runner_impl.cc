@@ -35,6 +35,13 @@
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/process/process_handle.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
+#include "res_sched_client_adapter.h"
+#endif
+
 namespace viz {
 namespace {
 
@@ -82,6 +89,16 @@ std::unique_ptr<VizCompositorThreadType> CreateAndStartCompositorThread() {
 
   CHECK(thread->StartWithOptions(std::move(thread_options)));
 
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          base::IgnoreResult(&ResSchedClientAdapter::ReportKeyThread),
+          ResSchedStatusAdapter::THREAD_CREATED, base::GetCurrentProcId(),
+          thread->GetThreadId(), ResSchedRoleAdapter::IMPORTANT_DISPLAY));
+#endif
+
   // Setup tracing sampler profiler as early as possible.
   thread->task_runner()->PostTask(
       FROM_HERE,
@@ -103,6 +120,15 @@ VizCompositorThreadRunnerImpl::~VizCompositorThreadRunnerImpl() {
       base::BindOnce(&VizCompositorThreadRunnerImpl::TearDownOnCompositorThread,
                      base::Unretained(this)));
   thread_->Stop();
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          base::IgnoreResult(&ResSchedClientAdapter::ReportKeyThread),
+          ResSchedStatusAdapter::THREAD_DESTROYED, base::GetCurrentProcId(),
+          thread_->GetThreadId(), ResSchedRoleAdapter::IMPORTANT_DISPLAY));
+#endif
 }
 
 base::PlatformThreadId VizCompositorThreadRunnerImpl::thread_id() {

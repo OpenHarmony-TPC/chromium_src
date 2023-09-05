@@ -16,6 +16,8 @@
 #ifndef NWEB_WEB_STORAGE_IMPL_H
 #define NWEB_WEB_STORAGE_IMPL_H
 
+#include "build/build_config.h"
+#include "capi/nweb_storage_extension_callback.h"
 #include "nweb_errors.h"
 #include "nweb_web_storage.h"
 #include "nweb_web_storage_delegate_interface.h"
@@ -36,6 +38,20 @@ class NWebWebStorageImpl : public NWebWebStorage {
   void GetOriginUsage(const std::string& origin,
       std::shared_ptr<NWebValueCallback<long>> callback) override;
   long GetOriginUsage(const std::string& origin) override;
+
+#if BUILDFLAG(IS_OHOS)
+  void PutWebStorageCallback(std::shared_ptr<NWebStorageExtensionCallback>
+                                 web_storage_extension_callback);
+  std::string GetPassword(const std::string& url, const std::string& username, int callback_id);
+  void GetSavedPasswords(int callback_id);
+  void ClearPassword();
+  void RemovePassword(const std::string& url, const std::string& username);
+  void RemovePasswordByUrl(const std::string& url);
+  void ModifyPassword(const std::string& url,
+                      const std::string& old_username,
+                      const std::string& new_username,
+                      const std::string& new_password);
+#endif
  private:
   std::shared_ptr<NWebWebStorageDelegateInterface> delegate_;
 };

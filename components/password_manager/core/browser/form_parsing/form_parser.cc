@@ -30,6 +30,12 @@
 #include "components/password_manager/core/browser/password_form.h"
 #include "components/password_manager/core/common/password_manager_features.h"
 
+#if defined(OHOS_NWEB_EX)
+#include "base/base_switches.h"
+#include "base/command_line.h"
+#include "content/public/common/content_switches.h"
+#endif
+
 using autofill::FieldPropertiesFlags;
 using autofill::FormData;
 using autofill::FormFieldData;
@@ -465,6 +471,11 @@ void ParseUsingAutocomplete(const std::vector<ProcessedField>& processed_fields,
         result->password = processed_field.field;
         break;
       case AutocompleteFlag::kNewPassword:
+#if defined(OHOS_NWEB_EX)
+        if (!processed_field.is_password) {
+          return;
+        }
+#endif
         if (!processed_field.is_password || new_password_found_by_server ||
             processed_field.server_hints_not_password ||
             should_ignore_new_password_autocomplete)
@@ -888,6 +899,15 @@ std::vector<ProcessedField> ProcessFields(
   std::set<base::StringPiece16> seen_username_values;
 
   const bool consider_only_non_empty = mode == FormDataParser::Mode::kSaving;
+#if defined(OHOS_NWEB_EX)
+  bool is_password_visible = false;
+  for (const FormFieldData& field : fields) {
+    if (field.form_control_type == "password" && field.IsVisible()) {
+      is_password_visible = true;
+      break;
+    }
+  }
+#endif
   for (const FormFieldData& field : fields) {
     if (!field.IsTextInputElement())
       continue;
@@ -921,8 +941,21 @@ std::vector<ProcessedField> ProcessFields(
 
     if (field.properties_mask & FieldPropertiesFlags::kUserTyped)
       processed_field.interactability = Interactability::kCertain;
+#if defined(OHOS_NWEB_EX)
+    else if (field.is_focusable) {
+      if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+              switches::kForBrowser)) {
+        if (is_password_visible) {
+          processed_field.interactability = Interactability::kPossible;
+        }
+      } else {
+        processed_field.interactability = Interactability::kPossible;
+      }
+    }
+#else
     else if (field.is_focusable)
       processed_field.interactability = Interactability::kPossible;
+#endif
 
     result.push_back(processed_field);
   }

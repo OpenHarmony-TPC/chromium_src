@@ -121,6 +121,11 @@ class PasswordStore : public PasswordStoreInterface {
   CreateSyncControllerDelegate() override;
   PasswordStoreBackend* GetBackendForTesting() override;
 
+#if BUILDFLAG(IS_OHOS)
+  std::vector<std::unique_ptr<PasswordForm>> GetMatchingLogins(
+      const PasswordFormDigest& form);
+#endif
+
  protected:
   friend class base::RefCountedThreadSafe<PasswordStore>;
 

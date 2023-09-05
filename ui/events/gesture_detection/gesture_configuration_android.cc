@@ -47,7 +47,7 @@ class GestureConfigurationAndroid : public GestureConfiguration {
     set_gesture_begin_end_types_enabled(false);
 #endif
     set_long_press_time_in_ms(ViewConfiguration::GetLongPressTimeoutInMs());
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     set_drag_long_press_time_in_ms(
       ViewConfiguration::GetLongPressTimeoutInMs() + 600);
 #endif

@@ -69,7 +69,7 @@ class GESTURE_DETECTION_EXPORT GestureProvider {
   // be handled.
   bool OnTouchEvent(const MotionEvent& event);
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void ResetDetection(bool is_lost_focus);
 #endif
 

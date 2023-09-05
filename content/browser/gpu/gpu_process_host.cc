@@ -85,6 +85,10 @@
 #include "components/metrics/stability_metrics_helper.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "res_sched_client_adapter.h"
+#endif
+
 #if BUILDFLAG(IS_WIN)
 #include "base/win/win_util.h"
 #include "sandbox/policy/win/sandbox_win.h"
@@ -760,6 +764,14 @@ GpuProcessHost::~GpuProcessHost() {
   }
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+  if (in_process_gpu_thread_)
+    OHOS::NWeb::ResSchedClientAdapter::ReportKeyThread(
+        OHOS::NWeb::ResSchedStatusAdapter::THREAD_DESTROYED,
+        base::GetCurrentProcId(), in_process_gpu_thread_->GetThreadId(),
+        OHOS::NWeb::ResSchedRoleAdapter::IMPORTANT_DISPLAY);
+#endif
+
   // This is only called on the IO thread so no race against the constructor
   // for another GpuProcessHost.
   if (g_gpu_process_hosts[kind_] == this)
@@ -906,6 +918,12 @@ bool GpuProcessHost::Init() {
     if (base::FeatureList::IsEnabled(features::kGpuUseDisplayThreadPriority))
       options.priority = base::ThreadPriority::DISPLAY;
     in_process_gpu_thread_->StartWithOptions(std::move(options));
+#if BUILDFLAG(IS_OHOS)
+    OHOS::NWeb::ResSchedClientAdapter::ReportKeyThread(
+        OHOS::NWeb::ResSchedStatusAdapter::THREAD_CREATED,
+        base::GetCurrentProcId(), in_process_gpu_thread_->GetThreadId(),
+        OHOS::NWeb::ResSchedRoleAdapter::IMPORTANT_DISPLAY);
+#endif
   } else if (!LaunchGpuProcess()) {
     return false;
   }

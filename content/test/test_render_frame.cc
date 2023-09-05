@@ -149,7 +149,7 @@ class MockFrameHost : public mojom::FrameHost {
         std::move(browser_interface_broker_receiver));
   }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     void OnClearContextMenu() override {
 
     }

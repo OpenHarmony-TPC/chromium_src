@@ -6255,12 +6255,12 @@ bool RenderFrameImpl::DeferMediaLoad(bool has_played_media_before,
       this, has_played_media_before, std::move(closure));
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void RenderFrameImpl::ClearContextMenu() {
   // It does not postTask here because contextmenu popup windows should be
   // dismissed before drag start.
   GetFrameHost()->OnClearContextMenu();
 }
-#endif //OHOS_ENABLE_DRAG_DROP
+#endif //BUILDFLAG(IS_OHOS)
 
 }  // namespace content

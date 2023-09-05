@@ -664,10 +664,10 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
                                   bool is_hung) {}
 #endif
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   // Notified to UI, contextmenu popup window should be dimissed
   virtual void ClearContextMenu() {}
-#endif // OHOS_ENABLE_DRAG_DROP
+#endif // BUILDFLAG(IS_OHOS)
  protected:
   virtual ~RenderFrameHostDelegate() = default;
 };

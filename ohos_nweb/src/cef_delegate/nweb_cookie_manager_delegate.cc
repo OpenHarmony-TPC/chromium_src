@@ -106,7 +106,9 @@ class HasCookieVisitor : public CefCookieVisitor {
     }
   }
 
-  bool IsExistCookies() const { return total_cookies_number == 0 ? false : true; }
+  bool IsExistCookies() const {
+    return total_cookies_number == 0 ? false : true;
+  }
 
  private:
   std::shared_ptr<WaitableEvent> event_;
@@ -276,30 +278,29 @@ void NWebCookieManagerDelegate::ReturnCookie(
     LOG(ERROR) << "GetGlobalCookieManager failed";
     return;
   }
-  CefRefPtr<ReturnCookieVisitor> visitor = new ReturnCookieVisitor(nullptr, callback);
-  if (!cookie_manager->VisitUrlCookies(CefString(url), false, visitor)) {
+  CefRefPtr<ReturnCookieVisitor> visitor =
+      new ReturnCookieVisitor(nullptr, callback);
+  if (!cookie_manager->VisitUrlCookies(CefString(url), false, visitor, false)) {
     LOG(ERROR) << "VisitUrlCookies failed";
     return;
   }
 }
 
-std::string NWebCookieManagerDelegate::ReturnCookie(
-  const std::string& url) {
+std::string NWebCookieManagerDelegate::ReturnCookie(const std::string& url,
+                                                    bool& is_valid) {
   CefRefPtr<CefCookieManager> cookie_manager = GetGlobalCookieManager();
   if (cookie_manager == nullptr) {
     LOG(ERROR) << "GetGlobalCookieManager failed";
     return "";
   }
-  std::shared_ptr<base::WaitableEvent> event =
-    std::make_shared<base::WaitableEvent>(
-      base::WaitableEvent::ResetPolicy::AUTOMATIC,
-      base::WaitableEvent::InitialState::NOT_SIGNALED);
-  CefRefPtr<ReturnCookieVisitor> visitor = new ReturnCookieVisitor(event, nullptr);
-  if (!cookie_manager->VisitUrlCookies(CefString(url), false, visitor)) {
+  CefRefPtr<ReturnCookieVisitor> visitor =
+      new ReturnCookieVisitor(nullptr, nullptr);
+  is_valid = true;
+  if (!cookie_manager->VisitUrlCookies(CefString(url), false, visitor, true)) {
     LOG(ERROR) << "VisitUrlCookies failed";
+    is_valid = false;
     return "";
   }
-  event->TimedWait(base::Milliseconds(ENOUGH_WAITED_TIME));
   return visitor->ReturnCookieLine();
 }
 
@@ -320,15 +321,15 @@ void NWebCookieManagerDelegate::SetCookie(
   }
 
   if (!cookie_manager->SetCookie(CefString(url), cef_cookie,
-                                 new CookieSetCallback(nullptr, callback))) {
+                                 new CookieSetCallback(nullptr, callback),
+                                 false)) {
     LOG(ERROR) << "SetCookie error";
     return;
   }
 }
 
-int NWebCookieManagerDelegate::SetCookie(
-    const std::string& url,
-    const std::string& value) {
+int NWebCookieManagerDelegate::SetCookie(const std::string& url,
+                                         const std::string& value) {
   CefRefPtr<CefCookieManager> cookie_manager = GetGlobalCookieManager();
   if (cookie_manager == nullptr) {
     LOG(ERROR) << "GetGlobalCookieManager failed";
@@ -340,16 +341,12 @@ int NWebCookieManagerDelegate::SetCookie(
     LOG(ERROR) << "CreateCefCookie failed";
     return NWEB_INVALID_COOKIE_VALUE;
   }
-  std::shared_ptr<base::WaitableEvent> completion =
-    std::make_shared<base::WaitableEvent>(
-      base::WaitableEvent::ResetPolicy::AUTOMATIC,
-      base::WaitableEvent::InitialState::NOT_SIGNALED);
-  CefRefPtr<CookieSetCallback> callback(new CookieSetCallback(completion, nullptr));
-  if (!cookie_manager->SetCookie(CefString(url), cef_cookie, callback)) {
+  CefRefPtr<CookieSetCallback> callback(
+      new CookieSetCallback(nullptr, nullptr));
+  if (!cookie_manager->SetCookie(CefString(url), cef_cookie, callback, true)) {
     LOG(ERROR) << "SetCookie error";
     return NWEB_INVALID_URL;
   }
-  completion->TimedWait(base::Milliseconds(ENOUGH_WAITED_TIME));
   return callback->IsSetSuccess() ? NWEB_OK : NWEB_ERR;
 }
 
@@ -359,8 +356,8 @@ void NWebCookieManagerDelegate::ExistCookies(
   if (cookie_manager == nullptr) {
     return;
   }
-  CefRefPtr<HasCookieVisitor> visitor = new HasCookieVisitor(nullptr ,callback);
-  if (!cookie_manager->VisitAllCookies(visitor)) {
+  CefRefPtr<HasCookieVisitor> visitor = new HasCookieVisitor(nullptr, callback);
+  if (!cookie_manager->VisitAllCookies(visitor, false)) {
     LOG(INFO) << "VisitAllCookies failed";
     return;
   }
@@ -372,13 +369,9 @@ bool NWebCookieManagerDelegate::ExistCookies() {
     LOG(ERROR) << "GetGlobalCookieManager failed";
     return false;
   }
-  std::shared_ptr<base::WaitableEvent> completion =
-    std::make_shared<base::WaitableEvent>(
-      base::WaitableEvent::ResetPolicy::AUTOMATIC,
-      base::WaitableEvent::InitialState::NOT_SIGNALED);
-  CefRefPtr<HasCookieVisitor> visitor = new HasCookieVisitor(completion, nullptr);
-  cookie_manager->VisitAllCookies(visitor);
-  completion->TimedWait(base::Milliseconds(ENOUGH_WAITED_TIME));
+  CefRefPtr<HasCookieVisitor> visitor =
+      new HasCookieVisitor(nullptr, nullptr);
+  cookie_manager->VisitAllCookies(visitor, true);
   return visitor->IsExistCookies();
 }
 
@@ -402,9 +395,9 @@ bool NWebCookieManagerDelegate::Store() {
     return false;
   }
   std::shared_ptr<base::WaitableEvent> event =
-    std::make_shared<base::WaitableEvent>(
-      base::WaitableEvent::ResetPolicy::AUTOMATIC,
-      base::WaitableEvent::InitialState::NOT_SIGNALED);
+      std::make_shared<base::WaitableEvent>(
+          base::WaitableEvent::ResetPolicy::AUTOMATIC,
+          base::WaitableEvent::InitialState::NOT_SIGNALED);
   CefRefPtr<CookieCompletionCallback> complete =
       new CookieCompletionCallback(event, nullptr);
   if (!cookie_manager->FlushStore(complete)) {
@@ -425,7 +418,7 @@ void NWebCookieManagerDelegate::DeleteSessionCookies(
       new CookieDeleteCallback(callback);
   if (!cookie_manager->DeleteCookies(CefString(std::string()),
                                      CefString(std::string()), true,
-                                     delete_callback)) {
+                                     delete_callback, true)) {
     LOG(ERROR) << "DeleteCookieEntirely Failed";
   }
 }
@@ -436,19 +429,12 @@ void NWebCookieManagerDelegate::DeleteCookieEntirely(
   if (cookie_manager == nullptr) {
     return;
   }
-  std::shared_ptr<base::WaitableEvent> event = (callback != nullptr) ?
-    nullptr : std::make_shared<base::WaitableEvent>(
-      base::WaitableEvent::ResetPolicy::AUTOMATIC,
-      base::WaitableEvent::InitialState::NOT_SIGNALED);
   CefRefPtr<CefDeleteCookiesCallback> delete_callback =
-      new CookieDeleteCallback(event, callback);
+      new CookieDeleteCallback(nullptr, nullptr);
   if (!cookie_manager->DeleteCookies(CefString(std::string()),
                                      CefString(std::string()), false,
-                                     delete_callback)) {
+                                     delete_callback, true)) {
     LOG(ERROR) << "DeleteCookieEntirely Failed";
-  }
-  if (event != nullptr) {
-    event->TimedWait(base::Milliseconds(ENOUGH_WAITED_TIME));
   }
 }
 }  // namespace OHOS::NWeb

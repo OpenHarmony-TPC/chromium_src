@@ -58,9 +58,9 @@ class CONTENT_EXPORT WebContentsViewDelegate {
   virtual void ShowContextMenu(RenderFrameHost& render_frame_host,
                                const ContextMenuParams& params);
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   virtual void ClearContextMenu();
-#endif //OHOS_ENABLE_DRAG_DROP
+#endif //BUILDFLAG(IS_OHOS)
 
   // Tests can use ExecuteCommandForTesting to simulate executing a context menu
   // item (after first opening the context menu using the ShowContextMenu

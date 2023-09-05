@@ -23,6 +23,10 @@
 #include "components/viz/common/hit_test/hit_test_region_list.h"
 #include "components/viz/common/quads/compositor_frame.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/process/process_handle.h"
+#endif
+
 namespace cc {
 namespace mojo_embedder {
 
@@ -106,6 +110,14 @@ bool AsyncLayerTreeFrameSink::BindToClient(LayerTreeFrameSinkClient* client) {
   if (io_thread_id_ != base::kInvalidThreadId)
     thread_ids.push_back(io_thread_id_);
   compositor_frame_sink_ptr_->SetThreadIds(thread_ids);
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  std::vector<int32_t> thread_ids;
+  thread_ids.push_back(base::PlatformThread::CurrentId());
+  bool is_created = true;
+  compositor_frame_sink_ptr_->ReportKeyThreadIds(
+      thread_ids, base::GetCurrentProcId(), is_created);
 #endif
 
   return true;

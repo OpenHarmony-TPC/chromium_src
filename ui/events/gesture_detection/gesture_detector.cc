@@ -31,7 +31,7 @@ enum TimeoutEvent {
   SHOW_PRESS = 0,
   LONG_PRESS,
   TAP,
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   DRAG_LONG_PRESS,
 #endif
   TIMEOUT_EVENT_COUNT
@@ -44,7 +44,7 @@ enum TimeoutEvent {
 // values without explicitly consulting an OWNER.
 GestureDetector::Config::Config()
     : longpress_timeout(base::Milliseconds(500)),
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       draglongpress_timeout(base::Milliseconds(1500)),
 #endif
       showpress_timeout(base::Milliseconds(180)),
@@ -93,7 +93,7 @@ class GestureDetector::TimeoutGestureHandler {
 
     timeout_callbacks_[TAP] = &GestureDetector::OnTapTimeout;
     timeout_delays_[TAP] = config.double_tap_timeout;
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     timeout_callbacks_[DRAG_LONG_PRESS] =
         &GestureDetector::OnDragLongPressTimeout;
     timeout_delays_[DRAG_LONG_PRESS] =
@@ -103,7 +103,7 @@ class GestureDetector::TimeoutGestureHandler {
       timeout_timers_[SHOW_PRESS].SetTaskRunner(config.task_runner);
       timeout_timers_[LONG_PRESS].SetTaskRunner(config.task_runner);
       timeout_timers_[TAP].SetTaskRunner(config.task_runner);
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       timeout_timers_[DRAG_LONG_PRESS].SetTaskRunner(config.task_runner);
 #endif
     }
@@ -121,7 +121,7 @@ class GestureDetector::TimeoutGestureHandler {
 
   void StopTimeout(TimeoutEvent event) { timeout_timers_[event].Stop(); }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void Stop(bool is_lost_focus) {
     for (size_t i = SHOW_PRESS; i < TIMEOUT_EVENT_COUNT; ++i) {
       // The longpress show contextmeu on UI will trigger focus changed and
@@ -186,7 +186,7 @@ GestureDetector::GestureDetector(
       stylus_button_accelerated_longpress_enabled_(false),
       deep_press_accelerated_longpress_enabled_(false),
       longpress_enabled_(true),
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       draglongpress_enabled_(true),
 #endif
       showpress_enabled_(true),
@@ -238,7 +238,7 @@ bool GestureDetector::OnTouchEvent(const MotionEvent& ev,
       down_focus_y_ = last_focus_y_ = focus_y;
       // Cancel long press and taps.
       CancelTaps();
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       timeout_handler_->StopTimeout(DRAG_LONG_PRESS);
 #endif
       maximum_pointer_count_ = std::max(maximum_pointer_count_,
@@ -348,7 +348,7 @@ bool GestureDetector::OnTouchEvent(const MotionEvent& ev,
         timeout_handler_->StartTimeout(SHOW_PRESS);
       if (longpress_enabled_)
         timeout_handler_->StartTimeout(LONG_PRESS);
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       if (draglongpress_enabled_)
         timeout_handler_->StartTimeout(DRAG_LONG_PRESS);
 #endif
@@ -404,7 +404,7 @@ bool GestureDetector::OnTouchEvent(const MotionEvent& ev,
           // feature is enabled, because MetalayerMode is also activated by a
           // stylus button press and has precedence over this press acceleration
           // feature.
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
             ActivateLongPressKeepDragTimeout(ev);
 #else
           ActivateLongPressGesture(ev);
@@ -478,7 +478,7 @@ bool GestureDetector::OnTouchEvent(const MotionEvent& ev,
         defer_confirm_single_tap_ = false;
         timeout_handler_->StopTimeout(SHOW_PRESS);
         timeout_handler_->StopTimeout(LONG_PRESS);
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
         timeout_handler_->StopTimeout(DRAG_LONG_PRESS);
 #endif
       }
@@ -486,7 +486,7 @@ bool GestureDetector::OnTouchEvent(const MotionEvent& ev,
       break;
 
     case MotionEvent::Action::CANCEL:
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       Cancel(ev.IsCancelByLostFocus());
 #else
       Cancel();
@@ -496,7 +496,7 @@ bool GestureDetector::OnTouchEvent(const MotionEvent& ev,
 
   return handled;
 }
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void GestureDetector::Cancel(bool is_lost_focus) {
   // Stop waiting for a second tap and send a GESTURE_TAP_CANCEL to keep the
   // gesture stream valid.
@@ -584,14 +584,14 @@ void GestureDetector::OnShowPressTimeout() {
 }
 
 void GestureDetector::OnLongPressTimeout() {
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   ActivateLongPressKeepDragTimeout(*current_down_event_);
 #else
   ActivateLongPressGesture(*current_down_event_);
 #endif
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void GestureDetector::OnDragLongPressTimeout() {
   LOG(ERROR) << "DragDrop GestureDetector::OnDragLongPressTimeout";
   listener_->OnDragLongPress(*current_down_event_);
@@ -614,7 +614,7 @@ void GestureDetector::ActivateLongPressGesture(const MotionEvent& ev) {
   defer_confirm_single_tap_ = false;
   listener_->OnLongPress(ev);
 }
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void GestureDetector::ActivateLongPressKeepDragTimeout(const MotionEvent& ev) {
   timeout_handler_->Stop(true);
   defer_confirm_single_tap_ = false;
@@ -633,7 +633,7 @@ void GestureDetector::Cancel() {
   still_down_ = false;
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void GestureDetector::StopDragLongPressGesture() {
   timeout_handler_->StopTimeout(DRAG_LONG_PRESS);
 }

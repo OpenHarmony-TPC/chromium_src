@@ -155,6 +155,24 @@ void GetLatestProxyConfigInternal(const GetPropertyCallback& get_property,
   }
 }
 
+std::string FixupProxyHostScheme(std::string host) {
+  // Strip the scheme if any.
+  std::string::size_type colon = host.find("://");
+  if (colon != std::string::npos)
+    host = host.substr(colon + 3);
+  // If a username and perhaps password are specified, give a warning.
+  std::string::size_type at_sign = host.find("@");
+  // Should this be supported?
+  if (at_sign != std::string::npos) {
+    // ProxyConfig does not support authentication parameters, but Chrome
+    // will prompt for the password later. Disregard the
+    // authentication parameters and continue with this hostname.
+    LOG(WARNING) << "Proxy authentication parameters ignored, see bug 16709";
+    host = host.substr(at_sign + 1);
+  }
+  return host;
+}
+
 std::string GetProperty(const std::string& property) {
   // Use OH network to get configuration information.
   std::string host;
@@ -165,7 +183,7 @@ std::string GetProperty(const std::string& property) {
   .GetNetProxyInstance().GetProperty(host, port, pac_url, exclusion);
 
   if (property == "http.proxyHost" || property == "https.proxyHost") {
-    return host;
+    return FixupProxyHostScheme(host);
   } else if (property == "http.proxyPort" || property == "https.proxyPort") {
     return std::to_string(port);
   } else if (property == "http.nonProxyHosts" || property == "https.nonProxyHosts") {

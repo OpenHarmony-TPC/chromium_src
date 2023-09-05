@@ -36,7 +36,7 @@
 
 #if BUILDFLAG(IS_OHOS)
 namespace media {
-  class OHOSAudioOutputStream;
+class OHOSAudioOutputStream;
 }
 #endif
 
@@ -328,11 +328,12 @@ class MediaSessionImpl : public MediaSession,
   const base::UnguessableToken& GetRequestId() const;
 
 #if BUILDFLAG(IS_OHOS)
-public:
+ public:
   std::unordered_set<media::OHOSAudioOutputStream*> activeAudioStream_;
   int audioResumeInterval_ = 0;
   bool audioExclusive_ = true;
   bool isStreamSuspended_ = false;
+  base::WeakPtrFactory<content::MediaSessionImpl> weakMediaSessionFactory_;
 #endif
 
  private:

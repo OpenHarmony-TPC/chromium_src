@@ -28,6 +28,7 @@ LocationProviderOhos::~LocationProviderOhos() {
 
 void LocationProviderOhos::SetUpdateCallback(
     const LocationProviderUpdateCallback& callback) {
+  LOG(DEBUG) << "LocationProviderOhos::SetUpdateCallback";
   callback_ = callback;
 
   if (!locator_callback_) {
@@ -45,11 +46,13 @@ void LocationProviderOhos::ProviderUpdateCallback(
 }
 
 void LocationProviderOhos::StartProvider(bool high_accuracy) {
+  LOG(DEBUG) << "LocationProviderOhos::StartProvider";
   StopProvider();
   RequestLocationUpdate(high_accuracy);
 }
 
 void LocationProviderOhos::StopProvider() {
+  LOG(DEBUG) << "LocationProviderOhos::StopProvider";
   if (!is_running_)
     return;
   is_running_ = false;
@@ -59,15 +62,18 @@ void LocationProviderOhos::StopProvider() {
 }
 
 const mojom::Geoposition& LocationProviderOhos::GetPosition() {
+  LOG(DEBUG) << "LocationProviderOhos::GetPosition";
   return locator_callback_->GetPosition();
 }
 
 void LocationProviderOhos::OnPermissionGranted() {
+  LOG(DEBUG) << "LocationProviderOhos::OnPermissionGranted";
   // Nothing to do here.
 }
 
 void LocationProviderCallback::OnNewLocationAvailable(
     const std::unique_ptr<OHOS::NWeb::LocationInfo>& location) {
+  LOG(DEBUG) << "LocationProviderCallback::OnNewLocationAvailable";
   if (!location)
     return;
 
@@ -86,6 +92,7 @@ void LocationProviderCallback::OnNewLocationAvailable(
 }
 
 void LocationProviderCallback::OnNewErrorAvailable(std::string message) {
+  LOG(DEBUG) << "LocationProviderCallback::OnNewErrorAvailable";
   mojom::Geoposition position_error;
   position_error.error_code =
       mojom::Geoposition::ErrorCode::POSITION_UNAVAILABLE;

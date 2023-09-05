@@ -19,6 +19,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "build/build_config.h"
+#include "capi/nweb_storage_extension_callback.h"
 #include "nweb_value_callback.h"
 #include "nweb_web_storage.h"
 
@@ -37,6 +39,24 @@ class NWebWebStorageDelegateInterface {
   virtual void GetOriginUsage(const std::string& origin,
                               std::shared_ptr<NWebValueCallback<long>> callback) = 0;
   virtual long GetOriginUsage(const std::string& origin) = 0;
+
+#if BUILDFLAG(IS_OHOS)
+  virtual void RegisterWebStorageExtensionCallback(
+      std::shared_ptr<NWebStorageExtensionCallback>
+          web_storage_extension_callback) = 0;
+  virtual std::string GetPassword(const std::string& url,
+                                  const std::string& username,
+                                  int callback_id) = 0;
+  virtual void GetSavedPasswordsInfo(int callback_id) = 0;
+  virtual void ClearPassword() = 0;
+  virtual void RemovePassword(const std::string& url,
+                              const std::string& username) = 0;
+  virtual void RemovePasswordByUrl(const std::string& url) = 0;
+  virtual void ModifyPassword(const std::string& url,
+                              const std::string& old_username,
+                              const std::string& new_username,
+                              const std::string& new_password) = 0;
+#endif
 };
 }  // namespace OHOS::NWeb
 #endif

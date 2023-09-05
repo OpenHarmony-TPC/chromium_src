@@ -37,7 +37,14 @@ component("os_crypt") {
     "os_crypt_switches.cc",
     "os_crypt_switches.h",
   ]
-
+  if (is_ohos) {
+    sources += [
+      "ohos_crypto.cc",
+      "ohos_crypto.h",
+      "ohos_keystore.cc",
+      "ohos_keystore.h",
+    ]
+  }
   deps = [
     "//base",
     "//build:branding_buildflags",

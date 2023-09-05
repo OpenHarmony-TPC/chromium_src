@@ -73,6 +73,11 @@ class PasswordStoreProxyBackend : public PasswordStoreBackend {
   CreateSyncControllerDelegate() override;
   void ClearAllLocalPasswords() override;
 
+#if BUILDFLAG(IS_OHOS)
+  LoginsResult FillMatchingLogins(
+      bool include_psl,
+      const std::vector<PasswordFormDigest>& forms) override;
+#endif
   const raw_ptr<PasswordStoreBackend> main_backend_;
   const raw_ptr<PasswordStoreBackend> shadow_backend_;
   raw_ptr<PrefService> const prefs_ = nullptr;

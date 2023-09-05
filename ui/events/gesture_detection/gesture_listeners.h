@@ -7,6 +7,8 @@
 
 #include "ui/events/gesture_detection/gesture_detection_export.h"
 
+#include "build/build_config.h"
+
 namespace ui {
 
 class MotionEvent;
@@ -19,7 +21,7 @@ class GESTURE_DETECTION_EXPORT GestureListener {
   virtual void OnShowPress(const MotionEvent& e) = 0;
   virtual bool OnSingleTapUp(const MotionEvent& e, int tap_count) = 0;
   virtual void OnLongPress(const MotionEvent& e) = 0;
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   virtual void OnDragLongPress(const MotionEvent& e) = 0;
 #endif
   virtual bool OnScroll(const MotionEvent& e1,
@@ -62,7 +64,7 @@ class GESTURE_DETECTION_EXPORT SimpleGestureListener
   void OnShowPress(const MotionEvent& e) override;
   bool OnSingleTapUp(const MotionEvent& e, int tap_count) override;
   void OnLongPress(const MotionEvent& e) override;
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void OnDragLongPress(const MotionEvent& e) override;
 #endif
   bool OnScroll(const MotionEvent& e1,

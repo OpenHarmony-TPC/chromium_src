@@ -26,7 +26,7 @@ bool TouchscreenTapSuppressionController::FilterTapEvent(
 
     case WebInputEvent::Type::kGestureShowPress:
     case WebInputEvent::Type::kGestureLongPress:
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     case WebInputEvent::Type::kGestureDragLongPress:
 #endif
     case WebInputEvent::Type::kGestureTapUnconfirmed:

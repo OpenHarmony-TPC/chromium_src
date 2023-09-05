@@ -117,6 +117,7 @@ class NWebDelegateInterface
   virtual void ClearClientAuthenticationCache() = 0;
   virtual void Reload() const = 0;
   virtual void ReloadOriginalUrl() const = 0;
+  virtual void PasswordSuggestionSelected(int list_index) const = 0;
   virtual int Zoom(float zoomFactor) const = 0;
   virtual int ZoomIn() const = 0;
   virtual int ZoomOut() const = 0;
@@ -130,6 +131,8 @@ class NWebDelegateInterface
   virtual void InitialScale(float scale) const = 0;
   virtual void OnPause() = 0;
   virtual void OnContinue() = 0;
+  virtual void OnOccluded() = 0;
+  virtual void OnUnoccluded() = 0;
   virtual std::shared_ptr<NWebPreference> GetPreference() const = 0;
   virtual std::string Title() = 0;
   virtual void CreateWebMessagePorts(std::vector<std::string>& ports) = 0;
@@ -215,12 +218,19 @@ class NWebDelegateInterface
   virtual void SelectAndCopy() = 0;
   virtual bool ShouldShowFreeCopy() = 0;
   virtual void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) = 0;
+
+  virtual void SetSavePasswordAutomatically(bool enable) = 0;
+  virtual bool GetSavePasswordAutomatically() = 0;
+  virtual void SetSavePassword(bool enable) = 0;
+  virtual bool GetSavePassword() = 0;
+  virtual void SaveOrUpdatePassword(bool is_update) = 0;
 #endif
 
   virtual void SetShouldFrameSubmissionBeforeDraw(bool should) = 0;
   virtual void SetAudioResumeInterval(int32_t resumeInterval) = 0;
   virtual void SetAudioExclusive(bool audioExclusive) = 0;
   virtual void NotifyPopupWindowResult(bool result) = 0;
+  virtual void SetWindowId(uint32_t window_id);
 };
 }  // namespace OHOS::NWeb
 

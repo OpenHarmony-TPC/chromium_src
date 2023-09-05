@@ -72,7 +72,10 @@ class NWebDragDataImpl : public NWebDragData {
     return drag_data_;
   }
 
+  void FreePixlMapData();
+
  private:
+  void* image_buffer_ = nullptr;
   void GenerateOhosDragBitmapFromOrigin(const SkBitmap& in_bitmap, SkBitmap& out_bitmap, int& width, int& height);
   void GenerateOhosDragBitmapFromOriginForRichtext(const SkBitmap& in_bitmap, SkBitmap& out_bitmap,
                                                    int& width, int& height);

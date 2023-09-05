@@ -12980,11 +12980,11 @@ std::ostream& operator<<(std::ostream& o,
   return o << RenderFrameHostImpl::LifecycleStateImplToString(s);
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void RenderFrameHostImpl::OnClearContextMenu() {
   if (IsInactiveAndDisallowActivation(DisallowActivationReasonId::kShowContextMenu))
     return;
   delegate_->ClearContextMenu();
 }
-#endif // OHOS_ENABLE_DRAG_DROP
+#endif // BUILDFLAG(IS_OHOS)
 }  // namespace content

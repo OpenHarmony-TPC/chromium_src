@@ -18,18 +18,16 @@ constexpr int64_t VSYNC_PERIOD_6090HZ_MID = 13000000;
 class ExternalBeginFrameSourceOHOS::VSyncUserData {
  public:
   VSyncUserData(const scoped_refptr<base::SingleThreadTaskRunner>& current,
-                viz::ExternalBeginFrameSourceOHOS* weakPtr)
-      : current_(current), weakPtr_(weakPtr){
-          LOG(INFO) << "VSyncUserData constructor!!!";
-      };
+                const base::WeakPtr<viz::ExternalBeginFrameSourceOHOS>& weakPtr)
+      : current_(current), weak_ptr_(weakPtr) {
+    LOG(INFO) << "VSyncUserData constructor!!!";
+  };
   VSyncUserData(const VSyncUserData&) = delete;
   VSyncUserData& operator=(const VSyncUserData&) = delete;
-  ~VSyncUserData() {
-    LOG(INFO) << "VSyncUserData destructor!!!";
-  };
+  ~VSyncUserData() { LOG(INFO) << "VSyncUserData destructor!!!"; };
 
   const scoped_refptr<base::SingleThreadTaskRunner>& current_;
-  base::WeakPtrFactory<viz::ExternalBeginFrameSourceOHOS> weakPtr_;
+  base::WeakPtr<viz::ExternalBeginFrameSourceOHOS> weak_ptr_;
 };
 
 ExternalBeginFrameSourceOHOS::ExternalBeginFrameSourceOHOS(
@@ -37,14 +35,13 @@ ExternalBeginFrameSourceOHOS::ExternalBeginFrameSourceOHOS(
     FrameSinkManagerImpl* frame_sink_manager)
     : ExternalBeginFrameSource(this, restart_id),
       vsync_notification_enabled_(false),
-      user_data_(
-          std::make_unique<VSyncUserData>(base::ThreadTaskRunnerHandle::Get(),
-                                          this)),
       vsync_adapter_(OhosAdapterHelper::GetInstance().GetVSyncAdapter()),
       frame_sink_manager_(frame_sink_manager) {
   TRACE_EVENT0("viz",
                "ExternalBeginFrameSourceOHOS::ExternalBeginFrameSourceOHOS");
   LOG(INFO) << "ExternalBeginFrameSourceOHOS constructor!!!";
+  user_data_ = std::make_unique<VSyncUserData>(
+      base::ThreadTaskRunnerHandle::Get(), weak_factory_.GetWeakPtr());
 }
 
 ExternalBeginFrameSourceOHOS::~ExternalBeginFrameSourceOHOS() {
@@ -75,13 +72,12 @@ void ExternalBeginFrameSourceOHOS::OnVSync(int64_t timestamp, void* data) {
 
   userData->current_->PostTask(
       FROM_HERE, base::BindOnce(&ExternalBeginFrameSourceOHOS::OnVSyncImpl,
-                                userData->weakPtr_.GetWeakPtr(), timestamp));
+                                userData->weak_ptr_, timestamp, userData));
 }
 
-void ExternalBeginFrameSourceOHOS::OnVSyncImpl(int64_t timestamp) {
-  if (!vsync_notification_enabled_) {
-    return;
-  }
+void ExternalBeginFrameSourceOHOS::OnVSyncImpl(int64_t timestamp,
+                                               VSyncUserData* user_data) {
+  user_data_.reset(user_data);
   last_vsync_period_ = timestamp;
   int64_t period = last_vsync_period_ - pre_vsync_period_;
   pre_vsync_period_ = last_vsync_period_;
@@ -104,8 +100,8 @@ void ExternalBeginFrameSourceOHOS::OnVSyncImpl(int64_t timestamp) {
                  "ExternalBeginFrameSourceOHOS::OnVSyncImpl::BackToMainThread");
     frame_sink_manager_->OnVsync(frame_sink_id_);
   }
-  
-  vsync_adapter_->RequestVsync(reinterpret_cast<void*>(user_data_.get()),
+
+  vsync_adapter_->RequestVsync(user_data_.release(),
                                ExternalBeginFrameSourceOHOS::OnVSync);
 }
 
@@ -121,7 +117,7 @@ void ExternalBeginFrameSourceOHOS::SetEnabled(bool enabled) {
                enabled);
   vsync_notification_enabled_ = enabled;
   if (vsync_notification_enabled_) {
-    vsync_adapter_->RequestVsync(reinterpret_cast<void*>(user_data_.get()),
+    vsync_adapter_->RequestVsync(user_data_.release(),
                                  ExternalBeginFrameSourceOHOS::OnVSync);
   }
 }

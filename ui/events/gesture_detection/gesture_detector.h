@@ -30,7 +30,7 @@ class GESTURE_DETECTION_EXPORT GestureDetector {
     ~Config();
 
     base::TimeDelta longpress_timeout;
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     base::TimeDelta draglongpress_timeout;
 #endif
     base::TimeDelta showpress_timeout;
@@ -119,7 +119,7 @@ class GESTURE_DETECTION_EXPORT GestureDetector {
   void set_longpress_enabled(bool enabled) { longpress_enabled_ = enabled; }
   void set_showpress_enabled(bool enabled) { showpress_enabled_ = enabled; }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void set_draglongpress_enabled(bool enabled) {
     draglongpress_enabled_ = enabled;
   }
@@ -138,7 +138,7 @@ class GESTURE_DETECTION_EXPORT GestureDetector {
   void Init(const Config& config);
   void OnShowPressTimeout();
   void OnLongPressTimeout();
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void OnDragLongPressTimeout();
   void Cancel(bool is_lost_focus);
   void CancelTaps(bool is_lost_focus);
@@ -209,7 +209,7 @@ class GESTURE_DETECTION_EXPORT GestureDetector {
   bool stylus_button_accelerated_longpress_enabled_;
   bool deep_press_accelerated_longpress_enabled_;
   bool longpress_enabled_;
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   bool draglongpress_enabled_;
 #endif
   bool showpress_enabled_;

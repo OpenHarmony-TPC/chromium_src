@@ -139,7 +139,7 @@ void ScrollBar::OnGestureEvent(ui::GestureEvent* event) {
     return;
   }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   if (event->type() == ui::ET_GESTURE_DRAG_LONG_PRESS) {
     // For a long-press, the repeater started in tap-down should continue. So
     // return early.

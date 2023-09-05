@@ -66,6 +66,7 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
   void DeleteForwardHandlerOnUI(int32_t length);
   bool IsCorrectParam(int32_t number, int32_t& selectBegin, int32_t& selectEnd);
   bool ResetTextSelectiondata();
+  IMFAdapterCursorInfo GetCursorInfo();
 
   static uint32_t lastAttachNWebId_;
   uint32_t nweb_Id_ = 0;
@@ -96,6 +97,7 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
   std::mutex textCursorMutex_;
   std::condition_variable textCursorCv_;
   bool is_need_notify_all_ = false;
+  int32_t text_cursor_length_ = 0;
 
   IMPLEMENT_REFCOUNTING(NWebInputMethodHandler);
 };

@@ -57,7 +57,7 @@ class GESTURE_DETECTION_EXPORT FilteredGestureProvider final
   // Synthesizes and propagates gesture end events.
   void SendSynthesizedEndEvents();
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void ResetDetection(bool is_lost_focus);
 #endif
 

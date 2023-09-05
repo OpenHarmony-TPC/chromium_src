@@ -1287,9 +1287,10 @@ void BrowserAutofillManager::DidShowSuggestions(bool has_autofill_suggestions,
 }
 
 void BrowserAutofillManager::OnHidePopup() {
+#if !BUILDFLAG(IS_OHOS)
   if (!IsAutofillEnabled())
     return;
-
+#endif
   single_field_form_fill_router_->CancelPendingQueries(this);
   client()->HideAutofillPopup(PopupHidingReason::kRendererEvent);
 }

@@ -107,7 +107,13 @@ const base::Feature kPasswordImport = {"PasswordImport",
 
 // Enables password reuse detection.
 const base::Feature kPasswordReuseDetectionEnabled = {
-    "PasswordReuseDetectionEnabled", base::FEATURE_ENABLED_BY_DEFAULT};
+    "PasswordReuseDetectionEnabled",
+#if BUILDFLAG(IS_OHOS)
+    base::FEATURE_DISABLED_BY_DEFAULT
+#else
+    base::FEATURE_ENABLED_BY_DEFAULT
+#endif
+};
 
 // Enables a revised opt-in flow for the account-scoped password storage.
 const base::Feature kPasswordsAccountStorageRevisedOptInFlow = {

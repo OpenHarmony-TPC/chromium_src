@@ -215,4 +215,12 @@ void PasswordStoreBackendMigrationDecorator::SyncStatusChanged() {
   }
 }
 
+#if BUILDFLAG(IS_OHOS)
+LoginsResult PasswordStoreBackendMigrationDecorator::FillMatchingLogins(
+    bool include_psl,
+    const std::vector<PasswordFormDigest>& forms) {
+  return {};
+}
+#endif
+
 }  // namespace password_manager

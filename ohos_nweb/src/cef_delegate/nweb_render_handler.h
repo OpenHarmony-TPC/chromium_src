@@ -124,6 +124,7 @@ class NWebRenderHandler : public CefRenderHandler {
       NWebTouchHandleState::TouchHandleType type);
 
   CefRefPtr<CefDragData> GetDragData();
+  void FreePixlMapData();
 
   float GetVirtualPixelRatio() const { return screen_info_.display_ratio; }
   float GetCefDeviceRatio() const { return cef_device_ratio_; }

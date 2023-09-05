@@ -46,7 +46,7 @@ class CC_EXPORT EventMetrics {
     kGestureScrollEnd,
     kGestureDoubleTap,
     kGestureLongPress,
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     kGestureDragLongPress,
 #endif
     kGestureLongTap,

@@ -1407,7 +1407,8 @@ bool FilePath::IsContentUri() const {
 bool FilePath::IsDataShareUri() const {
    return StartsWith(path_, "datashare://", base::CompareCase::INSENSITIVE_ASCII) ||
         StartsWith(path_, "dataability://", base::CompareCase::INSENSITIVE_ASCII) ||
-        StartsWith(path_, "file://media/", base::CompareCase::INSENSITIVE_ASCII);
+        StartsWith(path_, "file://media/", base::CompareCase::INSENSITIVE_ASCII) ||
+        StartsWith(path_, "file://docs/", base::CompareCase::INSENSITIVE_ASCII);;
 }
 #endif
 }  // namespace base

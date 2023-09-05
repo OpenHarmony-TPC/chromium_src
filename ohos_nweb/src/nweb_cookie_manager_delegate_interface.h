@@ -33,7 +33,7 @@ class NWebCookieManagerDelegateInterface {
   virtual void ReturnCookie(
       const std::string& url,
       std::shared_ptr<NWebValueCallback<std::string>> callback) = 0;
-  virtual std::string ReturnCookie(const std::string &url) = 0;
+  virtual std::string ReturnCookie(const std::string &url, bool &is_valid) = 0;
   virtual void SetCookie(const std::string& url,
                          const std::string& value,
                          std::shared_ptr<NWebValueCallback<bool>> callback) = 0;

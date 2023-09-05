@@ -137,17 +137,49 @@ int GetVerifiedChain(X509_STORE_CTX* ctx, std::vector<std::string>* verified_cha
   return X509_V_OK;
 }
 
+int CertChainRootVerify(X509* server_cert[],
+                        int32_t index,
+                        X509_STORE* ca_store) {
+  if (!server_cert || !ca_store || index <= 0) {
+    return X509_V_ERR_UNSPECIFIED;
+  }
+
+  STACK_OF(X509)* ca_stack = nullptr;
+  X509_STORE_CTX* ctx = nullptr;
+  ctx = X509_STORE_CTX_new();
+  if (!ctx) {
+    return X509_V_ERR_UNSPECIFIED;
+  }
+  X509_STORE_CTX_init(ctx, ca_store, server_cert[index], ca_stack);
+  if (!X509_verify_cert(ctx)) {
+    auto error = ctx->error;
+    LOG(ERROR) << "Certificate verify error: " << error
+               << ", Certificate verify info: "
+               << X509_verify_cert_error_string(ctx->error);
+    X509_STORE_CTX_free(ctx);
+    return error;
+  }
+  X509_STORE_CTX_free(ctx);
+  return X509_V_OK;
+}
+
 int CertChainVerify(X509* server_cert[],
                     int32_t server_cert_sum,
                     X509_STORE* ca_store,
                     std::vector<std::string>* verified_chain) {
-  uint32_t i;
+  int32_t server_cert_index;
   STACK_OF(X509)* ca_stack = nullptr;
   X509_STORE_CTX* ctx = nullptr;
 
   // Add the server certificate to the certificate store
-  for (i = server_cert_sum - 1; i > 0; i--) {
-    X509_STORE_add_cert(ca_store, server_cert[i]);
+  for (server_cert_index = server_cert_sum - 1; server_cert_index > 0; server_cert_index--) {
+    int ret = CertChainRootVerify(server_cert, server_cert_index, ca_store);
+    if (ret == X509_V_OK) {
+      for (int cert_index = server_cert_index; cert_index > 0; cert_index--) {
+        X509_STORE_add_cert(ca_store, server_cert[cert_index]);
+      }
+      break;
+    }
   }
 
   // Create certificate store context function

@@ -29,6 +29,13 @@
 #include "gpu/vulkan/vulkan_implementation.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/process/process_handle.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
+#include "res_sched_client_adapter.h"
+#endif
+
 namespace viz {
 
 // static
@@ -89,6 +96,15 @@ CompositorGpuThread::CompositorGpuThread(
       weak_ptr_factory_(this) {}
 
 CompositorGpuThread::~CompositorGpuThread() {
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          base::IgnoreResult(&ResSchedClientAdapter::ReportKeyThread),
+          ResSchedStatusAdapter::THREAD_DESTROYED, base::GetCurrentProcId(),
+          GetThreadId(), ResSchedRoleAdapter::IMPORTANT_DISPLAY));
+#endif
   base::Thread::Stop();
 }
 
@@ -102,6 +118,15 @@ bool CompositorGpuThread::Initialize() {
   // Wait until threas is started and Init() is executed in order to return
   // updated |init_succeeded_|.
   WaitUntilThreadStarted();
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          base::IgnoreResult(&ResSchedClientAdapter::ReportKeyThread),
+          ResSchedStatusAdapter::THREAD_CREATED, base::GetCurrentProcId(),
+          GetThreadId(), ResSchedRoleAdapter::IMPORTANT_DISPLAY));
+#endif
   return init_succeeded_;
 }
 

@@ -69,7 +69,7 @@ SourceEventType EventTypeToLatencySourceEventType(EventType type) {
     case ET_GESTURE_PINCH_END:
     case ET_GESTURE_PINCH_UPDATE:
     case ET_GESTURE_LONG_PRESS:
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     case ET_GESTURE_DRAG_LONG_PRESS:
 #endif
     case ET_GESTURE_LONG_TAP:
