@@ -36,7 +36,7 @@ class NWebCookieManagerImpl : public NWebCookieManager {
   void ReturnCookie(
       const std::string& url,
       std::shared_ptr<NWebValueCallback<std::string>> callback) override;
-  std::string ReturnCookie(const std::string &url) override;
+  std::string ReturnCookie(const std::string &url, bool &is_valid) override;
   void SetCookie(const std::string& url,
                  const std::string& value,
                  std::shared_ptr<NWebValueCallback<bool>> callback) override;

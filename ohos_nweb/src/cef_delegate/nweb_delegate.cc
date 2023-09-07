@@ -42,7 +42,7 @@ namespace OHOS::NWeb {
 
 void ConvertCefValueToNWebMessage(CefRefPtr<CefValue> src, std::shared_ptr<NWebMessage> dst) {
   int type = src->GetType();
-  LOG(INFO) << "OnMessage type:" << type;
+  LOG(DEBUG) << "OnMessage type:" << type;
   switch (type) {
     case VTYPE_STRING: {
       dst->SetType(NWebValue::Type::STRING);
@@ -151,7 +151,7 @@ class CefWebMessageReceiverImpl : public CefWebMessageReceiver {
       std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback)
       : callback_(callback){};
   void OnMessage(CefRefPtr<CefValue> message) override {
-    LOG(INFO) << "OnMessage in nweb delegate";
+    LOG(DEBUG) << "OnMessage in nweb delegate";
     if (callback_ != nullptr) {
         auto data = std::make_shared<OHOS::NWeb::NWebMessage>(NWebValue::Type::NONE);
         ConvertCefValueToNWebMessage(message, data);
@@ -249,7 +249,7 @@ bool NWebDelegate::HasBackgroundColorWithInit(int32_t& backgroundColor) {
     if (!strncmp(argv_[i], "--init-background-color=", strlen("--init-background-color="))) {
       const char* value = argv_[i] + strlen("--init-background-color=");
       backgroundColor = atoi(value);
-      LOG(INFO) << "HasBackgroundColorWithInit, background color = " << backgroundColor;
+      LOG(DEBUG) << "HasBackgroundColorWithInit, background color = " << backgroundColor;
       return true;
     }
   }
@@ -379,7 +379,7 @@ void NWebDelegate::StartDownload(const char* url) {
 
 void NWebDelegate::ResumeDownload(
     std::shared_ptr<NWebDownloadItem> web_download) {
-  LOG(INFO) << "NWebDelegate::ResumeDownload";
+  LOG(DEBUG) << "NWebDelegate::ResumeDownload";
   auto browser = GetBrowser();
 
   if (web_download == nullptr) {
@@ -504,6 +504,10 @@ void NWebDelegate::OnTouchPress(int32_t id,
                                 double y,
                                 bool from_overlay) {
   if (event_handler_ != nullptr) {
+    auto browser = GetBrowser();
+    if (browser != nullptr && browser->GetHost() != nullptr) {
+      browser->GetHost()->SetFocus(true);
+    }
     event_handler_->OnTouchPress(id, x / default_virtual_pixel_ratio_,
                                  y / default_virtual_pixel_ratio_,
                                  from_overlay);
@@ -631,7 +635,7 @@ int NWebDelegate::Load(const std::string& url) {
       return NWEB_INVALID_URL;
     }
   }
-  LOG(INFO) << "NWebDelegate::Load url=" << url;
+  LOG(DEBUG) << "NWebDelegate::Load url=" << url;
   auto browser = GetBrowser();
   if (browser == nullptr) {
     LOG(ERROR) << "NWebDelegate::Load browser is nullptr";
@@ -643,7 +647,7 @@ int NWebDelegate::Load(const std::string& url) {
 }
 
 bool NWebDelegate::IsNavigatebackwardAllowed() const {
-  LOG(INFO) << "NWebDelegate::IsNavigatebackwardAllowed";
+  LOG(DEBUG) << "NWebDelegate::IsNavigatebackwardAllowed";
   if (GetBrowser().get()) {
     return GetBrowser()->CanGoBack();
   }
@@ -651,7 +655,7 @@ bool NWebDelegate::IsNavigatebackwardAllowed() const {
 }
 
 bool NWebDelegate::IsNavigateForwardAllowed() const {
-  LOG(INFO) << "NWebDelegate::IsNavigateForwardAllowed";
+  LOG(DEBUG) << "NWebDelegate::IsNavigateForwardAllowed";
   if (GetBrowser().get()) {
     return GetBrowser()->CanGoForward();
   }
@@ -659,7 +663,7 @@ bool NWebDelegate::IsNavigateForwardAllowed() const {
 }
 
 bool NWebDelegate::CanNavigateBackOrForward(int num_steps) const {
-  LOG(INFO) << "NWebDelegate::CanNavigateBackOrForward";
+  LOG(DEBUG) << "NWebDelegate::CanNavigateBackOrForward";
   if (GetBrowser().get()) {
     return GetBrowser()->CanGoBackOrForward(num_steps);
   }
@@ -667,35 +671,35 @@ bool NWebDelegate::CanNavigateBackOrForward(int num_steps) const {
 }
 
 void NWebDelegate::NavigateBack() const {
-  LOG(INFO) << "NWebDelegate::NavigateBack";
+  LOG(DEBUG) << "NWebDelegate::NavigateBack";
   if (GetBrowser().get()) {
     GetBrowser()->GoBack();
   }
 }
 
 void NWebDelegate::NavigateForward() const {
-  LOG(INFO) << "NWebDelegate::NavigateForward";
+  LOG(DEBUG) << "NWebDelegate::NavigateForward";
   if (GetBrowser().get()) {
     GetBrowser()->GoForward();
   }
 }
 
 void NWebDelegate::NavigateBackOrForward(int step) const {
-  LOG(INFO) << "NWebDelegate::NavigateBackOrForward";
+  LOG(DEBUG) << "NWebDelegate::NavigateBackOrForward";
   if (GetBrowser().get()) {
     GetBrowser()->GoBackOrForward(step);
   }
 }
 
 void NWebDelegate::DeleteNavigateHistory() {
-  LOG(INFO) << "NWebDelegate::DeleteNavigateHistory";
+  LOG(DEBUG) << "NWebDelegate::DeleteNavigateHistory";
   if (GetBrowser().get()) {
     GetBrowser()->DeleteHistory();
   }
 }
 
 void NWebDelegate::ClearSslCache() {
-  LOG(INFO) << "NWebDelegate::ClearSslCache";
+  LOG(DEBUG) << "NWebDelegate::ClearSslCache";
   CefRefPtr<CefRequestContext> context = CefRequestContext::GetGlobalContext();
   if (context != nullptr) {
     context->ClearCertificateExceptions(nullptr);
@@ -703,7 +707,7 @@ void NWebDelegate::ClearSslCache() {
 }
 
 void NWebDelegate::ClearClientAuthenticationCache() {
-  LOG(INFO) << "NWebDelegate::ClearClientAuthenticationCache";
+  LOG(DEBUG) << "NWebDelegate::ClearClientAuthenticationCache";
   CefRefPtr<CefRequestContext> context = CefRequestContext::GetGlobalContext();
   if (context != nullptr) {
     context->ClearClientAuthenticationCache(nullptr);
@@ -711,21 +715,28 @@ void NWebDelegate::ClearClientAuthenticationCache() {
 }
 
 void NWebDelegate::Reload() const {
-  LOG(INFO) << "NWebDelegate::Reload";
+  LOG(DEBUG) << "NWebDelegate::Reload";
   if (GetBrowser().get()) {
     GetBrowser()->Reload();
   }
 }
 
 void NWebDelegate::ReloadOriginalUrl() const {
-  LOG(INFO) << "NWebDelegate::ReloadOriginalUrl";
+  LOG(DEBUG) << "NWebDelegate::ReloadOriginalUrl";
   if (GetBrowser().get()) {
     GetBrowser()->ReloadOriginalUrl();
   }
 }
 
+void NWebDelegate::PasswordSuggestionSelected(int list_index) const {
+  LOG(DEBUG) << "NWebDelegate::PasswordSuggestionSelected";
+  if (GetBrowser().get()) {
+    GetBrowser()->PasswordSuggestionSelected(list_index);
+  }
+}
+
 const std::string NWebDelegate::GetOriginalUrl() {
-  LOG(INFO) << "NWebDelegate::GetOriginalUrl";
+  LOG(DEBUG) << "NWebDelegate::GetOriginalUrl";
   if (GetBrowser().get()) {
     return GetBrowser()->GetHost()->GetOriginalUrl();
   }
@@ -737,7 +748,7 @@ bool NWebDelegate::GetFavicon(const void** data,
                               size_t& height,
                               ImageColorType& colorType,
                               ImageAlphaType& alphaType) {
-  LOG(INFO) << "NWebDelegate::getFavicon";
+  LOG(DEBUG) << "NWebDelegate::getFavicon";
   if (handler_delegate_) {
     return handler_delegate_->GetFavicon(data, width, height, colorType,
                                          alphaType);
@@ -748,14 +759,14 @@ bool NWebDelegate::GetFavicon(const void** data,
 }
 
 void NWebDelegate::PutNetworkAvailable(bool avaiable) {
-  LOG(INFO) << "NWebDelegate::PutNetworkAvailable";
+  LOG(DEBUG) << "NWebDelegate::PutNetworkAvailable";
   if (GetBrowser().get()) {
     GetBrowser()->GetHost()->PutNetworkAvailable(avaiable);
   }
 }
 
 void NWebDelegate::SetBrowserUserAgentString(const std::string& user_agent) {
-  LOG(INFO) << "NWebDelegate::SetBrowserUserAgentString";
+  LOG(DEBUG) << "NWebDelegate::SetBrowserUserAgentString";
   if (GetBrowser().get()) {
     GetBrowser()->SetBrowserUserAgentString(user_agent);
   }
@@ -774,7 +785,7 @@ void NWebDelegate::StoreWebArchive(
 }
 
 int NWebDelegate::Zoom(float zoomFactor) const {
-  LOG(INFO) << "NWebDelegate::Zoom";
+  LOG(DEBUG) << "NWebDelegate::Zoom";
   if (!preference_delegate_) {
     LOG(ERROR) << "preference_delegate_ get fail";
     return NWEB_ERR;
@@ -793,7 +804,7 @@ int NWebDelegate::Zoom(float zoomFactor) const {
 }
 
 int NWebDelegate::ZoomIn() const {
-  LOG(INFO) << "NWebDelegate::ZoomIn";
+  LOG(DEBUG) << "NWebDelegate::ZoomIn";
   if (!preference_delegate_) {
     return NWEB_ERR;
   }
@@ -811,7 +822,7 @@ int NWebDelegate::ZoomIn() const {
 }
 
 int NWebDelegate::ZoomOut() const {
-  LOG(INFO) << "NWebDelegate::ZoomOut";
+  LOG(DEBUG) << "NWebDelegate::ZoomOut";
   if (!preference_delegate_) {
     return NWEB_ERR;
   }
@@ -829,7 +840,7 @@ int NWebDelegate::ZoomOut() const {
 }
 
 bool NWebDelegate::SetZoomInFactor(float factor) {
-  LOG(INFO) << "NWebDelegate::SetZoomInFactor";
+  LOG(DEBUG) << "NWebDelegate::SetZoomInFactor";
   if (factor <= 0) {
     return false;
   }
@@ -838,7 +849,7 @@ bool NWebDelegate::SetZoomInFactor(float factor) {
 }
 
 bool NWebDelegate::SetZoomOutFactor(float factor) {
-  LOG(INFO) << "NWebDelegate::SetZoomOutFactor";
+  LOG(DEBUG) << "NWebDelegate::SetZoomOutFactor";
   if (factor >= 0) {
     return false;
   }
@@ -847,14 +858,14 @@ bool NWebDelegate::SetZoomOutFactor(float factor) {
 }
 
 void NWebDelegate::Stop() const {
-  LOG(INFO) << "NWebDelegate::Stop";
+  LOG(DEBUG) << "NWebDelegate::Stop";
   if (GetBrowser().get()) {
     GetBrowser()->StopLoad();
   }
 }
 
 void NWebDelegate::ExecuteJavaScript(const std::string& code) const {
-  LOG(INFO) << "NWebDelegate::ExecuteJavaScript";
+  LOG(DEBUG) << "NWebDelegate::ExecuteJavaScript";
   if (GetBrowser().get()) {
     GetBrowser()->GetMainFrame()->ExecuteJavaScript(
         code, GetBrowser()->GetMainFrame()->GetURL(), 0);
@@ -865,7 +876,7 @@ void NWebDelegate::ExecuteJavaScript(
     const std::string& code,
     std::shared_ptr<NWebValueCallback<std::shared_ptr<NWebMessage>>> callback,
     bool extention) const {
-  LOG(INFO) << "NWebDelegate::ExecuteJavaScript with callback";
+  LOG(DEBUG) << "NWebDelegate::ExecuteJavaScript with callback";
 
   if (GetBrowser().get()) {
     CefRefPtr<JavaScriptResultCallbackImpl> JsResultCb =
@@ -875,7 +886,7 @@ void NWebDelegate::ExecuteJavaScript(
 }
 
 void NWebDelegate::PutBackgroundColor(int color) const {
-  LOG(INFO) << "NWebDelegate::PutBackgroundColor color: " << (uint32_t)color;
+  LOG(DEBUG) << "NWebDelegate::PutBackgroundColor color: " << (uint32_t)color;
   if (GetBrowser().get()) {
     GetBrowser()->GetHost()->SetBackgroundColor(color);
   }
@@ -885,7 +896,7 @@ void NWebDelegate::PutBackgroundColor(int color) const {
 }
 
 void NWebDelegate::InitialScale(float scale) const {
-  LOG(INFO) << "NWebDelegate::InitialScale";
+  LOG(DEBUG) << "NWebDelegate::InitialScale";
   if (scale == intial_scale_ || !render_handler_) {
     return;
   }
@@ -896,19 +907,23 @@ void NWebDelegate::InitialScale(float scale) const {
 }
 
 void NWebDelegate::OnPause() {
-  LOG(INFO) << "NWebDelegate::OnPause";
+  LOG(DEBUG) << "NWebDelegate::OnPause";
   if (!GetBrowser().get()) {
     return;
   }
 
   // Remove focus from the browser.
   GetBrowser()->GetHost()->SetFocus(false);
+  if (handler_delegate_) {
+    handler_delegate_->SetFocusState(false);
+  }
   if (focus_nweb_id_.find(nweb_id_) != focus_nweb_id_.end()) {
     focus_nweb_id_.erase(nweb_id_);
   }
 
   if (!hidden_) {
     // Set the browser as hidden.
+    LOG(DEBUG) << "NWebDelegate::OnPause set hidden";
     GetBrowser()->GetHost()->WasHidden(true);
     hidden_ = true;
   }
@@ -916,13 +931,21 @@ void NWebDelegate::OnPause() {
 }
 
 void NWebDelegate::OnContinue() {
-  LOG(INFO) << "NWebDelegate::OnContinue";
+  LOG(DEBUG) << "NWebDelegate::OnContinue";
   if (!GetBrowser().get()) {
+    return;
+  }
+
+  if (occluded_) {
+    LOG(DEBUG) << "NWebDelegate::OnContinue set occluded";
+    hidden_ = false;
+    GetBrowser()->GetHost()->WasOccluded(true);
     return;
   }
 
   if (hidden_) {
     // Set the browser as visible.
+    LOG(DEBUG) << "NWebDelegate::OnContinue set unhidden";
     GetBrowser()->GetHost()->WasHidden(false);
     hidden_ = false;
   }
@@ -936,6 +959,34 @@ void NWebDelegate::OnContinue() {
     }
   }
   is_onPause_ = false;
+}
+
+void NWebDelegate::OnOccluded() {
+  LOG(DEBUG) << "NWebDelegate::OnOccluded";
+  if (!GetBrowser().get()) {
+    return;
+  }
+
+  if (!hidden_ && !occluded_) {
+    // Set the browser as occluded.
+    LOG(DEBUG) << "NWebDelegate::OnOccluded set occluded";
+    GetBrowser()->GetHost()->WasOccluded(true);
+  }
+  occluded_ = true;
+}
+
+void NWebDelegate::OnUnoccluded() {
+  LOG(DEBUG) << "NWebDelegate::OnUnoccluded";
+  if (!GetBrowser().get()) {
+    return;
+  }
+
+  if (!hidden_ && occluded_) {
+    // Set the browser as visible.
+    LOG(DEBUG) << "NWebDelegate::OnUnoccluded set unoccluded";
+    GetBrowser()->GetHost()->WasOccluded(false);
+  }
+  occluded_ = false;
 }
 
 void NWebDelegate::OnContextInitializeComplete(const std::string& url,
@@ -1145,7 +1196,7 @@ void NWebDelegate::PostPortMessage(std::string& portHandle, std::shared_ptr<NWeb
   CefString handleCef;
   handleCef.FromString(portHandle);
 
-  LOG(INFO) << "JSAPI PostPortMessage in nweb delegate";
+  LOG(DEBUG) << "JSAPI PostPortMessage in nweb delegate";
   CefRefPtr<CefValue> message = CefValue::Create();
   ConvertNWebMsgToCefValue(data, message);
 
@@ -1165,7 +1216,7 @@ void NWebDelegate::SetPortMessageCallback(std::string& portHandle,
 }
 
 std::string NWebDelegate::GetUrl() const {
-  LOG(INFO) << "NWebDelegate::get url";
+  LOG(DEBUG) << "NWebDelegate::get url";
   if (GetBrowser().get()) {
     auto entry = GetBrowser()->GetHost()->GetVisibleNavigationEntry();
     if (entry) {
@@ -1239,7 +1290,7 @@ int NWebDelegate::LoadWithDataAndBaseUrl(const std::string& baseUrl,
                                          const std::string& mimeType,
                                          const std::string& encoding,
                                          const std::string& historyUrl) {
-  LOG(INFO) << "NWebDelegate::LoadWithDataAndBaseUrl";
+  LOG(DEBUG) << "NWebDelegate::LoadWithDataAndBaseUrl";
   if (!GetBrowser().get()) {
     return NWEB_ERR;
   }
@@ -1252,7 +1303,7 @@ int NWebDelegate::LoadWithDataAndBaseUrl(const std::string& baseUrl,
 int NWebDelegate::LoadWithData(const std::string& data,
                                const std::string& mimeType,
                                const std::string& encoding) {
-  LOG(INFO) << "NWebDelegate::LoadWithData";
+  LOG(DEBUG) << "NWebDelegate::LoadWithData";
   if (!GetBrowser().get()) {
     return NWEB_ERR;
   }
@@ -1299,7 +1350,7 @@ int NWebDelegate::ContentHeight() {
 void NWebDelegate::RegisterArkJSfunction(
     const std::string& object_name,
     const std::vector<std::string>& method_list) const {
-  LOG(INFO) << "RegisterArkJSfunction name : " << object_name.c_str();
+  LOG(DEBUG) << "RegisterArkJSfunction name : " << object_name.c_str();
   std::vector<CefString> method_vector;
   for (std::string method : method_list) {
     method_vector.push_back(method);
@@ -1310,7 +1361,7 @@ void NWebDelegate::RegisterArkJSfunction(
 void NWebDelegate::UnregisterArkJSfunction(
     const std::string& object_name,
     const std::vector<std::string>& method_list) const {
-  LOG(INFO) << "UnregisterArkJSfunction name : " << object_name.c_str();
+  LOG(DEBUG) << "UnregisterArkJSfunction name : " << object_name.c_str();
   std::vector<CefString> method_vector;
   for (std::string method : method_list) {
     method_vector.push_back(method);
@@ -1338,8 +1389,10 @@ bool NWebDelegate::OnFocus(const FocusReason& focusReason) const {
                   "capture when loading this web page.";
     return false;
   }
-  GetBrowser()->GetHost()->SetFocus(true);
-  focus_nweb_id_.insert(nweb_id_);
+  if (handler_delegate_ && !handler_delegate_->GetFocusState()) {
+    GetBrowser()->GetHost()->SetFocus(true);
+    focus_nweb_id_.insert(nweb_id_);
+  }
   return true;
 }
 
@@ -1349,7 +1402,7 @@ void NWebDelegate::OnBlur() const {
     return;
   }
 
-  if (handler_delegate_) {
+  if (handler_delegate_ && handler_delegate_->GetFocusState()) {
     handler_delegate_->SetFocusState(false);
     GetBrowser()->GetHost()->SetFocus(false);
     if (focus_nweb_id_.find(nweb_id_) != focus_nweb_id_.end()) {
@@ -1401,6 +1454,7 @@ void NWebDelegate::ClearDragData() const {
     if (!render_handler_) {
         return;
     }
+    render_handler_->FreePixlMapData();
     auto drag_data = render_handler_->GetDragData();
     if (drag_data) {
         drag_data->SetFragmentText("");
@@ -1422,13 +1476,13 @@ void NWebDelegate::SendDragEvent(const DelegateDragEvent& dragEvent) const {
   event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
   switch (dragEvent.action) {
     case DelegateDragAction::DRAG_START:
-      LOG(INFO) << "DragDrop event SendDragEvent start";
+      LOG(DEBUG) << "DragDrop event SendDragEvent start";
       break;
     case DelegateDragAction::DRAG_ENTER:
       if (render_handler_) {
-        LOG(INFO) << "DragDrop event DRAG_ENTER SendDragEvent enter, send dragdata to chromium";
+        LOG(DEBUG) << "DragDrop event DRAG_ENTER SendDragEvent enter, send dragdata to chromium";
         ClearDragData();
-	auto drag_data = render_handler_->GetDragData();
+        auto drag_data = render_handler_->GetDragData();
         GetBrowser()->GetHost()->DragTargetDragEnter(
             drag_data, event, DRAG_OPERATION_EVERY);
       } else {
@@ -1436,7 +1490,7 @@ void NWebDelegate::SendDragEvent(const DelegateDragEvent& dragEvent) const {
       }
       break;
     case DelegateDragAction::DRAG_LEAVE:
-      LOG(INFO) << "DragDrop event SendDragEvent leave";
+      LOG(DEBUG) << "DragDrop event SendDragEvent leave";
       GetBrowser()->GetHost()->DragTargetDragLeave();
       break;
     case DelegateDragAction::DRAG_OVER:
@@ -1444,15 +1498,15 @@ void NWebDelegate::SendDragEvent(const DelegateDragEvent& dragEvent) const {
       break;
     case DelegateDragAction::DRAG_DROP:
       event.modifiers = EVENTFLAG_NONE;
-      LOG(INFO) << "DragDrop event SendDragEvent drop";
+      LOG(DEBUG) << "DragDrop event SendDragEvent drop";
       if (render_handler_) {
         auto drag_data1 = render_handler_->GetDragData();
         auto fragment1 = drag_data1->GetFragmentText();
-        LOG(INFO) << "DragDrop drag data GetFragmentText:" << fragment1.ToString();
+        LOG(DEBUG) << "DragDrop drag data GetFragmentText:" << fragment1.ToString();
         auto link_url1 = drag_data1->GetLinkURL();
-        LOG(INFO) << "DragDrop drag data GetLinkURL:" << link_url1.ToString();
+        LOG(DEBUG) << "DragDrop drag data GetLinkURL:" << link_url1.ToString();
         auto link_html1 = drag_data1->GetFragmentHtml();
-        LOG(INFO) << "DragDrop drag data GetFragmentHtml:" << link_html1.ToString();
+        LOG(DEBUG) << "DragDrop drag data GetFragmentHtml:" << link_html1.ToString();
       } else {
         LOG(ERROR) << "DragDrop drag data render_handler_ nullptr";
       }
@@ -1461,18 +1515,18 @@ void NWebDelegate::SendDragEvent(const DelegateDragEvent& dragEvent) const {
       break;
     case DelegateDragAction::DRAG_END:
       ClearDragData();
-      LOG(INFO) << "DragDrop event SendDragEvent end";
+      LOG(DEBUG) << "DragDrop event SendDragEvent end";
       GetBrowser()->GetHost()->DragSourceEndedAt(event.x, event.y,
                                                  DRAG_OPERATION_COPY);
       GetBrowser()->GetHost()->DragSourceSystemDragEnded();
       break;
     case DelegateDragAction::DRAG_CANCEL:
       ClearDragData();
-      LOG(INFO) << "DragDrop event SendDragEvent cancel";
+      LOG(DEBUG) << "DragDrop event SendDragEvent cancel";
       GetBrowser()->GetHost()->DragSourceSystemDragEnded();
       break;
     default:
-      LOG(INFO) << "invalid drag action";
+      LOG(DEBUG) << "invalid drag action";
       break;
   }
 }
@@ -1624,7 +1678,7 @@ bool NWebDelegate::GetCertChainDerDataInner(CefRefPtr<CefX509Certificate> cert,
   cert->GetDEREncodedIssuerChain(der_chain_list);
   der_chain_list.insert(der_chain_list.begin(), cert->GetDEREncoded());
 
-  LOG(INFO) << "GetCertChainDerData der_chain_list size = " << der_chain_list.size();
+  LOG(DEBUG) << "GetCertChainDerData der_chain_list size = " << der_chain_list.size();
   for (size_t i = 0U; i < der_chain_list.size(); ++i) {
     if (!der_chain_list[i].get()) {
       LOG(ERROR) << "GetCertChainDerDataInner failed, der chain data is null, index = " << i;
@@ -1637,13 +1691,13 @@ bool NWebDelegate::GetCertChainDerDataInner(CefRefPtr<CefX509Certificate> cert,
     der_chain_list[i]->GetData(const_cast<char*>(cert_data_item.data()), cert_data_size, 0);
     certChainData.emplace_back(cert_data_item);
     if (isSingleCert) {
-      LOG(INFO) << "get only one certificate of the current website";
+      LOG(DEBUG) << "get only one certificate of the current website";
       break;
     }
   }
 
   if (certChainData.size() == 0) {
-    LOG(INFO) << "GetCertChainDerData, no certificate data";
+    LOG(DEBUG) << "GetCertChainDerData, no certificate data";
     return false;
   }
 
@@ -1663,6 +1717,19 @@ void NWebDelegate::NotifyPopupWindowResult(bool result) {
   if (handler_delegate_) {
     handler_delegate_->NotifyPopupWindowResult(result);
   }
+}
+
+void NWebDelegate::SetWindowId(uint32_t window_id) {
+  if (handler_delegate_) {
+    handler_delegate_->SetWindowId(window_id);
+  }
+
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "SetWindowId can not get browser";
+    return;
+  }
+
+  GetBrowser()->GetHost()->SetWindowId(window_id, nweb_id_);
 }
 
 void NWebDelegate::PrefetchPage(
@@ -1685,7 +1752,7 @@ void NWebDelegate::PrefetchPage(
 
 #if defined (OHOS_NWEB_EX)
 void NWebDelegate::SetForceEnableZoom(bool forceEnableZoom) {
-  LOG(INFO) << "NWebDelegate::SetForceEnableZoom " << forceEnableZoom;
+  LOG(DEBUG) << "NWebDelegate::SetForceEnableZoom " << forceEnableZoom;
   if (GetBrowser().get()) {
     GetBrowser()->SetForceEnableZoom(forceEnableZoom);
   }
@@ -1704,6 +1771,39 @@ void NWebDelegate::SelectAndCopy() {
   }
 }
 
+void NWebDelegate::SaveOrUpdatePassword(bool is_update) {
+  if (GetBrowser().get()) {
+    GetBrowser()->SaveOrUpdatePassword(is_update);
+  }
+}
+void NWebDelegate::SetSavePasswordAutomatically(bool enable) {
+  LOG(DEBUG) << "NWebDelegate::SetSavePasswordAutomatically " << enable;
+  if (GetBrowser().get()) {
+    GetBrowser()->SetSavePasswordAutomatically(enable);
+  }
+}
+
+bool NWebDelegate::GetSavePasswordAutomatically() {
+  if (GetBrowser().get()) {
+    return GetBrowser()->GetSavePasswordAutomatically();
+  }
+  return false;
+}
+
+void NWebDelegate::SetSavePassword(bool enable) {
+  LOG(DEBUG) << "NWebDelegate::SetSavePassword " << enable;
+  if (GetBrowser().get()) {
+    GetBrowser()->SetSavePassword(enable);
+  }
+}
+
+bool NWebDelegate::GetSavePassword() {
+  if (GetBrowser().get()) {
+    return GetBrowser()->GetSavePassword();
+  }
+  return false;
+}
+
 bool NWebDelegate::ShouldShowFreeCopy() {
   if (GetBrowser().get()) {
     return GetBrowser()->ShouldShowFreeCopy();
@@ -1713,7 +1813,7 @@ bool NWebDelegate::ShouldShowFreeCopy() {
 
 void NWebDelegate::SetEnableBlankTargetPopupIntercept(
     bool enableBlankTargetPopup) {
-  LOG(INFO) << "NWebDelegate::SetEnableBlankTargetPopupIntercept "
+  LOG(DEBUG) << "NWebDelegate::SetEnableBlankTargetPopupIntercept "
             << enableBlankTargetPopup;
   if (GetBrowser().get()) {
     GetBrowser()->SetEnableBlankTargetPopupIntercept(enableBlankTargetPopup);
@@ -1723,7 +1823,7 @@ void NWebDelegate::SetEnableBlankTargetPopupIntercept(
     // only. Set enableBlankTargetPopup in NWebPreferenceDelegate first, and
     // then set it in NWebHandlerDelegate::OnAfterCreated when browser is
     // created.
-    LOG(INFO) << "NWebDelegate::SetEnableBlankTargetPopupIntercept to "
+    LOG(DEBUG) << "NWebDelegate::SetEnableBlankTargetPopupIntercept to "
                  "preference_delegate_ "<< enableBlankTargetPopup;
     preference_delegate_->SetEnableBlankTargetPopupIntercept(enableBlankTargetPopup);
   }

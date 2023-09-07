@@ -80,7 +80,7 @@ DispositionHandlingInfo GetDispositionHandlingInfo(EventType type) {
       return Info(RT_START);
     case ET_GESTURE_LONG_PRESS:
       return Info(RT_START);
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     case ET_GESTURE_DRAG_LONG_PRESS:
       return Info(RT_START);
 #endif

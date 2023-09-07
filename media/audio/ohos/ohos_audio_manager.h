@@ -5,11 +5,24 @@
 #ifndef MEDIA_AUDIO_OHOS_AUDIO_MANAGER_H_
 #define MEDIA_AUDIO_OHOS_AUDIO_MANAGER_H_
 
+#include "audio_system_manager_adapter.h"
 #include "media/audio/audio_manager_base.h"
 #include "media/audio/ohos/ohos_audio_input_stream.h"
 #include "media/audio/ohos/ohos_audio_output_stream.h"
 
 namespace media {
+
+class AudioManagerDeviceChangeCallback
+    : public AudioManagerDeviceChangeCallbackAdapter {
+ public:
+  AudioManagerDeviceChangeCallback(base::RepeatingClosure cb);
+  ~AudioManagerDeviceChangeCallback();
+
+  void OnDeviceChange() override;
+
+ private:
+  const base::RepeatingClosure outputDeviceChangeListenerCallback_;
+};
 
 class MEDIA_EXPORT OHOSAudioManager : public AudioManagerBase {
  public:
@@ -56,7 +69,9 @@ class MEDIA_EXPORT OHOSAudioManager : public AudioManagerBase {
   void SelectAudioDevice(const std::string& device_id, bool isInput);
 
  private:
-    bool isCommunication_ = false;
+  bool isCommunication_ = false;
+  std::shared_ptr<AudioManagerDeviceChangeCallback>
+      outputDeviceChangeCallback_ = nullptr;
 };
 
 }  // namespace media

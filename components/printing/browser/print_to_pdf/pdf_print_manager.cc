@@ -298,6 +298,10 @@ void PdfPrintManager::ReleaseJob(PrintResult result) {
   Reset();
 }
 
+#if BUILDFLAG(IS_OHOS)
+void PdfPrintManager::PrintRequested(PrintRequestedCallback callback) {}
+#endif
+
 WEB_CONTENTS_USER_DATA_KEY_IMPL(PdfPrintManager);
 
 }  // namespace print_to_pdf

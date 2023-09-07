@@ -61,9 +61,9 @@ void WebContentsViewDelegate::OnPerformDrop(const DropData& drop_data,
   return std::move(callback).Run(DropCompletionResult::kContinue);
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void WebContentsViewDelegate::ClearContextMenu() {
   }
-#endif // OHOS_ENABLE_DRAG_DROP
+#endif // BUILDFLAG(IS_OHOS)
 
 }  // namespace content

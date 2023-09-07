@@ -96,6 +96,11 @@ class ClosuresForMojoResponse
   void SetPrintSettingFromUserQuitClosure(base::OnceClosure quit_print_setting);
   void RunPrintSettingFromUserQuitClosure();
 
+#if BUILDFLAG(IS_OHOS)
+  void SetPrintRequestedPreviewQuitClosure(
+      base::OnceClosure quit_print_preview);
+  void RunPrintRequestedPreviewQuitClosure();
+#endif  // IS_OHOS
  private:
   friend class base::RefCounted<ClosuresForMojoResponse>;
   ~ClosuresForMojoResponse();
@@ -103,6 +108,10 @@ class ClosuresForMojoResponse
   // Stores quit closures for the runloops that are waiting for Mojo replies.
   base::OnceClosure scripted_print_preview_quit_closure_;
   base::OnceClosure get_print_settings_from_user_quit_closure_;
+
+#if BUILDFLAG(IS_OHOS)
+  base::OnceClosure print_requested_preview_quit_closure_;
+#endif  // IS_OHOS
 };
 
 // PrintRenderFrameHelper handles most of the printing grunt work for
@@ -694,6 +703,10 @@ class PrintRenderFrameHelper
   mojo::AssociatedRemote<mojom::PrintManagerHost> print_manager_host_;
 
   base::WeakPtrFactory<PrintRenderFrameHelper> weak_ptr_factory_{this};
+
+#if BUILDFLAG(IS_OHOS)
+  static blink::WebLocalFrame* static_web_frame_;
+#endif  // IS_OHOS
 };
 
 }  // namespace printing

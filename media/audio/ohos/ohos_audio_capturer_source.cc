@@ -97,6 +97,7 @@ void OHOSAudioCapturerSource::InitializeOnCapturerThread() {
       AudioAdapterSourceType::SOURCE_TYPE_VOICE_COMMUNICATION;
   capturerOptions.capturerFlags = 0;
   capturer_->Create(capturerOptions);
+  capturer_->GetFrameCount(frameCount_);
 }
 
 void OHOSAudioCapturerSource::StartOnCapturerThread() {
@@ -134,21 +135,19 @@ void OHOSAudioCapturerSource::ReadData() {
   BufferDescAdapter bufferDesc;
   bufferDesc.bufLength = 0;
   capturer_->GetBufferDesc(bufferDesc);
-  uint32_t frameCount = 0;
-  capturer_->GetFrameCount(frameCount);
-  if (static_cast<int>(frameCount) > 2 * params_.sample_rate() / 100) {
+  if (static_cast<int>(frameCount_) > 2 * params_.sample_rate() / 100) {
     LOG(ERROR) << "audioBus cannot handle input audio data more than 20ms. "
                   "frameCount: "
-               << static_cast<int>(frameCount);
+               << static_cast<int>(frameCount_);
     capturer_->Enqueue(bufferDesc);
     return;
   }
   base::TimeTicks timeStamp =
       base::TimeTicks() + base::Nanoseconds(capturer_->GetAudioTime());
-  auto audio_bus = AudioBus::Create(params_.channels(), frameCount);
+  auto audio_bus = AudioBus::Create(params_.channels(), frameCount_);
   audio_bus->FromInterleaved<SignedInt16SampleTypeTraits>(
       reinterpret_cast<const int16_t*>(bufferDesc.buffer),
-      static_cast<int>(frameCount));
+      static_cast<int>(frameCount_));
   if (callback_) {
     callback_->Capture(audio_bus.get(), timeStamp, 1.0, false);
   }

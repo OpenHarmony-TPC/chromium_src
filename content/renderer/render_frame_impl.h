@@ -397,7 +397,7 @@ class CONTENT_EXPORT RenderFrameImpl
   float GetDeviceScaleFactor() override;
   blink::scheduler::WebAgentGroupScheduler& GetAgentGroupScheduler() override;
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void ClearContextMenu() override;
 #endif
   // blink::mojom::AutoplayConfigurationClient implementation:

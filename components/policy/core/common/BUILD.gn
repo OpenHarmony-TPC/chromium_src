@@ -325,6 +325,12 @@ source_set("internal") {
       frameworks += [ "Foundation.framework" ]
     }
   }
+  if (is_ohos) {
+    sources += [
+      "policy_loader_ohos.cc",
+      "policy_loader_ohos.h",
+    ]
+  }
 }
 
 static_library("test_support") {

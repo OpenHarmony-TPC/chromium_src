@@ -79,6 +79,11 @@
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
+#if defined(OHOS_NWEB_EX)
+#include "components/password_manager/core/browser/password_form_manager_for_ui.h"
+#include "components/password_manager/core/browser/password_manager.h"
+#endif
+
 #if BUILDFLAG(IS_ANDROID)
 #include "content/public/browser/android/child_process_importance.h"
 #endif
@@ -398,6 +403,27 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   void SetForceEnableZoom(bool forceEnableZoom) override;
 
   bool GetForceEnableZoom() override { return force_enable_zoom_; }
+
+  void SetSavePasswordAutomatically(bool enable) override {
+    LOG(INFO) << "set save password automatically: " << enable;
+    save_password_automatically_ = enable;
+  }
+
+  bool GetSavePasswordAutomatically() override {
+    return save_password_automatically_;
+  }
+  void SetSavePassword(bool enable) override {
+    LOG(INFO) << "set save password enabled: " << enable;
+    save_password_ = enable;
+  }
+
+  bool GetSavePassword() override { return save_password_; }
+
+  void PromptSaveOrUpdatePassword(
+      bool is_update_password,
+      std::unique_ptr<password_manager::PasswordFormManagerForUI> form_to_save);
+  void SaveOrUpdatePassword(bool is_update) override;
+
   void SelectAndCopy() override;
   void SetShouldShowFreeCopy(bool is_selectable);
 
@@ -407,6 +433,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   bool GetEnableBlankTargetPopupIntercept() override {
     return enable_blank_target_popup_intercept_;
   }
+
+  void ShowAutofillPopup(
+      const gfx::RectF& element_bounds,
+      bool is_rtl,
+      const std::vector<autofill::Suggestion>& suggestions) override;
+  void HideAutofillPopup() override;
 #endif  // OHOS_NWEB_EX
 
 #endif
@@ -900,9 +932,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
       PrerenderTriggerType trigger_type,
       const std::string& embedder_histogram_suffix) override;
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void ClearContextMenu() override;
-#endif // OHOS_ENABLE_DRAG_DROP
+#endif // BUILDFLAG(IS_OHOS)
 
   // NavigatorDelegate ---------------------------------------------------------
 
@@ -2347,6 +2379,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   bool is_selectable_;
   std::string user_agent_{""};
   bool enable_blank_target_popup_intercept_ = true;
+  bool save_password_ = true;
+  bool save_password_automatically_ = false;
+  std::unique_ptr<password_manager::PasswordFormManagerForUI> form_to_save_;
 #endif  // OHOS_NWEB_EX
 
   base::WeakPtrFactory<WebContentsImpl> loading_weak_factory_{this};

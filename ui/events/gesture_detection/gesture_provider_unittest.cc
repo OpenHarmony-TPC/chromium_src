@@ -55,9 +55,9 @@ GestureProvider::Config CreateDefaultConfig() {
   sConfig.gesture_detector_config.double_tap_timeout = kOneMicrosecond * 4;
   sConfig.gesture_detector_config.double_tap_min_time = kOneMicrosecond * 2;
 
-  #ifdef OHOS_ENABLE_DRAG_DROP
+  #ifdef BUILDFLAG(IS_OHOS)
   sConfig.gesture_detector_config.draglongpress_timeout = kOneSecond;
-  #endif //OHOS_ENABLE_DRAG_DROP
+  #endif //BUILDFLAG(IS_OHOS)
 
   return sConfig;
 }
@@ -169,7 +169,7 @@ class GestureProviderTest : public testing::Test, public GestureProviderClient {
     gestures_.clear();
   }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void ResetGestureDetection(bool is_lost_focus) {
     gesture_provider_->ResetDetection(is_lost_focus);
     gestures_.clear();
@@ -241,11 +241,11 @@ class GestureProviderTest : public testing::Test, public GestureProviderClient {
     return GetDefaultConfig().gesture_detector_config.longpress_timeout;
   }
 
-  #ifdef OHOS_ENABLE_DRAG_DROP
+  #ifdef BUILDFLAG(IS_OHOS)
   base::TimeDelta GetDragLongpressTimeout() const {
     return GetDefaultConfig().gesture_detector_config.draglongpress_timeout;
   }
-  #endif //OHOS_ENABLE_DRAG_DROP
+  #endif //BUILDFLAG(IS_OHOS)
 
   base::TimeDelta GetShowPressTimeout() const {
     return GetDefaultConfig().gesture_detector_config.showpress_timeout;
@@ -309,13 +309,13 @@ class GestureProviderTest : public testing::Test, public GestureProviderClient {
     SetUpWithConfig(config);
   }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void SetDragLongPressTimeout(base::TimeDelta draglongpress_timeout) {
     GestureProvider::Config config = GetDefaultConfig();
     config.gesture_detector_config.longpress_timeout = draglongpress_timeout;
     SetUpWithConfig(config);
    }
-#endif //OHOS_ENABLE_DRAG_DROP
+#endif //BUILDFLAG(IS_OHOS)
 
   void SetSingleTapRepeatInterval(int repeat_interval) {
     GestureProvider::Config config = GetDefaultConfig();
@@ -3492,7 +3492,7 @@ TEST_F(GestureProviderTest, MaxDragDistanceHistogramsWithDrag) {
   histograms_tester.ExpectTotalCount("Event.MaxDragDistance.STYLUS", 0);
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 //Verify that DRAGLONGPRES is triggered after LONG_PRESS event.
 TEST_F(GestureProviderTest, GestureDragLongpressCreateDetection) {
   base::TimeTicks event_time = base::TimeTicks::Now();
@@ -3555,6 +3555,6 @@ TEST_F(GestureProviderTest, GesutreDragLongpressCancelAndReset) {
   RunTasksAndWait(drag_long_press_timeout);
   EXPECT_FALSE(HasReceivedGesture(ET_GESTURE_DRAG_LONG_PRESS));
 }
-#endif //OHOS_ENABLE_DRAG_DROP
+#endif //BUILDFLAG(IS_OHOS)
 
 }  // namespace ui

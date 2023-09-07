@@ -745,6 +745,21 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
     virtual void PrefetchPage(
         std::string& url,
         std::map<std::string, std::string> additionalHttpHeaders) = 0;
+
+    /**
+     * Set the window id.
+     */
+    virtual void SetWindowId(uint32_t window_id) = 0;
+
+    /**
+     * Notify that browser was occluded by other windows.
+     */
+    virtual void OnOccluded() const = 0;
+
+    /**
+     *Notify that browser was unoccluded by other windows.
+     */
+    virtual void OnUnoccluded() const = 0;
 };
 }  // namespace OHOS::NWeb
 

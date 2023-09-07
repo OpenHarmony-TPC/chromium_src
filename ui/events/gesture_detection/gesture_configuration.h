@@ -63,7 +63,7 @@ class GESTURE_DETECTION_EXPORT GestureConfiguration {
   }
   int long_press_time_in_ms() const { return long_press_time_in_ms_; }
   void set_long_press_time_in_ms(int val) { long_press_time_in_ms_ = val; }
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   int drag_long_press_time_in_ms() const { return drag_long_press_time_in_ms_; }
   void set_drag_long_press_time_in_ms(int val) {
     drag_long_press_time_in_ms_ = val;
@@ -230,7 +230,7 @@ class GESTURE_DETECTION_EXPORT GestureConfiguration {
   bool stylus_scale_enabled_;
   bool gesture_begin_end_types_enabled_;
   int long_press_time_in_ms_;
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   int drag_long_press_time_in_ms_;
 #endif
   float max_distance_between_taps_for_double_tap_;

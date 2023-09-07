@@ -515,4 +515,11 @@ void PasswordStoreProxyBackend::ClearAllLocalPasswords() {
   NOTIMPLEMENTED();
 }
 
+#if BUILDFLAG(IS_OHOS)
+LoginsResult PasswordStoreProxyBackend::FillMatchingLogins(
+    bool include_psl,
+    const std::vector<PasswordFormDigest>& forms) {
+  return {};
+}
+#endif
 }  // namespace password_manager

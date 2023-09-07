@@ -127,7 +127,7 @@ FrameEvictionManager::FrameEvictionManager()
   OHOS::NWeb::ProductDeviceType deviceType =
       system_properties_adapter.GetProductDeviceType();
 
-  if (deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_PC ||
+  if (deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_2IN1 ||
       deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_TABLET) {
     max_number_of_saved_frames_ = kMaxNumberOfSavedFrames;
   }

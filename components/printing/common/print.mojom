@@ -384,4 +384,7 @@ interface PrintManagerHost {
   // that. Instead, this dependency is enforced by GN.
   [EnableIf=enable_tagged_pdf]
   SetAccessibilityTree(int32 cookie, ax.mojom.AXTreeUpdate accessibility_tree);
+
+  [EnableIf=is_ohos]
+  PrintRequested() => ();
 };

@@ -92,8 +92,7 @@ bool RenderRemoteProxy::WaitForBrowserFd() {
   while (++wait_count <= kMaxWaitCount) {
     if (!browser_fd_cv_.wait_for(lk, std::chrono::milliseconds(kTimeOutDur),
                                  []() { return is_browser_fd_received_; })) {
-      LOG(INFO) << "retry AttachRenderProcess for " << wait_count << "time";
-      g_app_mgr_client_adapter->AttachRenderProcess(g_render_remote_proxy);
+      LOG(INFO) << "wait browser fd for " << wait_count * kTimeOutDur  << " ms";
     } else {
       LOG(INFO) << "success, wait for browser fd end";
       return true;

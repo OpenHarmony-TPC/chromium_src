@@ -296,4 +296,14 @@ void PasswordStoreBuiltInBackend::RemoveFieldInfoByTime(
       std::move(completion));
 }
 
+#if BUILDFLAG(IS_OHOS)
+LoginsResult PasswordStoreBuiltInBackend::FillMatchingLogins(
+    bool include_psl,
+    const std::vector<PasswordFormDigest>& forms) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  DCHECK(helper_);
+  return helper_->FillMatchingLogins(forms, include_psl);
+}
+#endif
+
 }  // namespace password_manager

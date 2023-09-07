@@ -90,7 +90,7 @@ void PointerProperties::SetAxesAndOrientation(float radius_x,
   }
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 MotionEventGeneric::MotionEventGeneric(Action action,
                                        base::TimeTicks event_time,
                                        const PointerProperties& pointer,
@@ -114,7 +114,7 @@ MotionEventGeneric::MotionEventGeneric(Action action,
       unique_event_id_(ui::GetNextTouchEventId()),
       action_index_(0),
       button_state_(0),
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       flags_(0),
       cancel_by_lost_focus_(false) {
 #else
@@ -130,7 +130,7 @@ MotionEventGeneric::MotionEventGeneric(const MotionEventGeneric& other)
       action_index_(other.action_index_),
       button_state_(other.button_state_),
       flags_(other.flags_),
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       pointers_(other.pointers_),
       cancel_by_lost_focus_(false) {
 #else
@@ -375,7 +375,7 @@ void MotionEventGeneric::PopPointer() {
   pointers_->pop_back();
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 bool MotionEventGeneric::IsCancelByLostFocus() const {
   return cancel_by_lost_focus_;
 }

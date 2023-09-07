@@ -15,17 +15,27 @@
 
 #include "base/trace_event/trace_event_ohos.h"
 
+#include <chrono>
+#include <time.h>
+
 #include "base/logging.h"
 #include "ohos_adapter_helper.h"
 
 using OHOS::NWeb::OhosAdapterHelper;
 
 bool IsBytraceEnable() {
-#if defined(ENABLE_OHOS_BYTRACE)
-  return true;
-#else
-  return false;
-#endif
+  static bool traceStatus = false;
+  static time_t lastTime = 0;
+  time_t nowTime;
+  nowTime = time(0);
+  if (nowTime == lastTime) {
+     return traceStatus;
+  }
+  lastTime = nowTime;
+  traceStatus = OhosAdapterHelper::GetInstance()
+                     .GetHiTraceAdapterInstance()
+                     .IsHiTraceEnable();
+  return traceStatus;
 }
 
 BytraceArg GetArg(double i) {
@@ -61,48 +71,44 @@ std::string GetStringWithArgs(const std::string& name) {
 }
 
 void StartBytrace(const std::string& value) {
-#if defined(ENABLE_OHOS_BYTRACE)
   OhosAdapterHelper::GetInstance().GetHiTraceAdapterInstance().StartTrace(
       value);
-#endif
 }
 
 void FinishBytrace() {
-#if defined(ENABLE_OHOS_BYTRACE)
   OhosAdapterHelper::GetInstance().GetHiTraceAdapterInstance().FinishTrace();
-#endif
 }
 
 void StartAsyncBytrace(const std::string& value, int32_t taskId) {
-#if defined(ENABLE_OHOS_BYTRACE)
-  OhosAdapterHelper::GetInstance().GetHiTraceAdapterInstance().StartAsyncTrace(
-      value, taskId);
-#endif
+  OhosAdapterHelper::GetInstance()
+      .GetHiTraceAdapterInstance()
+      .StartAsyncTrace(value, taskId);
 }
 
 void FinishAsyncBytrace(const std::string& value, int32_t taskId) {
-#if defined(ENABLE_OHOS_BYTRACE)
-  OhosAdapterHelper::GetInstance().GetHiTraceAdapterInstance().FinishAsyncTrace(
-      value, taskId);
-#endif
+  OhosAdapterHelper::GetInstance()
+      .GetHiTraceAdapterInstance()
+      .FinishAsyncTrace(value, taskId);
 }
 
 void CountBytrace(const std::string& name, int64_t count) {
-#if defined(ENABLE_OHOS_BYTRACE)
   OhosAdapterHelper::GetInstance().GetHiTraceAdapterInstance().CountTrace(
       name, count);
-#endif
 }
 
 ScopedBytrace::ScopedBytrace(const std::string& proc) : proc_(proc) {
-#if defined(ENABLE_OHOS_BYTRACE)
   OhosAdapterHelper::GetInstance().GetHiTraceAdapterInstance().StartTrace(
       proc_);
-#endif
 }
 
+void ScopedBytrace::SendTraceEvent(const std::string& data)  {
+  OhosAdapterHelper::GetInstance().GetHiTraceAdapterInstance().StartTrace(data);
+}
+
+ScopedBytrace::ScopedBytrace() {}
+
 ScopedBytrace::~ScopedBytrace() {
-#if defined(ENABLE_OHOS_BYTRACE)
-  OhosAdapterHelper::GetInstance().GetHiTraceAdapterInstance().FinishTrace();
-#endif
+  if (IsBytraceEnable()) {
+     OhosAdapterHelper::GetInstance().GetHiTraceAdapterInstance().FinishTrace();
+  }
 }

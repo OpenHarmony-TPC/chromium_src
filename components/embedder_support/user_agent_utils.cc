@@ -437,7 +437,7 @@ std::string GetFullUserAgent(
     case OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_TABLET:
       product += " Tablet";
       break;
-    case OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_PC:
+    case OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_2IN1:
     case OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_UNKNOWN:
     default:
       // product += "";

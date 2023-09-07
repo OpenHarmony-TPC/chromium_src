@@ -47,6 +47,12 @@ bool UnixDomainClientSocket::FillAddress(const std::string& socket_path,
   // namespace pathname must start with '\0'. So, the size is always greater
   // than socket_path size by 1.
   size_t path_size = socket_path.size() + 1;
+
+#if BUILDFLAG(IS_OHOS)
+  LOG(INFO) << "Unix Domain Client Socket Fill Address: path_size = "
+            << path_size << " path_max = " << path_max;
+#endif
+
   if (path_size > path_max)
     return false;
 
@@ -60,7 +66,8 @@ bool UnixDomainClientSocket::FillAddress(const std::string& socket_path,
     return true;
   }
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || \
+    BUILDFLAG(IS_OHOS)
   // Convert the path given into abstract socket name. It must start with
   // the '\0' character, so we are adding it. |addr_len| must specify the
   // length of the structure exactly, as potentially the socket name may

@@ -80,7 +80,7 @@ bool FlingController::ObserveAndFilterForTapSuppression(
     case WebInputEvent::Type::kGestureTap:
     case WebInputEvent::Type::kGestureDoubleTap:
     case WebInputEvent::Type::kGestureLongPress:
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     case WebInputEvent::Type::kGestureDragLongPress:
 #endif
     case WebInputEvent::Type::kGestureLongTap:

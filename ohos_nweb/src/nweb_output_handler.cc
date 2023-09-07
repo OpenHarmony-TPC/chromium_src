@@ -112,6 +112,21 @@ void NWebOutputHandler::Resize(uint32_t width, uint32_t height) {
     if (!dump_path_.empty() || dump_buf_ == nullptr) {
       dump_buf_.reset(new char[frame_size_]);
     }
+
+    if (!is_initialized_resize_) {
+      int32_t ret =
+          OHOS::NWeb::OhosAdapterHelper::GetInstance()
+              .GetWindowAdapterInstance()
+              .NativeWindowHandleOpt(reinterpret_cast<void*>(window_),
+                                    OHOS::NWeb::WindowAdapter::SET_BUFFER_GEOMETRY,
+                                    width, height);
+      if (ret == OHOS::NWeb::GSErrorCode::GSERROR_OK) {
+        is_initialized_resize_ = true;
+        WVLOG_I("need to resize for emulator early firstly, result = %{public}d", ret);
+      } else {
+        WVLOG_W("resize for emulator early failed, result = %{public}d", ret);
+      }
+    }
   }
 }
 

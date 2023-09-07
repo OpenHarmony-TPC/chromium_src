@@ -91,7 +91,7 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
   return false;
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void WebContentsDelegate::ClearContextMenu() {
 }
 #endif

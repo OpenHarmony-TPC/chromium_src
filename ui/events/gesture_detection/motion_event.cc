@@ -75,7 +75,7 @@ std::ostream& operator<<(std::ostream& stream,
   return stream << static_cast<int>(tool_type);
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 bool MotionEvent::IsCancelByLostFocus() const {
   return false;
 }

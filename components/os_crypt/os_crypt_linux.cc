@@ -22,11 +22,16 @@
 #include "crypto/encryptor.h"
 #include "crypto/symmetric_key.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "ohos_crypto.h"
+#endif
+
 namespace {
 
 // Salt for Symmetric key derivation.
 const char kSalt[] = "saltysalt";
 
+#if !BUILDFLAG(IS_OHOS)
 // Key size required for 128 bit AES.
 const size_t kDerivedKeySizeInBits = 128;
 
@@ -35,6 +40,12 @@ const size_t kEncryptionIterations = 1;
 
 // Size of initialization vector for AES 128-bit.
 const size_t kIVBlockSizeAES128 = 16;
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+// Size of initialization vectore for GCM
+const size_t kIVSizeAESGCM = 12;
+#endif
 
 // Password version. V10 means that the hardcoded password will be used.
 // V11 means that a password is/will be stored using an OS-level library (e.g
@@ -90,11 +101,18 @@ std::unique_ptr<crypto::SymmetricKey> GenerateEncryptionKey(
     const std::string& password) {
   std::string salt(kSalt);
 
+#if BUILDFLAG(IS_OHOS)
+    std::unique_ptr<crypto::SymmetricKey> encryption_key(
+      crypto::SymmetricKey::Import(
+          crypto::SymmetricKey::AES,
+          crypto::ohos::get_symmetric_key_256("nweb_data_key")));
+#else
   // Create an encryption key from our password and salt.
   std::unique_ptr<crypto::SymmetricKey> encryption_key(
       crypto::SymmetricKey::DeriveKeyFromPasswordUsingPbkdf2(
           crypto::SymmetricKey::AES, password, salt, kEncryptionIterations,
           kDerivedKeySizeInBits));
+#endif
   DCHECK(encryption_key);
 
   return encryption_key;
@@ -172,14 +190,23 @@ bool OSCrypt::EncryptString(const std::string& plaintext,
   if (!encryption_key)
     return false;
 
+#if BUILDFLAG(IS_OHOS)
+  std::string iv = crypto::ohos::get_iv(kIVSizeAESGCM);
+  crypto::Encryptor encryptor;
+  if (!encryptor.Init(encryption_key, crypto::Encryptor::GCM, iv))
+#else
   std::string iv(kIVBlockSizeAES128, ' ');
   crypto::Encryptor encryptor;
   if (!encryptor.Init(encryption_key, crypto::Encryptor::CBC, iv))
+#endif
     return false;
 
   if (!encryptor.Encrypt(plaintext, ciphertext))
     return false;
 
+#if BUILDFLAG(IS_OHOS)
+  ciphertext->insert(0, iv);
+#endif
   // Prefix the cipher text with version information.
   ciphertext->insert(0, kObfuscationPrefix[version]);
   return true;
@@ -216,15 +243,26 @@ bool OSCrypt::DecryptString(const std::string& ciphertext,
     return false;
   }
 
+#if BUILDFLAG(IS_OHOS)
+  std::string iv = ciphertext.substr(sizeof(kObfuscationPrefix[version]) - 1, kIVSizeAESGCM);
+  crypto::Encryptor encryptor;
+  if (!encryptor.Init(encryption_key, crypto::Encryptor::GCM, iv))
+#else
   std::string iv(kIVBlockSizeAES128, ' ');
   crypto::Encryptor encryptor;
   if (!encryptor.Init(encryption_key, crypto::Encryptor::CBC, iv))
+#endif
     return false;
 
+#if BUILDFLAG(IS_OHOS)
+  std::string raw_ciphertext =
+      ciphertext.substr(sizeof(kObfuscationPrefix[version])  + kIVSizeAESGCM - 1);
   // Strip off the versioning prefix before decrypting.
+#else
   std::string raw_ciphertext =
       ciphertext.substr(strlen(kObfuscationPrefix[version]));
 
+#endif
   if (!encryptor.Decrypt(raw_ciphertext, plaintext)) {
     VLOG(1) << "Decryption failed";
     return false;

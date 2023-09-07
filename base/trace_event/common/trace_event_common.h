@@ -383,17 +383,14 @@ template <class ARG1_TYPE>
 std::string GetStringFromArgs(const char* name,
                                      const char* arg1_name,
                                      ARG1_TYPE&& arg1_val) {
-  if (IsBytraceEnable()) {
-    std::string str(name);
-    base::trace_event::TraceArguments args(arg1_name,
-                                           std::forward<ARG1_TYPE>(arg1_val));
-    str += " | ";
-    str += arg1_name;
-    str += "=";
-    args.values()[0].AppendAsString(args.types()[0], &str);
-    return str;
-  }
-  return "";
+  std::string str(name);
+  base::trace_event::TraceArguments args(arg1_name,
+                                         std::forward<ARG1_TYPE>(arg1_val));
+  str += " | ";
+  str += arg1_name;
+  str += "=";
+  args.values()[0].AppendAsString(args.types()[0], &str);
+  return str;
 }
 
 template <class ARG1_TYPE, class ARG2_TYPE>
@@ -402,35 +399,50 @@ std::string GetStringFromArgs(const char* name,
                               ARG1_TYPE&& arg1_val,
                               const char* arg2_name,
                               ARG2_TYPE&& arg2_val) {
-  if (IsBytraceEnable()) {
-    std::string str(name);
-    base::trace_event::TraceArguments args(
-        arg1_name, std::forward<ARG1_TYPE>(arg1_val), arg2_name,
-        std::forward<ARG2_TYPE>(arg2_val));
-    str += " | ";
-    str += arg1_name;
-    str += "=";
-    args.values()[0].AppendAsString(args.types()[0], &str);
-    str += " | ";
-    str += arg2_name;
-    str += "=";
-    args.values()[1].AppendAsString(args.types()[1], &str);
-    return str;
-  }
-  return "";
+  std::string str(name);
+  base::trace_event::TraceArguments args(
+      arg1_name, std::forward<ARG1_TYPE>(arg1_val), arg2_name,
+      std::forward<ARG2_TYPE>(arg2_val));
+  str += " | ";
+  str += arg1_name;
+  str += "=";
+  args.values()[0].AppendAsString(args.types()[0], &str);
+  str += " | ";
+  str += arg2_name;
+  str += "=";
+  args.values()[1].AppendAsString(args.types()[1], &str);
+  return str;
 }
 #endif
 
 #if defined(OS_OHOS)
 #define TRACE_EVENT0(category_group, name) \
-  (void)(category_group);                  \
-  BYTRACE_SCOPED(name);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+  if (IsBytraceEnable()) {  \
+    (void)(category_group);                  \
+    BYTRACE_SCOPED_TRACE_EVENT(name); \
+  } \
+  } while(0)
+
 #define TRACE_EVENT1(category_group, name, arg1_name, arg1_val) \
-  TRACE_EVENT0(category_group, GetStringFromArgs(name, arg1_name, arg1_val));
-#define TRACE_EVENT2(category_group, name, arg1_name, arg1_val, arg2_name,  \
-                     arg2_val)                                              \
-  TRACE_EVENT0(category_group, GetStringFromArgs(name, arg1_name, arg1_val, \
-                                                 arg2_name, arg2_val));
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group);                  \
+      BYTRACE_SCOPED_TRACE_EVENT(GetStringFromArgs(name, arg1_name, arg1_val)); \
+    } \
+  } while(0)
+
+#define TRACE_EVENT2(category_group, name, arg1_name, arg1_val, arg2_name, arg2_val)  \
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group);                  \
+      BYTRACE_SCOPED_TRACE_EVENT(GetStringFromArgs(name, arg1_name, arg1_val, \
+                                                 arg2_name, arg2_val)); \
+    } \
+  } while(0)
 #else
 #define TRACE_EVENT0(category_group, name)    \
   INTERNAL_TRACE_EVENT_ADD_SCOPED(category_group, name)
@@ -444,20 +456,37 @@ std::string GetStringFromArgs(const char* name,
 
 #if defined(OS_OHOS)
 #define TRACE_EVENT_WITH_FLOW0(category_group, name, bind_id, flow_flags) \
-  (void)(category_group);                                                 \
-  (void)(bind_id);                                                        \
-  (void)(flow_flags);                                                     \
-  BYTRACE_SCOPED(name);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group);                                                 \
+      (void)(bind_id);                                                        \
+      (void)(flow_flags);                                                     \
+      BYTRACE_SCOPED_TRACE_EVENT(name); \
+    } \
+  } while(0)
 #define TRACE_EVENT_WITH_FLOW1(category_group, name, bind_id, flow_flags, \
                                arg1_name, arg1_val)                       \
-  TRACE_EVENT_WITH_FLOW0(category_group,                                  \
-                         GetStringFromArgs(name, arg1_name, arg1_val),    \
-                         bind_id, flow_flags);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(bind_id); \
+      (void)(flow_flags); \
+      BYTRACE_SCOPED_TRACE_EVENT(GetStringFromArgs(name, arg1_name, arg1_val)); \
+    } \
+  } while(0)
 #define TRACE_EVENT_WITH_FLOW2(category_group, name, bind_id, flow_flags, \
                                arg1_name, arg1_val, arg2_name, arg2_val)  \
-  TRACE_EVENT_WITH_FLOW0(category_group,                                  \
-      GetStringFromArgs(name, arg1_name, arg1_val, arg2_name, arg2_val),  \
-                        bind_id, flow_flags);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(bind_id); \
+      (void)(flow_flags); \
+      BYTRACE_SCOPED_TRACE_EVENT(GetStringFromArgs(name, arg1_name, arg1_val, arg2_name, arg2_val)); \
+    } \
+  } while(0)
 #else
 #define TRACE_EVENT_WITH_FLOW0(category_group, name, bind_id, flow_flags)  \
   INTERNAL_TRACE_EVENT_ADD_SCOPED_WITH_FLOW(category_group, name, bind_id, \
@@ -528,15 +557,27 @@ std::string GetStringFromArgs(const char* name,
 //   literals). They may not include " chars.
 #if defined(OS_OHOS)
 #define TRACE_EVENT_BEGIN0(category_group, name) \
-  (void)(category_group);                        \
-  StartBytrace(name)
+  do { \
+     if (IsBytraceEnable()) {  \
+        (void)(category_group); \
+        StartBytrace(name); \
+     } \
+  } while (0)
 #define TRACE_EVENT_BEGIN1(category_group, name, arg1_name, arg1_val) \
-  TRACE_EVENT_BEGIN0(category_group,                                  \
-                     GetStringFromArgs(name, arg1_name, arg1_val))
+  do { \
+    if (IsBytraceEnable()) { \
+      (void)(category_group); \
+      StartBytrace(GetStringFromArgs(name, arg1_name, arg1_val));     \
+    } \
+   } while (0)
 #define TRACE_EVENT_BEGIN2(category_group, name, arg1_name, arg1_val, \
                            arg2_name, arg2_val)                       \
-  TRACE_EVENT_BEGIN0(category_group, GetStringFromArgs(name, arg1_name, \
-                     arg1_val, arg2_name, arg2_val))
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      StartBytrace(GetStringFromArgs(name, arg1_name, arg1_val, arg2_name, arg2_val)); \
+    } \
+  } while (0)
 #else
 #define TRACE_EVENT_BEGIN0(category_group, name)                          \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_BEGIN, category_group, name, \
@@ -553,16 +594,30 @@ std::string GetStringFromArgs(const char* name,
 
 #if defined(OS_OHOS)
 #define TRACE_EVENT_BEGIN_WITH_FLAGS0(category_group, name, flags) \
-  (void)(flags);                                 \
-  TRACE_EVENT_BEGIN0(category_group, name)
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(flags); \
+      StartBytrace(name); \
+    } \
+  } while (0)
 #define TRACE_EVENT_BEGIN_WITH_FLAGS1(category_group, name, flags, arg1_name, \
                                       arg1_val)                               \
-  (void)(flags);                                 \
-  TRACE_EVENT_BEGIN1(category_group, name, arg1_name, arg1_name)
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(flags); \
+      StartBytrace(GetStringFromArgs(name, arg1_name, arg1_val)); \
+    } \
+  } while (0)
 #define TRACE_EVENT_COPY_BEGIN2(category_group, name, arg1_name, arg1_val, \
                                 arg2_name, arg2_val)                       \
-  TRACE_EVENT_BEGIN2(category_group, name, arg1_name, arg1_name,           \
-                     arg2_name, arg2_val)
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      StartBytrace(GetStringFromArgs(name, arg1_name, arg1_val, arg2_name, arg2_val)); \
+    } \
+  } while (0)
 #else
 #define TRACE_EVENT_BEGIN_WITH_FLAGS0(category_group, name, flags) \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_BEGIN, category_group, name, flags)
@@ -615,20 +670,36 @@ std::string GetStringFromArgs(const char* name,
 //   literals). They may not include " chars.
 #if defined(OS_OHOS)
 #define TRACE_EVENT_END0(category_group, name) \
-  (void)(category_group);                      \
-  (void)(name);                                \
-  FinishBytrace()
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(name); \
+      FinishBytrace(); \
+    } \
+  } while (0)
 #define TRACE_EVENT_END1(category_group, name, arg1_name, arg1_val) \
-  (void)(arg1_name);                                                \
-  (void)(arg1_val);                                                 \
-  TRACE_EVENT_END0(category_group, name)
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(name); \
+      (void)(arg1_name); \
+      (void)(arg1_val); \
+      FinishBytrace(); \
+    } \
+  } while (0)
 #define TRACE_EVENT_END2(category_group, name, arg1_name, arg1_val, arg2_name, \
                          arg2_val)                                             \
-  (void)(arg1_name);                                                           \
-  (void)(arg1_val);                                                            \
-  (void)(arg2_name);                                                           \
-  (void)(arg2_val);                                                            \
-  TRACE_EVENT_END0(category_group, name)
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(name); \
+      (void)(arg1_name); \
+      (void)(arg1_val); \
+      (void)(arg2_name); \
+      (void)(arg2_val); \
+      FinishBytrace(); \
+    } \
+  } while (0)
 #else
 #define TRACE_EVENT_END0(category_group, name)                          \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_END, category_group, name, \
@@ -645,21 +716,39 @@ std::string GetStringFromArgs(const char* name,
 
 #if defined(OS_OHOS)
 #define TRACE_EVENT_END_WITH_FLAGS0(category_group, name, flags) \
-  (void)(flags);                                                 \
-  TRACE_EVENT_END0(category_group, name)
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(name); \
+      (void)(flags); \
+      FinishBytrace(); \
+    } \
+  } while (0)
 #define TRACE_EVENT_END_WITH_FLAGS1(category_group, name, flags, arg1_name,  \
                                     arg1_val)                                \
-  (void)(flags);                                                 \
-  (void)(arg1_name);                                             \
-  (void)(arg1_val);                                              \
-  TRACE_EVENT_END0(category_group, name)
+  do { \
+   if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(name); \
+      (void)(arg1_name); \
+      (void)(arg1_val); \
+      (void)(flags); \
+      FinishBytrace(); \
+    } \
+  } while (0)
 #define TRACE_EVENT_COPY_END2(category_group, name, arg1_name, arg1_val,  \
                               arg2_name, arg2_val)                        \
-  (void)(arg1_name);                                                      \
-  (void)(arg1_val);                                                       \
-  (void)(arg2_name);                                                      \
-  (void)(arg2_val);                                                       \
-  TRACE_EVENT_END0(category_group, name)
+  do { \
+   if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(name); \
+      (void)(arg1_name); \
+      (void)(arg1_val); \
+      (void)(arg2_name); \
+      (void)(arg2_val); \
+      FinishBytrace(); \
+    } \
+  } while (0)
 #else
 #define TRACE_EVENT_END_WITH_FLAGS0(category_group, name, flags) \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_END, category_group, name, flags)
@@ -680,17 +769,36 @@ std::string GetStringFromArgs(const char* name,
 // doesn't run all tests with tracing enabled.
 #if defined(OS_OHOS)
 #define TRACE_EVENT_MARK_WITH_TIMESTAMP0(category_group, name, timestamp) \
-  (void)(timestamp);                                                      \
-  TRACE_EVENT0(category_group, name);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(timestamp); \
+      (void)(category_group); \
+      BYTRACE_SCOPED_TRACE_EVENT(name); \
+    } \
+  } while (0)
 #define TRACE_EVENT_MARK_WITH_TIMESTAMP1(category_group, name, timestamp, \
                                          arg1_name, arg1_val)             \
-  (void)(timestamp);                                                      \
-  TRACE_EVENT1(category_group, name, arg1_name, arg1_val);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(timestamp); \
+      (void)(category_group); \
+      BYTRACE_SCOPED_TRACE_EVENT(GetStringFromArgs(name, arg1_name, arg1_val)); \
+    } \
+  } while (0)
 
 #define TRACE_EVENT_MARK_WITH_TIMESTAMP2(                                      \
     category_group, name, timestamp, arg1_name, arg1_val, arg2_name, arg2_val) \
-  (void)(timestamp);                                                           \
-  TRACE_EVENT2(category_group, name, arg1_name, arg1_val, arg2_name, arg2_val);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(timestamp); \
+      (void)(category_group); \
+      BYTRACE_SCOPED_TRACE_EVENT(GetStringFromArgs(name, arg1_name, arg1_val, \
+                                                   arg2_name, arg2_val)); \
+    } \
+  } while (0)
 #else
 #define TRACE_EVENT_MARK_WITH_TIMESTAMP0(category_group, name, timestamp) \
   INTERNAL_TRACE_EVENT_ADD_WITH_TIMESTAMP(                                \
@@ -712,14 +820,32 @@ std::string GetStringFromArgs(const char* name,
 
 #if defined(OS_OHOS)
 #define TRACE_EVENT_COPY_MARK(category_group, name)                      \
-  TRACE_EVENT0(category_group, name);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      BYTRACE_SCOPED_TRACE_EVENT(name); \
+    } \
+  } while (0)
 
 #define TRACE_EVENT_COPY_MARK1(category_group, name, arg1_name, arg1_val) \
-  TRACE_EVENT1(category_group, name, arg1_name, arg1_val);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      BYTRACE_SCOPED_TRACE_EVENT(GetStringFromArgs(name, arg1_name, arg1_val)); \
+    } \
+  } while (0)
 
 #define TRACE_EVENT_COPY_MARK_WITH_TIMESTAMP(category_group, name, timestamp) \
-  (void)(timestamp);                                                          \
-  TRACE_EVENT_COPY_MARK(category_group, name);
+  BYTRACE_SCOPED_INIT(); \
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(timestamp); \
+      BYTRACE_SCOPED_TRACE_EVENT(name); \
+    } \
+  } while (0)
 #else
 #define TRACE_EVENT_COPY_MARK(category_group, name)                      \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_MARK, category_group, name, \
@@ -773,15 +899,27 @@ std::string GetStringFromArgs(const char* name,
 //   literals). They may not include " chars.
 #if defined(OS_OHOS)
 #define TRACE_COUNTER1(category_group, name, value)                         \
-  (void)(category_group);                                                   \
-  CountBytrace(name, value);
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      CountBytrace(name, value); \
+    } \
+  } while (0)
 #define TRACE_COUNTER_WITH_FLAG1(category_group, name, flag, value)         \
-  (void)(category_group);                                                   \
-  (void)(flag);                                                             \
-  CountBytrace(name, value);
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(flag); \
+      CountBytrace(name, value); \
+    } \
+  } while (0)
 #define TRACE_COPY_COUNTER1(category_group, name, value)                    \
-  (void)(category_group);                                                   \
-  CountBytrace(name, static_cast<int>(value));
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group);\
+      CountBytrace(name, static_cast<int>(value)); \
+    } \
+  } while (0)
 #else
 #define TRACE_COUNTER1(category_group, name, value)                         \
   INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_COUNTER, category_group, name, \
@@ -820,8 +958,13 @@ std::string GetStringFromArgs(const char* name,
 //   enabled, as the commit queue doesn't run all tests with tracing enabled.
 #if defined(OS_OHOS)
 #define TRACE_COUNTER_WITH_TIMESTAMP1(category_group, name, timestamp, value) \
-  (void)(timestamp);                                                          \
-  TRACE_COUNTER1(category_group, name, value);
+  do { \
+    if (IsBytraceEnable()) {  \
+      (void)(category_group); \
+      (void)(timestamp); \
+      CountBytrace(name, value); \
+    } \
+  } while (0)
 #else
 #define TRACE_COUNTER_WITH_TIMESTAMP1(category_group, name, timestamp, value) \
   INTERNAL_TRACE_EVENT_ADD_WITH_TIMESTAMP(                                    \

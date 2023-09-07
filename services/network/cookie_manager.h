@@ -72,6 +72,20 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CookieManager
                           const GURL& source_url,
                           const net::CookieOptions& cookie_options,
                           SetCanonicalCookieCallback callback) override;
+#if BUILDFLAG(IS_OHOS)
+  void SetCanonicalCookieSync(const net::CanonicalCookie& cookie,
+                              const GURL& source_url,
+                              const net::CookieOptions& cookie_options,
+                              SetCanonicalCookieCallback callback) override;
+  void GetCookieListSync(
+      const GURL& url,
+      const net::CookieOptions& cookie_options,
+      const net::CookiePartitionKeyCollection& cookie_partition_key_collection,
+      GetCookieListCallback callback) override;
+  void GetAllCookiesSync(GetAllCookiesCallback callback) override;
+  void DeleteCookiesSync(mojom::CookieDeletionFilterPtr filter,
+                         DeleteCookiesCallback callback) override;
+#endif
   void DeleteCanonicalCookie(const net::CanonicalCookie& cookie,
                              DeleteCanonicalCookieCallback callback) override;
   void SetContentSettings(const ContentSettingsForOneType& settings) override;

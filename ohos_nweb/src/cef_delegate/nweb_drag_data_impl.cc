@@ -45,6 +45,11 @@ namespace {
   constexpr int SHADOW_COLOR = 0x33000000;
   constexpr int SHADOW_DX = 0;
   constexpr int SHADOW_DY = 4;
+  constexpr int WEIRD_PADDING = 30;
+  constexpr int IAMGE_SHADOW_RADIUS = 6;
+  constexpr int IMAGE_EXPAND_PADDING = 11;
+  constexpr int IMAGE_SHADOW_COLOR = 0xA0000000;
+  constexpr int IMAGE_SHADOW_DY = 3;
 }
 
 namespace OHOS::NWeb {
@@ -162,16 +167,16 @@ SkPath NWebDragDataImpl::GetShadowPath(int width, int height) {
 
   bool is_oneline = ((start_edge_top_.y == end_edge_top_.y) && (start_edge_bottom_.y == end_edge_bottom_.y));
   bool is_both_out_clip_region = (start_edge_top_.y < 0) &&
-    (std::abs(end_edge_bottom_.y - (drag_image_origin_point_.y + drag_clip_height_)) < ToOhCoordinate(DEFAULT_MARGIN));
-  bool is_start_line_compelete = (std::abs(start_edge_top_.y - drag_image_origin_point_.y) < ToOhCoordinate(DEFAULT_MARGIN)) &&
-    (std::abs(start_edge_top_.x - drag_image_origin_point_.x) < ToOhCoordinate(DEFAULT_MARGIN));
+    (std::abs(end_edge_bottom_.y - (drag_image_origin_point_.y + drag_clip_height_)) > ToOhCoordinate(WEIRD_PADDING));
+  bool is_start_line_compelete = (start_edge_top_.y >= 0) &&
+    (std::abs(start_edge_top_.x - drag_image_origin_point_.x) < ToOhCoordinate(DEFAULT_MARGIN + ADD_BOUND_RECT_RATIO));
   is_start_line_compelete = is_start_line_compelete || (start_edge_top_.y < 0);
-  bool is_end_line_compelete = (std::abs(end_edge_bottom_.y - (drag_image_origin_point_.y + drag_clip_height_)) < ToOhCoordinate(DEFAULT_MARGIN)) &&
-    (std::abs(drag_image_origin_point_.x + drag_clip_width_ - end_edge_bottom_.x) < ToOhCoordinate(DEFAULT_MARGIN));
+  bool is_end_line_compelete = (std::abs(end_edge_bottom_.y - (drag_image_origin_point_.y + drag_clip_height_)) <= ToOhCoordinate(WEIRD_PADDING)) &&
+    (std::abs(drag_image_origin_point_.x + drag_clip_width_ - end_edge_bottom_.x) < ToOhCoordinate(DEFAULT_MARGIN + ADD_BOUND_RECT_RATIO));
   is_end_line_compelete = is_end_line_compelete ||
     (std::abs(end_edge_bottom_.x - drag_image_origin_point_.x) < ToOhCoordinate(DEFAULT_MARGIN));
   is_end_line_compelete = is_end_line_compelete ||
-    (std::abs(end_edge_bottom_.y - (drag_image_origin_point_.y + drag_clip_height_)) >= ToOhCoordinate(DEFAULT_MARGIN));
+    (std::abs(end_edge_bottom_.y - (drag_image_origin_point_.y + drag_clip_height_)) > ToOhCoordinate(WEIRD_PADDING));
   LOG(INFO) << "is one line = " << is_oneline << ", is_both_out_clip_region = " \
     << is_both_out_clip_region << ", is_start_line_compelete = " \
     << is_start_line_compelete << ", is_end_line_compelete = " << is_end_line_compelete;
@@ -227,39 +232,43 @@ void NWebDragDataImpl::GenerateOhosDragBitmapFromOriginForImage(const SkBitmap& 
   SkPath shadow_path;
   SkRect out_rect = SkRect::MakeXYWH(0, 0, width, height);
 
-  width += ToOhCoordinate(EXPAND_PADDING) * DOUBLE_RATIO;
-  height += ToOhCoordinate(EXPAND_PADDING) * DOUBLE_RATIO;
+  width += ToOhCoordinate(IMAGE_EXPAND_PADDING) * DOUBLE_RATIO;
+  height += ToOhCoordinate(IMAGE_EXPAND_PADDING) * DOUBLE_RATIO;
   shadow_path.addRoundRect(out_rect, ToOhCoordinate(IMAGE_ROUND_RECT_RATIO), ToOhCoordinate(IMAGE_ROUND_RECT_RATIO));
   auto imageInfo = SkImageInfo::Make(width, height, SkColorType::kBGRA_8888_SkColorType , SkAlphaType::kUnpremul_SkAlphaType);
   out_bitmap.allocPixels(imageInfo);
   SkCanvas bitmapCanvas(out_bitmap);
   bitmapCanvas.clear(SK_ColorTRANSPARENT);
 
+  SkBitmap clip_image_bitmap;
+  SkPath clip_image_path;
+  SkRect image_rect = SkRect::MakeXYWH(0, 0, drag_clip_width_, drag_clip_height_);
+  clip_image_path.addRoundRect(image_rect, ToOhCoordinate(IMAGE_ROUND_RECT_RATIO), ToOhCoordinate(IMAGE_ROUND_RECT_RATIO));
+  auto clip_image_info = SkImageInfo::Make(drag_clip_width_, drag_clip_height_, SkColorType::kBGRA_8888_SkColorType , SkAlphaType::kUnpremul_SkAlphaType);
+  clip_image_bitmap.allocPixels(clip_image_info);
+  SkCanvas clip_image_canvas(clip_image_bitmap);
+  clip_image_canvas.clear(SK_ColorTRANSPARENT);
 
-  shadow_path.offset(ToOhCoordinate(EXPAND_PADDING - SHADOW_DX), ToOhCoordinate(EXPAND_PADDING - SHADOW_DY));
-  SkPaint out_paint;
-  out_paint.setAntiAlias(true);
-  out_paint.setColor(DEFAULT_COLOR_BG);
-  out_paint.setBlendMode(SkBlendMode::kSrcOver);
-  out_paint.setStyle(SkPaint::kFill_Style);
-  bitmapCanvas.drawPath(shadow_path, out_paint);
+  SkPaint clip_image_paint;
+  clip_image_paint.setAntiAlias(true);
+  clip_image_paint.setColor(DEFAULT_COLOR_BG);
+  clip_image_paint.setBlendMode(SkBlendMode::kSrcOver);
+  clip_image_paint.setStyle(SkPaint::kFill_Style);
+  clip_image_canvas.drawPath(clip_image_path, clip_image_paint);
+
+  SkPaint clip_bitmap_paint;
+  clip_bitmap_paint.setAntiAlias(true);
+  clip_bitmap_paint.setBlendMode(SkBlendMode::kSrcIn);
+  clip_image_canvas.drawImage(in_bitmap.asImage(), 0, 0, SkSamplingOptions(), &clip_bitmap_paint);
+  clip_image_canvas.readPixels(clip_image_bitmap, 0, 0);
 
   SkPaint bitmap_paint;
   bitmap_paint.setAntiAlias(true);
-  bitmap_paint.setBlendMode(SkBlendMode::kSrcIn);
-  bitmapCanvas.drawImage(in_bitmap.asImage(), ToOhCoordinate(EXPAND_PADDING - SHADOW_DX),
-    ToOhCoordinate(EXPAND_PADDING - SHADOW_DY), SkSamplingOptions(), &bitmap_paint);
-
-  // draw shadow path
-  SkPaint shadow_layer_paint;
-  shadow_layer_paint.setAntiAlias(true);
-  shadow_layer_paint.setStyle(SkPaint::kFill_Style);
-  shadow_layer_paint.setColor(DEFAULT_COLOR_BG);
-  shadow_layer_paint.setBlendMode(SkBlendMode::kSrcOver);
-  auto shadow = SkImageFilters::DropShadowOnly(ToOhCoordinate(SHADOW_DX), ToOhCoordinate(SHADOW_DY),
-    ToOhCoordinate(SHADOW_RADIUS), ToOhCoordinate(SHADOW_RADIUS), SHADOW_COLOR, nullptr);
-  shadow_layer_paint.setImageFilter(shadow);
-  bitmapCanvas.drawPath(shadow_path, shadow_layer_paint);
+  auto shadow = SkImageFilters::DropShadow(ToOhCoordinate(SHADOW_DX), ToOhCoordinate(IMAGE_SHADOW_DY),
+    ToOhCoordinate(IAMGE_SHADOW_RADIUS), ToOhCoordinate(IAMGE_SHADOW_RADIUS), IMAGE_SHADOW_COLOR, nullptr);
+  bitmap_paint.setImageFilter(shadow);
+  bitmapCanvas.drawImage(clip_image_bitmap.asImage(), ToOhCoordinate(IMAGE_EXPAND_PADDING - SHADOW_DX),
+    ToOhCoordinate(IMAGE_EXPAND_PADDING - IMAGE_SHADOW_DY), SkSamplingOptions(), &bitmap_paint);
   bitmapCanvas.readPixels(out_bitmap, 0, 0);
 }
 
@@ -434,10 +443,23 @@ bool NWebDragDataImpl::GetPixelMapSetting(const void** data, size_t& len, int& w
   }
   len = read_size;
   *data = buffer;
+  if (image_buffer_) {
+    free(image_buffer_);
+    image_buffer_ = nullptr;
+  }
+  image_buffer_ = buffer;
 
   LOG(INFO) << "drag image width : " << width << ", height : " << height
             << ", buffer size : " << read_size;
   return true;
+}
+
+void NWebDragDataImpl::FreePixlMapData()
+{
+  if (image_buffer_) {
+    free(image_buffer_);
+    image_buffer_ = nullptr;
+  }
 }
 
 bool NWebDragDataImpl::SetLinkURL(std::string& url)

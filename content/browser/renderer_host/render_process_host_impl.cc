@@ -208,6 +208,7 @@
 
 #if BUILDFLAG(IS_OHOS)
 #include "content/browser/font_unique_name_lookup/font_unique_name_lookup_service.h"
+#include "res_sched_client_adapter.h"
 #include "third_party/blink/public/mojom/android_font_lookup/android_font_lookup.mojom.h"
 #endif
 
@@ -3703,6 +3704,12 @@ void RenderProcessHostImpl::OnChannelConnected(int32_t peer_pid) {
       peer_pid, child_process_.get());
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+  OHOS::NWeb::ResSchedClientAdapter::ReportKeyThread(
+      OHOS::NWeb::ResSchedStatusAdapter::THREAD_CREATED, peer_pid, peer_pid,
+      OHOS::NWeb::ResSchedRoleAdapter::IMPORTANT_DISPLAY);
+#endif
+
   if (IsReady()) {
     DCHECK(!sent_render_process_ready_);
     sent_render_process_ready_ = true;
@@ -4718,6 +4725,13 @@ void RenderProcessHostImpl::ProcessDied(
   // It should not be possible for a process death notification to come in
   // while we are dying.
   DCHECK(!deleting_soon_);
+
+#if BUILDFLAG(IS_OHOS)
+  base::ProcessId process_id = GetProcess().Pid();
+  OHOS::NWeb::ResSchedClientAdapter::ReportKeyThread(
+      OHOS::NWeb::ResSchedStatusAdapter::THREAD_DESTROYED, process_id, process_id,
+      OHOS::NWeb::ResSchedRoleAdapter::IMPORTANT_DISPLAY);
+#endif
 
   // child_process_launcher_ can be NULL in single process mode or if fast
   // termination happened.

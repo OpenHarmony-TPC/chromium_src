@@ -266,6 +266,10 @@ void FormFetcherImpl::SplitResults(
   non_federated_.clear();
   federated_.clear();
   for (auto& form : forms) {
+#if defined(OHOS_NWEB_EX)
+    if (form->password_value.empty())
+      continue;
+#endif
     if (form->blocked_by_user) {
       // Ignore non-exact matches for blocklisted entries.
       if (password_manager_util::GetMatchType(*form) ==
@@ -297,7 +301,6 @@ void FormFetcherImpl::OnGetPasswordStoreResultsFrom(
     std::vector<std::unique_ptr<PasswordForm>> results) {
   DCHECK_EQ(State::WAITING, state_);
   DCHECK_GT(wait_counter_, 0);
-
   if (should_migrate_http_passwords_ && results.empty() &&
       form_digest_.url.SchemeIs(url::kHttpsScheme)) {
     http_migrators_[store] = std::make_unique<HttpPasswordStoreMigrator>(

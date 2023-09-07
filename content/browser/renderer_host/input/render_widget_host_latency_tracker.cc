@@ -58,7 +58,7 @@ const char* GetTraceNameFromType(blink::WebInputEvent::Type type) {
     CASE_TYPE(GestureDoubleTap);
     CASE_TYPE(GestureTwoFingerTap);
     CASE_TYPE(GestureLongPress);
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
     CASE_TYPE(GestureDragLongPress);
 #endif
     CASE_TYPE(GestureLongTap);

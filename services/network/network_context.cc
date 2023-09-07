@@ -576,6 +576,8 @@ NetworkContext::NetworkContext(
 }
 
 NetworkContext::~NetworkContext() {
+  is_destructing_ = true;
+
   // May be nullptr in tests.
   if (network_service_)
     network_service_->DeregisterNetworkContext(this);
@@ -628,6 +630,13 @@ NetworkContext::~NetworkContext() {
     }
   }
 #endif
+
+
+ // Clear `url_loader_factories_` before deleting the contents, as it can
+ // result in re-entrant calls to DestroyURLLoaderFactory().
+ std::set<std::unique_ptr<cors::CorsURLLoaderFactory>,
+           base::UniquePtrComparator>
+      url_loader_factories = std::move(url_loader_factories_);
 }
 
 // static
@@ -800,6 +809,9 @@ void NetworkContext::DisableQuic() {
 
 void NetworkContext::DestroyURLLoaderFactory(
     cors::CorsURLLoaderFactory* url_loader_factory) {
+  if (is_destructing_) {
+    return;
+  }
   auto it = url_loader_factories_.find(url_loader_factory);
   DCHECK(it != url_loader_factories_.end());
   url_loader_factories_.erase(it);

@@ -899,7 +899,11 @@ PasswordFormManager::PasswordFormManager(
                                         ? *observed_digest()
                                         : PasswordFormDigest(*observed_form()),
                                     client_,
+#if defined(OHOS_NWEB_EX)
+                                    false /* should_migrate_http_passwords */)),
+#else
                                     true /* should_migrate_http_passwords */)),
+#endif
       form_fetcher_(form_fetcher ? form_fetcher : owned_form_fetcher_.get()),
       password_save_manager_(std::move(password_save_manager)),
       // TODO(https://crbug.com/831123): set correctly

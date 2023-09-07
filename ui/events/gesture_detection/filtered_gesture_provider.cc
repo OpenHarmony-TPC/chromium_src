@@ -73,7 +73,7 @@ void FilteredGestureProvider::SendSynthesizedEndEvents() {
   gesture_provider_->SendSynthesizedEndEvents();
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void FilteredGestureProvider::ResetDetection(bool is_lost_focus) {
   gesture_provider_->ResetDetection(is_lost_focus);
 }

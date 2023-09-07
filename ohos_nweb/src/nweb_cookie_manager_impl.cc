@@ -103,9 +103,9 @@ void NWebCookieManagerImpl::ReturnCookie(
 }
 
 std::string NWebCookieManagerImpl::ReturnCookie(
-    const std::string& url) {
+    const std::string& url, bool& is_valid) {
   if (delegate_ != nullptr) {
-    return delegate_->ReturnCookie(url);
+    return delegate_->ReturnCookie(url, is_valid);
   }
   return "";
 }

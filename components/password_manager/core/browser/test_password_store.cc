@@ -392,4 +392,12 @@ PasswordStoreChangeList TestPasswordStore::RemoveLoginImpl(
   return changes;
 }
 
+#if BUILDFLAG(IS_OHOS)
+LoginsResult TestPasswordStore::FillMatchingLogins(
+    bool include_psl,
+    const std::vector<PasswordFormDigest>& forms) {
+  return {};
+}
+#endif
+
 }  // namespace password_manager

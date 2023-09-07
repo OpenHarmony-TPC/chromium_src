@@ -1036,9 +1036,9 @@ class CONTENT_EXPORT RenderFrameHost : public IPC::Listener,
   virtual DocumentRef GetDocumentRef() = 0;
   virtual WeakDocumentPtr GetWeakDocumentPtr() = 0;
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   virtual void OnClearContextMenu() = 0;
-#endif //OHOS_ENABLE_DRAG_DROP
+#endif //BUILDFLAG(IS_OHOS)
 
  private:
   // This interface should only be implemented inside content.

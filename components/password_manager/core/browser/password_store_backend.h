@@ -131,6 +131,11 @@ class PasswordStoreBackend {
   // Clears all the passwords from the local storage.
   virtual void ClearAllLocalPasswords() = 0;
 
+#if BUILDFLAG(IS_OHOS)
+  virtual LoginsResult FillMatchingLogins(
+      bool include_psl,
+      const std::vector<PasswordFormDigest>& forms) = 0;
+#endif
   // Factory function for creating the backend. The Local backend requires the
   // provided `login_db` for storage and Android backend for migration purposes.
   static std::unique_ptr<PasswordStoreBackend> Create(

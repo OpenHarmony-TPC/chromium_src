@@ -149,9 +149,6 @@ class CONTENT_EXPORT StoragePartitionImpl
   std::unique_ptr<network::PendingSharedURLLoaderFactory>
   GetURLLoaderFactoryForBrowserProcessIOThread() override;
   network::mojom::CookieManager* GetCookieManagerForBrowserProcess() override;
-#if BUILDFLAG(IS_OHOS)
-  network::mojom::CookieManager* GetCookieManagerForOhos() override;
-#endif
   void CreateHasTrustTokensAnswerer(
       mojo::PendingReceiver<network::mojom::HasTrustTokensAnswerer> receiver,
       const url::Origin& top_frame_origin) override;
@@ -681,12 +678,6 @@ class CONTENT_EXPORT StoragePartitionImpl
   bool is_test_url_loader_factory_for_browser_process_with_corb_ = false;
   mojo::Remote<network::mojom::CookieManager>
       cookie_manager_for_browser_process_;
-#if BUILDFLAG(IS_OHOS)
-  mojo::Remote<network::mojom::CookieManager> cookie_manager_for_ohos_;
-  base::WaitableEvent completion_{
-      base::WaitableEvent::ResetPolicy::AUTOMATIC,
-      base::WaitableEvent::InitialState::NOT_SIGNALED};
-#endif
   mojo::Remote<network::mojom::OriginPolicyManager>
       origin_policy_manager_for_browser_process_;
 

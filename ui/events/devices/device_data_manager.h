@@ -143,6 +143,7 @@ class EVENTS_DEVICES_EXPORT DeviceDataManager
 #if BUILDFLAG(IS_OHOS)
   std::unique_ptr<OHOS::NWeb::MMIAdapter> mmi_adapter_ = nullptr;
   std::shared_ptr<OHOS::NWeb::MMIListenerAdapter> dev_listener_ = nullptr;
+  scoped_refptr<base::SequencedTaskRunner> sequenced_task_runner_;
 #endif
 
 };
