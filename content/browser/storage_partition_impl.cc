@@ -1421,30 +1421,6 @@ StoragePartitionImpl::GetCookieManagerForBrowserProcess() {
   return cookie_manager_for_browser_process_.get();
 }
 
-#if BUILDFLAG(IS_OHOS)
-network::mojom::CookieManager* StoragePartitionImpl::GetCookieManagerForOhos() {
-  DCHECK(initialized_);
-  // Create the CookieManager remote for ohos as needed.
-  if (!cookie_manager_for_ohos_ || !cookie_manager_for_ohos_.is_connected()) {
-    // Reset |cookie_manager_for_ohos_| before binding it again.
-
-    cookie_manager_for_ohos_.reset();
-    GetIOThreadTaskRunner({})->PostTask(
-        FROM_HERE,
-        base::BindOnce(&StoragePartitionImpl::GetCookieManagerForOhosInternal,
-                       base::Unretained(this)));
-    completion_.Wait();
-  }
-  return cookie_manager_for_ohos_.get();
-}
-
-void StoragePartitionImpl::GetCookieManagerForOhosInternal() {
-  GetNetworkContext()->GetCookieManager(
-      cookie_manager_for_ohos_.BindNewPipeAndPassReceiver());
-  completion_.Signal();
-}
-#endif
-
 void StoragePartitionImpl::CreateRestrictedCookieManager(
     network::mojom::RestrictedCookieManagerRole role,
     const url::Origin& origin,
@@ -2785,7 +2761,6 @@ void StoragePartitionImpl::InitNetworkContext() {
 
   context_params->cert_verifier_params =
       GetCertVerifierParams(std::move(cert_verifier_creation_params));
-
   // This mechanisms should be used only for legacy internal headers. You can
   // find a recommended alternative approach on URLRequest::cors_exempt_headers
   // at services/network/public/mojom/url_loader.mojom.

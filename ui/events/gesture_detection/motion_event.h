@@ -115,7 +115,7 @@ class GESTURE_DETECTION_EXPORT MotionEvent {
 
   float GetTouchMajor() const { return GetTouchMajor(0); }
   float GetTouchMinor() const { return GetTouchMinor(0); }
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   virtual bool IsCancelByLostFocus() const;
   virtual void SetCancelByLostFocus(bool is_lost_focus);
 #endif

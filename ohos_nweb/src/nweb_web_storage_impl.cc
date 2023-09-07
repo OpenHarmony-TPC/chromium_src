@@ -87,4 +87,56 @@ long NWebWebStorageImpl::GetOriginUsage(const std::string& origin) {
   return NWEB_ERR;
 }
 
+#if BUILDFLAG(IS_OHOS)
+void NWebWebStorageImpl::PutWebStorageCallback(
+    std::shared_ptr<NWebStorageExtensionCallback>
+        web_storage_extension_callback) {
+  if (delegate_ != nullptr) {
+    delegate_->RegisterWebStorageExtensionCallback(
+        web_storage_extension_callback);
+  }
+}
+
+std::string NWebWebStorageImpl::GetPassword(const std::string& url,
+                                            const std::string& username,
+                                            int callback_id) {
+  if (delegate_ != nullptr) {
+    return delegate_->GetPassword(url, username, callback_id);
+  }
+  return "";
+}
+
+void NWebWebStorageImpl::GetSavedPasswords(int callback_id) {
+  if (delegate_ != nullptr) {
+    return delegate_->GetSavedPasswordsInfo(callback_id);
+  }
+}
+
+void NWebWebStorageImpl::ClearPassword() {
+  if (delegate_ != nullptr) {
+    delegate_->ClearPassword();
+  }
+}
+
+void NWebWebStorageImpl::RemovePassword(const std::string& url,
+                                        const std::string& username) {
+  if (delegate_ != nullptr) {
+    delegate_->RemovePassword(url, username);
+  }
+}
+void NWebWebStorageImpl::ModifyPassword(const std::string& url,
+                                        const std::string& old_username,
+                                        const std::string& new_username,
+                                        const std::string& new_password) {
+  if (delegate_ != nullptr) {
+    delegate_->ModifyPassword(url, old_username, new_username, new_password);
+  }
+}
+
+void NWebWebStorageImpl::RemovePasswordByUrl(const std::string& url) {
+  if (delegate_ != nullptr) {
+    delegate_->RemovePasswordByUrl(url);
+  }
+}
+#endif
 }  // namespace OHOS::NWeb

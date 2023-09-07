@@ -239,12 +239,16 @@ void ServerStartedOnUI(base::WeakPtr<DevToolsHttpHandler> handler,
                        std::unique_ptr<net::IPEndPoint> ip_address) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (handler && thread && server_wrapper) {
+    LOG(INFO) << "Domain Socket Server Started.";
+
     handler->ServerStarted(
         std::unique_ptr<base::Thread>(thread),
         std::unique_ptr<ServerWrapper>(server_wrapper),
         std::unique_ptr<DevToolsSocketFactory>(socket_factory),
         std::move(ip_address));
   } else {
+    LOG(INFO) << "Domain Socket Server Terminate On UI.";
+
     TerminateOnUI(std::unique_ptr<base::Thread>(thread),
                   std::unique_ptr<ServerWrapper>(server_wrapper),
                   std::unique_ptr<DevToolsSocketFactory>(socket_factory));
@@ -295,7 +299,7 @@ void StartServerOnHandlerThread(
       }
     }
   } else {
-#if !BUILDFLAG(IS_ANDROID)
+#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
     // Android uses UNIX domain sockets which don't have an IP address.
     LOG(ERROR) << "Cannot start http server for devtools.";
 #endif
@@ -790,7 +794,9 @@ DevToolsHttpHandler::DevToolsHttpHandler(
       new base::Thread(kDevToolsHandlerThreadName));
   base::Thread::Options options;
   options.message_pump_type = base::MessagePumpType::IO;
+  LOG(INFO) << "Is Domain Socket Dev Tools Http Handler Entry?";
   if (thread->StartWithOptions(std::move(options))) {
+    LOG(INFO) << "Is Domain Socket Dev Tools Http Handler Entry!";
     auto task_runner = thread->task_runner();
     task_runner->PostTask(
         FROM_HERE,

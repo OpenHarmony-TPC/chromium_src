@@ -50,7 +50,9 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/storage_partition.h"
+#include "res_sched_client_adapter.h"
 #include "services/network/network_service.h"
+#include "soc_perf_client_adapter.h"
 #endif
 
 #include "libcef/browser/predictors/loading_predictor.h"
@@ -75,6 +77,11 @@ uint32_t g_nweb_max_count = 0;
 }  // namespace
 
 namespace OHOS::NWeb {
+
+#if BUILDFLAG(IS_OHOS)
+static constexpr int32_t SOC_PERF_LOADURL_CONFIG_ID = 10070;
+static constexpr int32_t SOC_PERF_MOUSEWHEEL_CONFIG_ID = 10071;
+#endif
 
 typedef std::unordered_map<int32_t, std::weak_ptr<NWebImpl>> NWebMap;
 base::LazyInstance<NWebMap>::DestructorAtExit g_nweb_map =
@@ -156,11 +163,14 @@ NWebImpl* NWebImpl::FromID(int32_t nweb_id) {
   return nullptr;
 }
 
-std::set<uint32_t> NWebImpl::focus_nweb_id_{};
-
-NWebImpl::NWebImpl(uint32_t id) : nweb_id_(id) {}
+NWebImpl::NWebImpl(uint32_t id) : nweb_id_(id) {
+  ResSchedClientAdapter::ReportNWebInit(ResSchedStatusAdapter::WEB_SCENE_ENTER,
+                                        nweb_id_);
+}
 
 NWebImpl::~NWebImpl() {
+  ResSchedClientAdapter::ReportNWebInit(ResSchedStatusAdapter::WEB_SCENE_EXIT,
+                                        nweb_id_);
   g_nweb_map.Get().erase(nweb_id_);
 }
 
@@ -192,7 +202,7 @@ bool NWebImpl::Init(const NWebCreateInfo& create_info) {
 }
 
 void NWebImpl::OnDestroy() {
-  WVLOG_I("NWebImpl::OnDestroy");
+  WVLOG_I("NWebImpl::OnDestroy, nweb_id = %{public}u", nweb_id_);
   if (g_nweb_count == 0) {
     return;
   }
@@ -345,6 +355,11 @@ void NWebImpl::PutDownloadCallback(
 }
 
 void NWebImpl::SetNWebHandler(std::shared_ptr<NWebHandler> client) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("set nweb handler failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
   nweb_handle_ = client;
   nweb_delegate_->RegisterNWebHandler(client);
   client->SetNWeb(shared_from_this());
@@ -372,6 +387,8 @@ void NWebImpl::OnTouchPress(int32_t id, double x, double y, bool from_overlay) {
     return;
   }
 
+  ResSchedClientAdapter::ReportScene(ResSchedStatusAdapter::WEB_SCENE_ENTER,
+                                     ResSchedSceneAdapter::CLICK, nweb_id_);
   input_handler_->OnTouchPress(id, x, y, from_overlay);
 }
 
@@ -422,12 +439,25 @@ void NWebImpl::SendMouseWheelEvent(double x,
   if (input_handler_ == nullptr) {
     return;
   }
+
+  ResSchedClientAdapter::ReportScene(ResSchedStatusAdapter::WEB_SCENE_ENTER,
+                                     ResSchedSceneAdapter::SLIDE);
+
+  OHOS::NWeb::OhosAdapterHelper::GetInstance()
+      .CreateSocPerfClientAdapter()
+      ->ApplySocPerfConfigById(SOC_PERF_MOUSEWHEEL_CONFIG_ID);
+
   input_handler_->SendMouseWheelEvent(x, y, deltaX, deltaY);
 }
 
 void NWebImpl::SendMouseEvent(int x, int y, int button, int action, int count) {
   if (input_handler_ == nullptr) {
     return;
+  }
+
+  if (action == MouseAction::PRESS) {
+    ResSchedClientAdapter::ReportScene(ResSchedStatusAdapter::WEB_SCENE_ENTER,
+                                       ResSchedSceneAdapter::CLICK, nweb_id_);
   }
   input_handler_->SendMouseEvent(x, y, button, action, count);
 }
@@ -441,6 +471,13 @@ int NWebImpl::Load(const std::string& url) const {
     WVLOG_E("nweb size is invalid, stop Load");
     return NWEB_ERR;
   }
+
+  ResSchedClientAdapter::ReportScene(ResSchedStatusAdapter::WEB_SCENE_ENTER,
+                                     ResSchedSceneAdapter::LOAD_URL, nweb_id_);
+
+  OHOS::NWeb::OhosAdapterHelper::GetInstance()
+      .CreateSocPerfClientAdapter()
+      ->ApplySocPerfConfigById(SOC_PERF_LOADURL_CONFIG_ID);
 
   int result = nweb_delegate_->Load(url);
   output_handler_->StartRenderOutput();
@@ -587,16 +624,32 @@ void NWebImpl::OnContinue() const {
     LOG(ERROR) << "nweb_delegate_ is nullptr.";
     return;
   }
+
   nweb_delegate_->OnContinue();
   if (inputmethod_handler_ == nullptr) {
     LOG(ERROR) << "inputmethod_handler_ is nullptr.";
     return;
   }
   if (inputmethod_handler_->Reattach(
-      nweb_id_, NWebInputMethodHandler::ReattachType::FROM_CONTINUE)) {
+          nweb_id_, NWebInputMethodHandler::ReattachType::FROM_CONTINUE)) {
     nweb_delegate_->OnFocus();
-    focus_nweb_id_.insert(nweb_id_);
   }
+}
+
+void NWebImpl::OnOccluded() const {
+  if (nweb_delegate_ == nullptr) {
+    LOG(ERROR) << "nweb_delegate_ is nullptr.";
+    return;
+  }
+  nweb_delegate_->OnOccluded();
+}
+
+void NWebImpl::OnUnoccluded() const {
+  if (nweb_delegate_ == nullptr) {
+    LOG(ERROR) << "nweb_delegate_ is nullptr.";
+    return;
+  }
+  nweb_delegate_->OnUnoccluded();
 }
 
 void NWebImpl::StopCameraSession() const {
@@ -639,6 +692,14 @@ void NWebImpl::OnWebviewHide() const {
 
 void NWebImpl::OnWebviewShow() const {
   RestartCameraSession();
+}
+
+void NWebImpl::SetWindowId(uint32_t window_id) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("SetWindowId nweb delegate is null");
+    return;
+  }
+  nweb_delegate_->SetWindowId(window_id);
 }
 
 const std::shared_ptr<NWebPreference> NWebImpl::GetPreference() const {
@@ -799,19 +860,12 @@ void NWebImpl::OnFocus(const FocusReason& focusReason) const {
     LOG(ERROR) << "nweb_delegate_ is nullptr.";
     return;
   }
-  if (focusReason == FocusReason::FOCUS_DEFAULT && !focus_nweb_id_.empty() &&
-      focus_nweb_id_.find(nweb_id_) == focus_nweb_id_.end()) {
-    LOG(DEBUG) << "There is already web capture, and there is no need for "
-                  "capture when loading this web page.";
-    return;
-  }
 
   if (inputmethod_handler_ == nullptr) {
     LOG(ERROR) << "inputmethod_handler_ is nullptr.";
     return;
   }
   if (nweb_delegate_->OnFocus(focusReason)) {
-    focus_nweb_id_.insert(nweb_id_);
     inputmethod_handler_->Reattach(
         nweb_id_, NWebInputMethodHandler::ReattachType::FROM_ONFOCUS);
   }
@@ -823,9 +877,6 @@ void NWebImpl::OnBlur(const BlurReason& blurReason) const {
     return;
   }
   nweb_delegate_->OnBlur();
-  if (focus_nweb_id_.find(nweb_id_) != focus_nweb_id_.end()) {
-    focus_nweb_id_.erase(nweb_id_);
-  }
   if (inputmethod_handler_ == nullptr) {
     LOG(ERROR) << "inputmethod_handler_ is nullptr.";
     return;
@@ -1077,94 +1128,20 @@ bool NWebImpl::GetBrowserServiceApiEnabled() {
   return g_browser_service_api_enabled;
 }
 
-void NWebImpl::SetUrlExceptionList(int contentType,
-                                   std::vector<std::string>& urls,
-                                   bool accept) {
-#if defined(OHOS_NWEB_EX)
-  // URL例外列表中域名的最大数量。
-  static constexpr unsigned int kMaxUrlExceptions = 10000;
-
-  ContentSettingsType content_type =
-      static_cast<ContentSettingsType>(contentType);
-  if (content_type != ContentSettingsType::COOKIES &&
-      content_type != ContentSettingsType::JAVASCRIPT) {
-    LOG(ERROR) << "SetUrlExceptionList Unsupported content type: "
-               << contentType;
-    return;
-  }
-
-  ContentSetting setting = CONTENT_SETTING_BLOCK;
-  if (accept) {
-    setting = CONTENT_SETTING_ALLOW;
-  }
-
-  std::vector<std::string> urls_vector;
-  for (std::string url : urls) {
-    urls_vector.push_back(url);
-  }
-
-  if (urls_vector.size() > kMaxUrlExceptions) {
-    urls_vector.resize(kMaxUrlExceptions);
-  }
-  int size = urls_vector.size();
-  for (const auto& cef_browser_context : CefBrowserContext::GetAll()) {
-    content::BrowserContext* browser_context =
-        cef_browser_context->AsBrowserContext();
-    if (!browser_context) {
-      LOG(ERROR) << "SetUrlExceptionList null browser_context";
-      return;
-    }
-    HostContentSettingsMap* host_content_settings_map =
-        HostContentSettingsMapFactory::GetForProfile(browser_context);
-    if (!host_content_settings_map) {
-      LOG(ERROR) << "SetUrlExceptionList null host_content_settings_map";
-      return;
-    }
-    // Reset custom rules.
-    host_content_settings_map->ClearSettingsForOneType(content_type);
-    // Set custom rules.
-    for (int i = 0; i < size; i++) {
-      host_content_settings_map->SetContentSettingCustomScope(
-          ContentSettingsPattern::FromString(urls_vector[i]),
-          ContentSettingsPattern::Wildcard(), content_type,
-          static_cast<ContentSetting>(setting));
-    }
-
-    // Update cookies' setting on storage.
-    if (content_type == ContentSettingsType::COOKIES) {
-      ContentSettingsForOneType cookies_settings;
-      host_content_settings_map->GetSettingsForOneType(
-          ContentSettingsType::COOKIES, &cookies_settings);
-
-      browser_context->ForEachStoragePartition(base::BindRepeating(
-          [](ContentSettingsForOneType settings,
-             content::StoragePartition* storage_partition) {
-            storage_partition->GetCookieManagerForBrowserProcess()
-                ->SetContentSettings(settings);
-          },
-          cookies_settings));
-    }
-  }
-
-  LOG(INFO) << "SetUrlExceptionList Add "
-            << (setting == CONTENT_SETTING_BLOCK ? "Block" : "Allow")
-            << " exception for content type: " << int32_t(content_type)
-            << " with " << size;
-#endif
-}
-
-void NWebImpl::SetConnectTimeout(int32_t seconds) {
-#if defined(OHOS_NWEB_EX)
-  content::GetNetworkService()->SetConnectTimeout(seconds);
-#endif
-}
-
 void NWebImpl::ReloadOriginalUrl() const {
   if (nweb_delegate_ == nullptr) {
     return;
   }
 
   nweb_delegate_->ReloadOriginalUrl();
+}
+
+void NWebImpl::PasswordSuggestionSelected(int list_index) const {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+
+  nweb_delegate_->PasswordSuggestionSelected(list_index);
 }
 
 void NWebImpl::SetBrowserUserAgentString(const std::string& user_agent) {
@@ -1206,6 +1183,13 @@ void NWebImpl::SetForceEnableZoom(bool forceEnableZoom) const {
   nweb_delegate_->SetForceEnableZoom(forceEnableZoom);
 }
 
+void NWebImpl::SaveOrUpdatePassword(bool is_update) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->SaveOrUpdatePassword(is_update);
+}
+
 bool NWebImpl::GetForceEnableZoom() const {
   if (nweb_delegate_ == nullptr) {
     return false;
@@ -1245,6 +1229,35 @@ void NWebImpl::SetEnableBlankTargetPopupIntercept(
   }
   nweb_delegate_->SetEnableBlankTargetPopupIntercept(enableBlankTargetPopup);
 }
+
+bool NWebImpl::GetSavePasswordAutomatically() const {
+  if (nweb_delegate_ == nullptr) {
+    return false;
+  }
+  return nweb_delegate_->GetSavePasswordAutomatically();
+}
+
+void NWebImpl::SetSavePasswordAutomatically(bool enable) const {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->SetSavePasswordAutomatically(enable);
+}
+
+bool NWebImpl::GetSavePassword() const {
+  if (nweb_delegate_ == nullptr) {
+    return false;
+  }
+  return nweb_delegate_->GetSavePassword();
+}
+
+void NWebImpl::SetSavePassword(bool enable) const {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->SetSavePassword(enable);
+}
+
 #endif  // OHOS_NWEB_EX
 
 void NWebImpl::PrefetchPage(

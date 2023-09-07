@@ -31,6 +31,10 @@ class CRYPTO_EXPORT Encryptor {
   enum Mode {
     CBC,
     CTR,
+#if BUILDFLAG(IS_OHOS)
+    GCM,
+#endif
+
   };
 
   Encryptor();
@@ -92,6 +96,15 @@ class CRYPTO_EXPORT Encryptor {
   absl::optional<size_t> CryptCTR(bool do_encrypt,
                                   base::span<const uint8_t> input,
                                   base::span<uint8_t> output);
+
+#if BUILDFLAG(IS_OHOS)
+  absl::optional<size_t> EncryptGCM(base::span<const uint8_t> input,
+                                    base::span<uint8_t> output,
+                                    std::string* tag);
+  absl::optional<size_t> DecryptGCM(const std::string& input,
+                                    base::span<uint8_t> output,
+                                    std::string* tag);
+#endif
 
   // In CBC mode, the IV passed to Init(). In CTR mode, the counter value passed
   // to SetCounter().

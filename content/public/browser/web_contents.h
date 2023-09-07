@@ -38,7 +38,9 @@
 #include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #if BUILDFLAG(IS_OHOS)
+#include "components/autofill/core/browser/ui/suggestion.h"
 #include "third_party/blink/public/common/messaging/web_message_port.h"
+#include "ui/gfx/geometry/rect_f.h"
 #endif
 #include "third_party/blink/public/mojom/favicon/favicon_url.mojom-forward.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom-forward.h"
@@ -52,7 +54,6 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/native_widget_types.h"
 #include "url/gurl.h"
-
 #if BUILDFLAG(IS_ANDROID)
 #include "base/android/scoped_java_ref.h"
 #endif
@@ -600,6 +601,8 @@ class WebContents : public PageNavigator,
   virtual bool GetTouchInsertHandleMenuShow() = 0;
   virtual void OpenDateTimeChooser() = 0;
   virtual void CloseDateTimeChooser() = 0;
+#endif
+
 #if defined (OHOS_NWEB_EX)
   virtual void SetForceEnableZoom(bool forceEnableZoom) = 0;
   virtual bool GetForceEnableZoom() = 0;
@@ -607,8 +610,17 @@ class WebContents : public PageNavigator,
   virtual bool ShouldShowFreeCopy() = 0;
   virtual void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) = 0;
   virtual bool GetEnableBlankTargetPopupIntercept() = 0;
-#endif // OHOS_NWEB_EX
-#endif
+  virtual void SetSavePasswordAutomatically(bool enable) = 0;
+  virtual bool GetSavePasswordAutomatically() = 0;
+  virtual void SetSavePassword(bool enable) = 0;
+  virtual bool GetSavePassword() = 0;
+  virtual void SaveOrUpdatePassword(bool is_update) = 0;
+  virtual void ShowAutofillPopup(
+      const gfx::RectF& element_bounds,
+      bool is_rtl,
+      const std::vector<autofill::Suggestion>& suggestions) = 0;
+  virtual void HideAutofillPopup() = 0;
+#endif  // OHOS_NWEB_EX
 
   // Saves the given title to the navigation entry and does associated work. It
   // will update history and the view with the new title, and also synthesize
@@ -1394,9 +1406,9 @@ class WebContents : public PageNavigator,
       PrerenderTriggerType trigger_type,
       const std::string& embedder_histogram_suffix) = 0;
 
- #ifdef OHOS_ENABLE_DRAG_DROP
+ #ifdef BUILDFLAG(IS_OHOS)
   virtual void ClearContextMenu() = 0;
-#endif //OHOS_ENABLE_DRAG_DROP
+#endif //BUILDFLAG(IS_OHOS)
 
  private:
   // This interface should only be implemented inside content.

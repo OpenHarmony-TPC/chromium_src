@@ -128,6 +128,69 @@ class GetOriginUsageOrQuotaCallback : public CefGetOriginUsageOrQuotaCallback {
 
   IMPLEMENT_REFCOUNTING(GetOriginUsageOrQuotaCallback);
 };
+
+class GetPasswordCallback : public CefGetPasswordCallback {
+ public:
+  GetPasswordCallback(std::shared_ptr<WaitableEvent> event,
+                      std::shared_ptr<NWebValueCallback<std::string>> callback)
+      : event_(event), callback_(callback), result_("") {}
+  void OnComplete(const CefString& result) override {
+    result_ = result;
+    if (event_ != nullptr) {
+      event_->Signal();
+    }
+    if (callback_ != nullptr) {
+      callback_->OnReceiveValue(result.ToString());
+    }
+  }
+
+  std::string GetPassword() const { return result_; }
+
+ private:
+  std::shared_ptr<WaitableEvent> event_;
+  std::shared_ptr<NWebValueCallback<std::string>> callback_;
+  std::string result_;
+
+  IMPLEMENT_REFCOUNTING(GetPasswordCallback);
+};
+
+class GetSavedPasswordsCallback : public CefGetSavedPasswordsCallback {
+ public:
+  GetSavedPasswordsCallback(
+      std::shared_ptr<WaitableEvent> event,
+      std::shared_ptr<NWebValueCallback<std::string>> callback)
+      : event_(event), callback_(callback), result_("") {}
+  void OnComplete(const std::vector<CefString>& url,
+                  const std::vector<CefString>& username) override {
+    int size = url.size();
+    for (int i = 0; i < size; i++) {
+      url_.push_back(url[i].ToString());
+      username_.push_back(username[i].ToString());
+    }
+
+    if (event_ != nullptr) {
+      event_->Signal();
+    }
+    if (callback_ != nullptr) {
+      callback_->OnReceiveValue(result_);
+    }
+  }
+
+  std::string GetPassword() const { return result_; }
+
+  std::vector<std::string> GetPasswordUsername() { return username_; }
+
+  std::vector<std::string> GetPasswordUrl() { return url_; }
+
+ private:
+  std::shared_ptr<WaitableEvent> event_;
+  std::shared_ptr<NWebValueCallback<std::string>> callback_;
+  std::string result_;
+  std::vector<std::string> url_;
+
+  std::vector<std::string> username_;
+  IMPLEMENT_REFCOUNTING(GetSavedPasswordsCallback);
+};
 }
 
 namespace OHOS::NWeb {
@@ -238,4 +301,101 @@ long NWebWebStorageDelegate::GetOriginUsage(const std::string& origin) {
   completion->Wait();
   return callback->GetUsageOrQuota();
 }
+
+#if BUILDFLAG(IS_OHOS)
+std::string NWebWebStorageDelegate::GetPassword(const std::string& url,
+                                                const std::string& username,
+                                                int callback_id) {
+#if defined(OHOS_NWEB_EX)
+  CefRefPtr<CefWebStorage> web_storage = GetGlobalWebStorage();
+  if (web_storage == nullptr) {
+    return "";
+  }
+
+  std::shared_ptr<base::WaitableEvent> completion =
+      std::make_shared<base::WaitableEvent>(
+          base::WaitableEvent::ResetPolicy::AUTOMATIC,
+          base::WaitableEvent::InitialState::NOT_SIGNALED);
+  CefRefPtr<GetPasswordCallback> callback =
+      new GetPasswordCallback(completion, nullptr);
+  web_storage->GetPassword(CefString(url), CefString(username), callback);
+  completion->Wait();
+  web_storage_extension_callback_->OnGetPassword(
+      callback->GetPassword().c_str(), callback_id);
+  return callback->GetPassword();
+#else
+  return "";
+#endif  // OHOS_NWEB_EX
+}
+
+void NWebWebStorageDelegate::GetSavedPasswordsInfo(int callback_id) {
+#if defined(OHOS_NWEB_EX)
+  CefRefPtr<CefWebStorage> web_storage = GetGlobalWebStorage();
+  if (web_storage == nullptr) {
+    return;
+  }
+  std::shared_ptr<base::WaitableEvent> completion =
+      std::make_shared<base::WaitableEvent>(
+          base::WaitableEvent::ResetPolicy::AUTOMATIC,
+          base::WaitableEvent::InitialState::NOT_SIGNALED);
+  CefRefPtr<GetSavedPasswordsCallback> callback =
+      new GetSavedPasswordsCallback(completion, nullptr);
+  web_storage->GetSavedPasswordsInfo(callback);
+  completion->Wait();
+  LOG(INFO) << "get saved password callback id: " << callback_id;
+  web_storage_extension_callback_->OnGetSavedPasswords(
+      callback->GetPasswordUrl(), callback->GetPasswordUsername(), callback_id);
+#endif  // OHOS_NWEB_EX
+}
+
+void NWebWebStorageDelegate::RegisterWebStorageExtensionCallback(
+    std::shared_ptr<NWebStorageExtensionCallback>
+        web_storage_extension_callback) {
+  web_storage_extension_callback_ = web_storage_extension_callback;
+}
+
+void NWebWebStorageDelegate::ClearPassword() {
+#if defined(OHOS_NWEB_EX)
+  CefRefPtr<CefWebStorage> web_storage = GetGlobalWebStorage();
+  if (web_storage == nullptr) {
+    return;
+  }
+  web_storage->ClearPassword();
+#endif  // OHOS_NWEB_EX
+}
+
+void NWebWebStorageDelegate::RemovePassword(const std::string& url,
+                                            const std::string& username) {
+#if defined(OHOS_NWEB_EX)
+  CefRefPtr<CefWebStorage> web_storage = GetGlobalWebStorage();
+  if (web_storage == nullptr) {
+    return;
+  }
+  web_storage->RemovePassword(url, username);
+#endif  // OHOS_NWEB_EX
+}
+
+void NWebWebStorageDelegate::ModifyPassword(const std::string& url,
+                                            const std::string& old_username,
+                                            const std::string& new_username,
+                                            const std::string& new_password) {
+#if defined(OHOS_NWEB_EX)
+  CefRefPtr<CefWebStorage> web_storage = GetGlobalWebStorage();
+  if (web_storage == nullptr) {
+    return;
+  }
+  web_storage->ModifyPassword(url, old_username, new_username, new_password);
+#endif  // OHOS_NWEB_EX
+}
+
+void NWebWebStorageDelegate::RemovePasswordByUrl(const std::string& url) {
+#if defined(OHOS_NWEB_EX)
+  CefRefPtr<CefWebStorage> web_storage = GetGlobalWebStorage();
+  if (web_storage == nullptr) {
+    return;
+  }
+  web_storage->RemovePasswordByUrl(url);
+#endif  // OHOS_NWEB_EX
+}
+#endif
 }  // namespace OHOS::NWeb

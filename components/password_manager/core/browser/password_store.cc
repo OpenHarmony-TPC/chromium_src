@@ -468,4 +468,16 @@ void PasswordStore::InjectAffiliationAndBrandingInformation(
   }
 }
 
+#if BUILDFLAG(IS_OHOS)
+std::vector<std::unique_ptr<PasswordForm>> PasswordStore::GetMatchingLogins(
+    const PasswordFormDigest& form) {
+  DCHECK(main_task_runner_->RunsTasksInCurrentSequence());
+  if (!backend_) {
+    return {};  // Once the shutdown started, ignore new requests.
+  }
+
+  return backend_->FillMatchingLogins(FormSupportsPSL(form), {form});
+}
+#endif
+
 }  // namespace password_manager

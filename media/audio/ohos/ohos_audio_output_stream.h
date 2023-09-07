@@ -85,7 +85,9 @@ class OHOSAudioOutputStream : public AudioOutputStream {
 
   bool StartRender();
 
-  void Erase(content::MediaSessionImpl* mediaSession);
+  void Erase(base::WeakPtr<content::MediaSessionImpl> weakMediaSession);
+
+  void Prepare(content::MediaSessionImpl* mediaSession);
 
   OHOSAudioManager* manager_;
 
@@ -118,7 +120,7 @@ class OHOSAudioOutputStream : public AudioOutputStream {
 
   std::unique_ptr<AudioRendererAdapter> audio_renderer_;
 
-  content::MediaSessionImpl* mediaSession_ = nullptr;
+  base::WeakPtr<content::MediaSessionImpl> weakMediaSession_ = nullptr;
 
   std::shared_ptr<AudioRendererCallback> rendererCallback_ = nullptr;
 

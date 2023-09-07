@@ -64,6 +64,7 @@ class MEDIA_EXPORT OHOSAudioCapturerSource final : public AudioCapturerSource {
   void ReportError(const std::string& message);
 
   std::unique_ptr<AudioCapturerAdapter> capturer_;
+  uint32_t frameCount_ = 0;
   scoped_refptr<base::SingleThreadTaskRunner> capturer_task_runner_;
   scoped_refptr<base::SingleThreadTaskRunner> main_task_runner_;
   AudioParameters params_;

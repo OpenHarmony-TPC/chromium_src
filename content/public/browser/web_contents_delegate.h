@@ -33,6 +33,10 @@
 #include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/native_widget_types.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "components/autofill/core/browser/ui/suggestion.h"
+#endif
+
 #if BUILDFLAG(IS_ANDROID)
 #include "base/android/scoped_java_ref.h"
 #endif
@@ -278,6 +282,16 @@ class CONTENT_EXPORT WebContentsDelegate {
   virtual bool HandleContextMenu(RenderFrameHost& render_frame_host,
                                  const ContextMenuParams& params);
 
+#if defined(OHOS_NWEB_EX)
+  // notify ui show save password dialog
+  virtual void ShowPasswordDialog(bool is_update, const std::string& url) {}
+
+  virtual void OnShowAutofillPopup(
+      const gfx::RectF& element_bounds,
+      bool is_rtl,
+      const std::vector<autofill::Suggestion>& suggestions) {}
+  virtual void OnHideAutofillPopup() {}
+#endif
   // Allows delegates to handle keyboard events before sending to the renderer.
   // See enum for description of return values.
   virtual KeyboardEventProcessingResult PreHandleKeyboardEvent(
@@ -753,9 +767,9 @@ class CONTENT_EXPORT WebContentsDelegate {
   // Whether the WebContents is privileged.
   // It's used to prevent drag and drop between privileged and non-privileged
   // WebContents.
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   virtual void ClearContextMenu();
-#endif // OHOS_ENABLE_DRAG_DROP
+#endif // BUILDFLAG(IS_OHOS)
   virtual bool IsPrivileged();
 
  protected:

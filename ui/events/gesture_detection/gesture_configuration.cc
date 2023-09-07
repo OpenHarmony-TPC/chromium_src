@@ -33,7 +33,7 @@ GestureConfiguration::GestureConfiguration()
       stylus_scale_enabled_(false),
       gesture_begin_end_types_enabled_(false),
       long_press_time_in_ms_(500),
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       drag_long_press_time_in_ms_(1500),
 #endif
       max_distance_between_taps_for_double_tap_(20),

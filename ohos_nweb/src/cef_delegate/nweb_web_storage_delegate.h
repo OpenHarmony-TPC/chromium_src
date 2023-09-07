@@ -38,9 +38,29 @@ class NWebWebStorageDelegate : public NWebWebStorageDelegateInterface {
   void GetOriginUsage(const std::string& origin,
                               std::shared_ptr<NWebValueCallback<long>> callback) override;
   long GetOriginUsage(const std::string& origin) override;
+
+#if BUILDFLAG(IS_OHOS)
+  void RegisterWebStorageExtensionCallback(
+      std::shared_ptr<NWebStorageExtensionCallback>
+          web_storage_extension_callback) override;
+  std::string GetPassword(const std::string& url,
+                          const std::string& username,
+                          int callback_id) override;
+  void GetSavedPasswordsInfo(int callback_id) override;
+  void ClearPassword() override;
+  void RemovePassword(const std::string& url,
+                      const std::string& username) override;
+  void RemovePasswordByUrl(const std::string& url) override;
+  void ModifyPassword(const std::string& url,
+                      const std::string& old_username,
+                      const std::string& new_username,
+                      const std::string& new_password) override;
+#endif
  private:
   CefRefPtr<CefWebStorage> GetGlobalWebStorage();
   CefRefPtr<CefWebStorage> web_storage_ = nullptr;
+  std::shared_ptr<NWebStorageExtensionCallback>
+      web_storage_extension_callback_ = nullptr;
 };
 }  // namespace OHOS::NWeb
 #endif

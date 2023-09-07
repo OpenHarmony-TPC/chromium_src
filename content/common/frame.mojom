@@ -795,8 +795,6 @@ interface FrameHost {
   // Called when the renderer is done loading a frame.
   DidStopLoading();
 
-  // #ifdef OHOS_ENABLE_DRAG_DROP
   [EnableIf=is_ohos]
   OnClearContextMenu();
-  // #endif OHOS_ENABLE_DRAG_DROP
 };

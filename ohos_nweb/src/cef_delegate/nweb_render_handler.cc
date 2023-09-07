@@ -27,6 +27,7 @@
 #include "nweb_drag_data_impl.h"
 #include "nweb_touch_handle_state_impl.h"
 #include "ohos_adapter_helper.h"
+#include "res_sched_client_adapter.h"
 
 namespace {
 cef_screen_orientation_type_t ConvertOrientationType(
@@ -198,6 +199,9 @@ void NWebRenderHandler::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser,
   if (auto handler = handler_.lock()) {
     handler->OnScroll(x, y);
   }
+
+  ResSchedClientAdapter::ReportScene(ResSchedStatusAdapter::WEB_SCENE_ENTER,
+                                     ResSchedSceneAdapter::SLIDE);
 }
 
 int NWebRenderHandler::ContentHeight() {
@@ -396,6 +400,12 @@ CefRefPtr<CefDragData> NWebRenderHandler::GetDragData() {
   }
 
   return std::static_pointer_cast<NWebDragDataImpl>(nweb_drag_data_)->GetDragData();
+}
+
+void NWebRenderHandler::FreePixlMapData() {
+  if (nweb_drag_data_) {
+    std::static_pointer_cast<NWebDragDataImpl>(nweb_drag_data_)->FreePixlMapData();
+  }
 }
 
 void NWebRenderHandler::OnCompleteSwapWithNewSize() {

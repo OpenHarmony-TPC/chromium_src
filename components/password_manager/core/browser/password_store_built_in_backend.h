@@ -42,6 +42,12 @@ class PasswordStoreBuiltInBackend : public PasswordStoreBackend,
 
   ~PasswordStoreBuiltInBackend() override;
 
+#if BUILDFLAG(IS_OHOS)
+  LoginsResult FillMatchingLogins(
+      bool include_psl,
+      const std::vector<PasswordFormDigest>& forms) override;
+#endif
+
  private:
   // Implements PasswordStoreBackend interface.
   base::WeakPtr<PasswordStoreBackend> GetWeakPtr() override;

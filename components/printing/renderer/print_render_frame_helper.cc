@@ -6,7 +6,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-
 #include <algorithm>
 #include <memory>
 #include <string>
@@ -679,6 +678,23 @@ void ClosuresForMojoResponse::RunPrintSettingFromUserQuitClosure() {
   std::move(get_print_settings_from_user_quit_closure_).Run();
 }
 
+#if BUILDFLAG(IS_OHOS)
+void ClosuresForMojoResponse::SetPrintRequestedPreviewQuitClosure(
+    base::OnceClosure quit_print_preview) {
+  DCHECK(!print_requested_preview_quit_closure_);
+  print_requested_preview_quit_closure_ = std::move(quit_print_preview);
+}
+
+void ClosuresForMojoResponse::RunPrintRequestedPreviewQuitClosure() {
+  if (!print_requested_preview_quit_closure_)
+    return;
+
+  std::move(print_requested_preview_quit_closure_).Run();
+}
+
+blink::WebLocalFrame* PrintRenderFrameHelper::static_web_frame_ = nullptr;
+#endif  // IS_OHOS
+
 // static
 double PrintRenderFrameHelper::GetScaleFactor(double input_scale_factor,
                                               bool is_pdf) {
@@ -1240,9 +1256,22 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
   // Detached documents can't be printed.
   if (!web_frame->GetDocument().GetFrame())
     return;
-  
+
 #if BUILDFLAG(IS_OHOS)
   if (delegate_->IsScriptedPrintEnabled()) {
+    LOG(INFO) << "delegate_->IsScriptedPrintEnabled()";
+    web_frame->DispatchBeforePrintEvent(/*print_client=*/nullptr);
+
+    static_web_frame_ = web_frame;
+
+    base::RunLoop loop{base::RunLoop::Type::kNestableTasksAllowed};
+    closures_for_mojo_responses_->SetPrintRequestedPreviewQuitClosure(
+        loop.QuitClosure());
+    GetPrintManagerHost()->PrintRequested(base::BindOnce(
+        &ClosuresForMojoResponse::RunPrintRequestedPreviewQuitClosure,
+        closures_for_mojo_responses_));
+    loop.Run();
+    web_frame->DispatchAfterPrintEvent();
     return;
   }
 #endif  // IS_OHOS
@@ -1298,9 +1327,13 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
   ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
   if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
     return;
-
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
+
+#if BUILDFLAG(IS_OHOS)
+  frame = static_web_frame_;
+#else
   frame->DispatchBeforePrintEvent(/*print_client=*/nullptr);
+#endif
   // Don't print if the RenderFrame is gone.
   if (render_frame_gone_)
     return;
@@ -1311,8 +1344,11 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
 
   Print(frame, plugin, PrintRequestType::kRegular);
 
+#if BUILDFLAG(IS_OHOS)
+#else
   if (!render_frame_gone_)
     frame->DispatchAfterPrintEvent();
+#endif
   // WARNING: |this| may be gone at this point. Do not do any more work here and
   // just return.
 }

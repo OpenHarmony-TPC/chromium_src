@@ -22,7 +22,7 @@
 #include "ui/events/types/event_type.h"
 #include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/vector2d_f.h"
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 #include "base/logging.h"
 #endif
 
@@ -182,7 +182,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
         DCHECK(!IsScaleGestureDetectionInProgress());
         current_longpress_time_ = gesture.time;
         break;
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
       case ET_GESTURE_DRAG_LONG_PRESS:
         DCHECK(!IsScaleGestureDetectionInProgress());
         current_longpress_time_ = gesture.time;
@@ -236,7 +236,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
            gesture.type() == ET_GESTURE_SHOW_PRESS ||
            gesture.type() == ET_GESTURE_TAP_CANCEL ||
            gesture.type() == ET_GESTURE_BEGIN ||
-           #ifdef OHOS_ENABLE_DRAG_DROP
+           #ifdef BUILDFLAG(IS_OHOS)
            gesture.type() == ET_GESTURE_DRAG_LONG_PRESS ||
            #endif
            gesture.type() == ET_GESTURE_END);
@@ -623,7 +623,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
     Send(CreateGesture(long_press_details, e));
   }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   void OnDragLongPress(const MotionEvent& e) override {
     LOG(INFO) << "DragDrop GestureDetector::OnDragLongPress ";
     DCHECK(!IsDoubleTapInProgress());
@@ -910,7 +910,7 @@ bool GestureProvider::OnTouchEvent(const MotionEvent& event) {
   // gesture where the UP is not dispatched to content.
   uma_histogram_.RecordTouchEvent(event);
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
   if (event.GetAction() == MotionEvent::Action::UP) {
     gesture_listener_->StopDragLongPressGesture();
   }
@@ -923,7 +923,7 @@ bool GestureProvider::OnTouchEvent(const MotionEvent& event) {
   OnTouchEventHandlingEnd(event);
   return true;
 }
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void GestureProvider::ResetDetection(bool is_lost_focus) {
   MotionEventGeneric generic_cancel_event(
       MotionEvent::Action::CANCEL, base::TimeTicks::Now(), PointerProperties(),

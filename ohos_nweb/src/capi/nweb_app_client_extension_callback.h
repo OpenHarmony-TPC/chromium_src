@@ -17,6 +17,7 @@
 #define OHOS_NWEB_SRC_NWEB_APP_CLIENT_EXTENSION_CALLBACK_H_
 
 #include <stddef.h>
+#include <string>
 
 struct NWebAppClientExtensionCallback {
   size_t struct_size = sizeof(NWebAppClientExtensionCallback);
@@ -28,6 +29,16 @@ struct NWebAppClientExtensionCallback {
                                int alpha_type,
                                int nweb_id);
   void (*OnLoadStarted)(bool toDifferentDocument, int nweb_id);
+  void (*OnHidePasswordAutofillPopup)(int nweb_id);
+  void (*OnSaveOrUpdatePassword)(bool isUpdate, std::string url, int nweb_id);
+  void (*OnShowPasswordAutofillPopup)(int left,
+                                      int top,
+                                      int width,
+                                      int height,
+                                      bool is_rtl,
+                                      std::vector<std::string> labels,
+                                      std::vector<std::string> sublabels,
+                                      int nweb_id);
 };
 
 #endif  // OHOS_NWEB_SRC_NWEB_APP_CLIENT_EXTENSION_CALLBACK_H_

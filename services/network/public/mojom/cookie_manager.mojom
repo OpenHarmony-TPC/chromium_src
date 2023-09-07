@@ -445,4 +445,21 @@ interface CookieManager {
   // the caller with a callback when settings have been updated.
   SetStorageAccessGrantSettings(
       array<content_settings.mojom.ContentSettingPatternSource> settings) => ();
+  
+  [Enable_if=is_ohos, Sync] SetCanonicalCookieSync(
+          CanonicalCookie cookie, url.mojom.Url source_url,
+          CookieOptions cookie_options)
+      => (CookieAccessResult access_result);
+  
+  [Enable_if=is_ohos, Sync] GetCookieListSync(url.mojom.Url url,
+            CookieOptions cookie_options,
+            CookiePartitionKeyCollection cookie_partition_key_collection)
+      => (array<CookieWithAccessResult> cookies,
+      array<CookieWithAccessResult> excluded_cookies);
+  
+  [Enable_if=is_ohos, Sync] DeleteCookiesSync(CookieDeletionFilter filter)
+      => (uint32 num_deleted);
+  
+  [Enable_if=is_ohos, Sync] GetAllCookiesSync()
+      => (array<CanonicalCookie> cookies);
 };

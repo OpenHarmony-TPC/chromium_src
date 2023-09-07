@@ -73,6 +73,9 @@ class PdfPrintManager : public printing::PrintManager,
       GetDefaultPrintSettingsCallback callback) override;
   void ScriptedPrint(printing::mojom::ScriptedPrintParamsPtr params,
                      ScriptedPrintCallback callback) override;
+#if BUILDFLAG(IS_OHOS)
+  void PrintRequested(PrintRequestedCallback callback) override;
+#endif
   void ShowInvalidPrinterSettingsError() override;
   void PrintingFailed(int32_t cookie) override;
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)

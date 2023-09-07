@@ -992,8 +992,8 @@ WebContentsImpl::WebContentsImpl(BrowserContext* browser_context)
 }
 
 WebContentsImpl::~WebContentsImpl() {
-  TRACE_EVENT0("content", "WebContentsImpl::~WebContentsImpl");
 
+  TRACE_EVENT0("content", "WebContentsImpl::~WebContentsImpl");
   // Imperfect sanity check against double free, given some crashes unexpectedly
   // observed in the wild.
   CHECK(!IsBeingDestroyed());
@@ -2390,7 +2390,13 @@ void WebContentsImpl::SetPrimaryMainFrameImportance(
 
 void WebContentsImpl::WasOccluded() {
   TRACE_EVENT0("content", "WebContentsImpl::WasOccluded");
+#if BUILDFLAG(IS_OHOS)
+  // Many observers observe the visibility and they do not handle OCCLUDED.
+  // So Temporarily use HIDDEN.
+  UpdateVisibilityAndNotifyPageAndView(Visibility::HIDDEN);
+#else
   UpdateVisibilityAndNotifyPageAndView(Visibility::OCCLUDED);
+#endif
 }
 
 Visibility WebContentsImpl::GetVisibility() {
@@ -2901,7 +2907,16 @@ void WebContentsImpl::SetSlowWebPreferences(
     std::string touch_enabled_default_switch =
         switches::kTouchEventFeatureDetectionDisabled;
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
-    touch_enabled_default_switch = switches::kTouchEventFeatureDetectionEnabled;
+    auto& system_properties_adapter =
+        OHOS::NWeb::OhosAdapterHelper::GetInstance()
+            .GetSystemPropertiesInstance();
+    OHOS::NWeb::ProductDeviceType deviceType =
+        system_properties_adapter.GetProductDeviceType();
+    if (deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_TABLET ||
+        deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_MOBILE) {
+      touch_enabled_default_switch =
+          switches::kTouchEventFeatureDetectionEnabled;
+    }
 #endif  // BUILDFLAG(IS_ANDROID)
     const std::string touch_enabled_switch =
         command_line.HasSwitch(switches::kTouchEventFeatureDetection)
@@ -9441,6 +9456,43 @@ void WebContentsImpl::SetEnableBlankTargetPopupIntercept(
     OnWebPreferencesChanged();
   }
 }
+
+void WebContentsImpl::PromptSaveOrUpdatePassword(
+    bool is_update,
+    std::unique_ptr<password_manager::PasswordFormManagerForUI> form_to_save) {
+  form_to_save_ = std::move(form_to_save);
+  if (GetSavePasswordAutomatically()) {
+    SaveOrUpdatePassword(is_update);
+    return;
+  }
+  std::string full_url = form_to_save_->GetPendingCredentials().url.spec();
+  if (delegate_) {
+    delegate_->ShowPasswordDialog(is_update, full_url);
+  }
+}
+
+void WebContentsImpl::SaveOrUpdatePassword(bool is_update) {
+  if (is_update) {
+    form_to_save_->Update(form_to_save_->GetPendingCredentials());
+  } else {
+    form_to_save_->Save();
+  }
+}
+
+void WebContentsImpl::ShowAutofillPopup(
+    const gfx::RectF& element_bounds,
+    bool is_rtl,
+    const std::vector<autofill::Suggestion>& suggestions) {
+  if (delegate_) {
+    delegate_->OnShowAutofillPopup(element_bounds, is_rtl, suggestions);
+  }
+}
+void WebContentsImpl::HideAutofillPopup() {
+  // notify ui to dismiss hideAutofillPopup
+  if (delegate_) {
+    delegate_->OnHideAutofillPopup();
+  }
+}
 #endif
 
 // static
@@ -9455,11 +9507,11 @@ std::pair<int, int> WebContentsImpl::GetAvailablePointerAndHoverTypes() {
   return ui::GetAvailablePointerAndHoverTypes();
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void WebContentsImpl::ClearContextMenu() {
   if (delegate_) {
     delegate_->ClearContextMenu();
   }
 }
-#endif //OHOS_ENABLE_DRAG_DROP
+#endif //BUILDFLAG(IS_OHOS)
 }  // namespace content

@@ -101,6 +101,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void ClearClientAuthenticationCache() override;
   void Reload() const override;
   void ReloadOriginalUrl() const override;
+  void PasswordSuggestionSelected(int list_index) const override;
   int Zoom(float zoomFactor) const override;
   int ZoomIn() const override;
   int ZoomOut() const override;
@@ -114,6 +115,8 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void InitialScale(float scale) const override;
   void OnPause() override;
   void OnContinue() override;
+  void OnOccluded() override;
+  void OnUnoccluded() override;
   std::shared_ptr<NWebPreference> GetPreference() const override;
   std::string Title() override;
   void CreateWebMessagePorts(std::vector<std::string>& ports) override;
@@ -205,12 +208,20 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
 #if defined (OHOS_NWEB_EX)
   void SetForceEnableZoom(bool forceEnableZoom) override;
   bool GetForceEnableZoom() override;
+
+  void SetSavePasswordAutomatically(bool enable) override;
+  bool GetSavePasswordAutomatically() override;
+  void SetSavePassword(bool enable) override;
+  bool GetSavePassword() override;
+  void SaveOrUpdatePassword(bool is_udpate) override;
+
   void SelectAndCopy() override;
   bool ShouldShowFreeCopy() override;
   void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) override;
 #endif
 
   void NotifyPopupWindowResult(bool result) override;
+  void SetWindowId(uint32_t window_id) override;
 
  public:
   int argc_;
@@ -250,6 +261,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
       nullptr;
   // Members only accessed on the main thread.
   bool hidden_ = false;
+  bool occluded_ = false;
   uint32_t width_ = 0;
   uint32_t height_ = 0;
 #if defined(REPORT_SYS_EVENT)

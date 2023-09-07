@@ -127,6 +127,16 @@ class NWebHandlerDelegate : public CefClient,
                              const CefString& method,
                              const CefString& object_name,
                              CefRefPtr<CefListValue> result) override;
+  // #if defined(OHOS_NWEB_EX)
+  void ShowPasswordDialog(bool is_update, const CefString& url) override;
+  void OnShowAutofillPopup(
+      CefRefPtr<CefBrowser> browser,
+      const CefRect& bounds,
+      bool right_aligned,
+      const std::vector<CefAutofillPopupItem>& menu_items) override;
+  void OnHideAutofillPopup() override;
+  // #endif
+
   CefRefPtr<CefFindHandler> GetFindHandler() override;
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override;
   CefRefPtr<CefPrintHandler> GetPrintHandler() override;
@@ -165,6 +175,7 @@ class NWebHandlerDelegate : public CefClient,
 
   void OnLoadStart(CefRefPtr<CefBrowser> browser,
                    CefRefPtr<CefFrame> frame,
+                   const CefString& url,
                    TransitionType transition_type) override;
 
   void OnLoadEnd(CefRefPtr<CefBrowser> browser,
@@ -197,8 +208,8 @@ class NWebHandlerDelegate : public CefClient,
                      const CefString& url,
                      bool success) override;
 
-  void OnFirstContentfulPaint(long navigationStartTick,
-                              long firstContentfulPaintMs) override;
+  void OnFirstContentfulPaint(int64_t navigationStartTick,
+                              int64_t firstContentfulPaintMs) override;
 
   void OnDataResubmission(CefRefPtr<CefBrowser> browser,
                           CefRefPtr<CefCallback> callback) override;
@@ -453,6 +464,7 @@ class NWebHandlerDelegate : public CefClient,
   void SetNWebId(uint32_t nwebId);
   uint32_t GetNWebId();
 #endif
+  void SetWindowId(uint32_t window_id) { window_id_ = window_id; };
 
   void SetFavicon(const void* icon_data, size_t width, size_t height,
     ImageColorType color_type, ImageAlphaType alpha_type);
@@ -513,6 +525,7 @@ class NWebHandlerDelegate : public CefClient,
   uint32_t access_success_count_ = 0;
   uint32_t access_fail_count_ = 0;
 #endif
+  uint32_t window_id_ = 0;
 
   static int32_t popIndex_;
   CefRefPtr<CefCallback> popupWindowCallback_ = nullptr;

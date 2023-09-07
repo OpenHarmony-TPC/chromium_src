@@ -21,7 +21,7 @@ bool SimpleGestureListener::OnSingleTapUp(const MotionEvent& e,
 void SimpleGestureListener::OnLongPress(const MotionEvent& e) {
 }
 
-#ifdef OHOS_ENABLE_DRAG_DROP
+#ifdef BUILDFLAG(IS_OHOS)
 void SimpleGestureListener::OnDragLongPress(const MotionEvent& e) {
 }
 #endif

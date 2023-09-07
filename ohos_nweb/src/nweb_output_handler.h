@@ -90,6 +90,7 @@ class NWebOutputHandler
   int64_t frame_miss_count_ = 0L;
 
   uint32_t nweb_id_ = 0;
+  bool is_initialized_resize_ = false;
 };
 }  // namespace OHOS::NWeb
 

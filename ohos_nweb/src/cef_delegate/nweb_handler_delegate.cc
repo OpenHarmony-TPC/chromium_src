@@ -220,7 +220,7 @@ DateTime ConvertMsToDateTime(double ms) {
 }
 
 double ConvertDateTimeToMonth(const DateTime& datetime) {
-  return (datetime.year - kEpochBeginYear) * kMonthPerYear + datetime.month; 
+  return (datetime.year - kEpochBeginYear) * kMonthPerYear + datetime.month;
 }
 
 DateTime ConvertMonthToDateTime(double month) {
@@ -479,6 +479,11 @@ CefRefPtr<CefPrintHandler> NWebHandlerDelegate::GetPrintHandler() {
 void NWebHandlerDelegate::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   LOG(INFO) << "NWebHandlerDelegate::OnAfterCreated IsPopup " << browser->IsPopup();
   CEF_REQUIRE_UI_THREAD();
+  if (browser && browser->GetHost()) {
+    if (window_id_ != 0 && nweb_id_ != 0) {
+      browser->GetHost()->SetWindowId(window_id_, nweb_id_);
+    }
+  }
   if (!main_browser_ && browser->IsPopup()) {
     main_browser_ = browser;
 
@@ -699,6 +704,7 @@ void NWebHandlerDelegate::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
 
 void NWebHandlerDelegate::OnLoadStart(CefRefPtr<CefBrowser> browser,
                                       CefRefPtr<CefFrame> frame,
+                                      const CefString& url,
                                       TransitionType transition_type) {
   LOG(INFO) << "NWebHandlerDelegate::OnLoadStart";
   if (frame == nullptr || !frame->IsMain()) {
@@ -708,7 +714,7 @@ void NWebHandlerDelegate::OnLoadStart(CefRefPtr<CefBrowser> browser,
     browser->GetHost()->SetFocus(true);
   }
   if (nweb_handler_ != nullptr) {
-    nweb_handler_->OnPageLoadBegin(frame->GetURL().ToString());
+    nweb_handler_->OnPageLoadBegin(url.ToString());
   }
 }
 
@@ -755,8 +761,9 @@ void NWebHandlerDelegate::OnPageVisible(CefRefPtr<CefBrowser> browser,
   }
 }
 
-void NWebHandlerDelegate::OnFirstContentfulPaint(long navigationStartTick,
-                                                 long firstContentfulPaintMs) {
+void NWebHandlerDelegate::OnFirstContentfulPaint(
+    int64_t navigationStartTick,
+    int64_t firstContentfulPaintMs) {
   LOG(INFO) << "NWebHandlerDelegate::OnFirstContentfulPaint";
   if (nweb_handler_ != nullptr) {
     nweb_handler_->OnFirstContentfulPaint(navigationStartTick,
@@ -890,8 +897,12 @@ void NWebHandlerDelegate::OnRefreshAccessedHistory(
     CefRefPtr<CefFrame> frame,
     const CefString& url,
     bool isReload) {
-  LOG(INFO) << "NWebHandlerDelegate::OnRefreshAccessedHistory, url = "
-            << url.ToString() << ", isReload = " << isReload;
+  std::string url1 = url.ToString();
+  auto pos = url1.find("?");
+  url1 = url1.substr(0, pos);
+  LOG(INFO)
+      << "NWebHandlerDelegate::OnRefreshAccessedHistory, intercepted url = "
+      << url1 << ", isReload = " << isReload;
   if (nweb_handler_ == nullptr) {
     LOG(ERROR) << "nweb handler is null";
     return;
@@ -1206,9 +1217,6 @@ CefRefPtr<CefResourceHandler> NWebHandlerDelegate::GetResourceHandler(
 /* CefPrintHandler method begin */
 void NWebHandlerDelegate::OnPrintStart(CefRefPtr<CefBrowser> browser) {
   LOG(INFO) << "NWebHandlerDelegate::OnPrintStart";
-  if (main_browser_ && main_browser_->GetHost()) {
-    main_browser_->GetHost()->Print();
-  }
 }
 
 void NWebHandlerDelegate::OnPrintSettings(CefRefPtr<CefBrowser> browser,
@@ -1276,6 +1284,56 @@ void NWebHandlerDelegate::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser,
 #endif  // OHOS_NWEB_EX
 
   return;
+}
+
+void NWebHandlerDelegate::ShowPasswordDialog(bool is_update,
+                                             const CefString& url) {
+#if defined(OHOS_NWEB_EX)
+  if (web_app_client_extension_listener_ != nullptr &&
+      web_app_client_extension_listener_->OnSaveOrUpdatePassword != nullptr) {
+    web_app_client_extension_listener_->OnSaveOrUpdatePassword(
+        is_update, url.ToString(), web_app_client_extension_listener_->nweb_id);
+  }
+#endif  // OHOS_NWEB_EX
+}
+
+void NWebHandlerDelegate::OnShowAutofillPopup(
+    CefRefPtr<CefBrowser> browser,
+    const CefRect& bounds,
+    bool right_aligned,
+    const std::vector<CefAutofillPopupItem>& menu_items) {
+#if defined(OHOS_NWEB_EX)
+  if (!render_handler_) {
+    return;
+  }
+  float ratio = render_handler_->GetCefDeviceRatio();
+  std::vector<std::string> label_list;
+  std::vector<std::string> sublabel_list;
+  for (auto& menu_item : menu_items) {
+    label_list.push_back(CefString(&menu_item.label).ToString());
+    sublabel_list.push_back(CefString(&menu_item.sublabel).ToString());
+  }
+
+  if (web_app_client_extension_listener_ != nullptr &&
+      web_app_client_extension_listener_->OnShowPasswordAutofillPopup !=
+          nullptr) {
+    web_app_client_extension_listener_->OnShowPasswordAutofillPopup(
+        bounds.x * ratio, bounds.y * ratio, bounds.width * ratio,
+        bounds.height * ratio, right_aligned, label_list, sublabel_list,
+        web_app_client_extension_listener_->nweb_id);
+  }
+#endif  // OHOS_NWEB_EX
+}
+
+void NWebHandlerDelegate::OnHideAutofillPopup() {
+#if defined(OHOS_NWEB_EX)
+  if (web_app_client_extension_listener_ != nullptr &&
+      web_app_client_extension_listener_->OnHidePasswordAutofillPopup !=
+          nullptr) {
+    web_app_client_extension_listener_->OnHidePasswordAutofillPopup(
+        web_app_client_extension_listener_->nweb_id);
+  }
+#endif  // OHOS_NWEB_EX
 }
 
 void NWebHandlerDelegate::OnReceivedIcon(const void* data,
@@ -1679,7 +1737,7 @@ void NWebHandlerDelegate::OnDateTimeChooserPopup(
 void NWebHandlerDelegate::OnDateTimeChooserClose() {
   if (!nweb_handler_)
     return;
-  
+
   nweb_handler_->OnDateTimeChooserClose();
 }
 /* CefDialogHandler method end */
@@ -1918,6 +1976,7 @@ void AddNWebValueCef(std::vector<std::shared_ptr<NWebValue>>& vector,
       break;
     default:
       LOG(INFO) << "AddNWebValueCef: not support value";
+      vector.push_back(value);
       break;
   }
 }
@@ -1943,9 +2002,11 @@ std::vector<std::shared_ptr<NWebValue>> ParseCefValueTONWebValue(
         AddNWebValueCef(value_vector, NWebValue::Type::STRING, argument);
         break;
       case CefValueType::VTYPE_INVALID:
+        AddNWebValueCef(value_vector, NWebValue::Type::NONE, argument);
         break;
       default:
         LOG(INFO) << "ParseCefValueTONWebValue: not support value";
+        AddNWebValueCef(value_vector, NWebValue::Type::NONE, argument);
         break;
     }
   }

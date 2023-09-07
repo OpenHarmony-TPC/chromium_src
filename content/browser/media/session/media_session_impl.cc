@@ -975,6 +975,9 @@ void MediaSessionImpl::OnResumeInternal(SuspendType suspend_type) {
 MediaSessionImpl::MediaSessionImpl(WebContents* web_contents)
     : WebContentsObserver(web_contents),
       WebContentsUserData<MediaSessionImpl>(*web_contents),
+#if BUILDFLAG(IS_OHOS)
+      weakMediaSessionFactory_(this),
+#endif
       audio_focus_state_(State::INACTIVE),
       desired_audio_focus_type_(AudioFocusType::kGainTransientMayDuck),
       is_ducking_(false),

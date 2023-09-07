@@ -15,6 +15,11 @@
 #include "third_party/boringssl/src/include/openssl/aes.h"
 #include "third_party/boringssl/src/include/openssl/evp.h"
 
+#if BUILDFLAG(IS_OHOS)
+#define GCM_TAG_SIZE 16
+#define GCM_IV_SIZE 12
+#endif
+
 namespace crypto {
 
 namespace {
@@ -27,6 +32,19 @@ const EVP_CIPHER* GetCipherForKey(const SymmetricKey* key) {
       return nullptr;
   }
 }
+
+#if BUILDFLAG(IS_OHOS)
+const EVP_CIPHER* GetCipherForKeyGCM(const SymmetricKey* key) {
+  switch (key->key().length()) {
+    case 16:
+      return EVP_aes_128_gcm();
+    case 32:
+      return EVP_aes_256_gcm();
+    default:
+      return nullptr;
+  }
+}
+#endif
 
 }  // namespace
 
@@ -45,7 +63,11 @@ bool Encryptor::Init(const SymmetricKey* key,
                      Mode mode,
                      base::span<const uint8_t> iv) {
   DCHECK(key);
+#if BUILDFLAG(IS_OHOS)
+  DCHECK(mode == CBC || mode == CTR || mode == GCM);
+#else
   DCHECK(mode == CBC || mode == CTR);
+#endif
 
   EnsureOpenSSLInit();
   if (mode == CBC && iv.size() != AES_BLOCK_SIZE)
@@ -56,6 +78,11 @@ bool Encryptor::Init(const SymmetricKey* key,
 
   if (GetCipherForKey(key) == nullptr)
     return false;
+
+#if BUILDFLAG(IS_OHOS)
+  if (mode == GCM && iv.size() != GCM_IV_SIZE)
+    return false;
+#endif
 
   key_ = key;
   mode_ = mode;
@@ -108,16 +135,53 @@ bool Encryptor::CryptString(bool do_encrypt,
   uint8_t* out_ptr =
       reinterpret_cast<uint8_t*>(base::WriteInto(&result, out_size + 1));
 
-  absl::optional<size_t> len =
-      (mode_ == CTR)
-          ? CryptCTR(do_encrypt, base::as_bytes(base::make_span(input)),
-                     base::make_span(out_ptr, out_size))
-          : Crypt(do_encrypt, base::as_bytes(base::make_span(input)),
-                  base::make_span(out_ptr, out_size));
+  absl::optional<size_t> len;
+#if BUILDFLAG(IS_OHOS)
+  std::string tag(GCM_TAG_SIZE, 0);
+  if (mode_ == CTR) {
+    len = CryptCTR(do_encrypt, base::as_bytes(base::make_span(input)),
+                   base::make_span(out_ptr, out_size));
+  } else if (mode_ == GCM) {
+    if (do_encrypt) {
+      len = EncryptGCM(base::as_bytes(base::make_span(input)),
+                       base::make_span(out_ptr, out_size), &tag);
+    } else {
+      // Get the tag that we attached with cipher during encryption from input
+      tag =
+          std::string(input.substr(input.length() - GCM_TAG_SIZE, GCM_TAG_SIZE));
+      // Get the cipher part only from input
+      std::string ciphertext = std::string(
+        input.substr(0, input.length() - GCM_TAG_SIZE));
+      const size_t output_size = ciphertext.length();
+      CHECK_GT(output_size, 0u);
+      CHECK_GT(output_size + 1, ciphertext.length());
+      out_ptr =
+          reinterpret_cast<uint8_t*>(base::WriteInto(&result, output_size + 1));
+      len = DecryptGCM(ciphertext, base::make_span(out_ptr, output_size), &tag);
+    }
+  } else {
+    len = Crypt(do_encrypt, base::as_bytes(base::make_span(input)),
+                base::make_span(out_ptr, out_size));
+  }
+#else
+  len = (mode_ == CTR)
+            ? CryptCTR(do_encrypt, base::as_bytes(base::make_span(input)),
+                       base::make_span(out_ptr, out_size))
+            : Crypt(do_encrypt, base::as_bytes(base::make_span(input)),
+                    base::make_span(out_ptr, out_size));
+#endif
+
   if (!len)
     return false;
 
   result.resize(*len);
+
+#if BUILDFLAG(IS_OHOS)
+  // concat tag with cipher at the end.
+  if (mode_ == GCM && do_encrypt)
+    result += tag;
+#endif
+
   *output = std::move(result);
   return true;
 }
@@ -138,7 +202,13 @@ bool Encryptor::CryptBytes(bool do_encrypt,
 }
 
 size_t Encryptor::MaxOutput(bool do_encrypt, size_t length) {
+#if BUILDFLAG(IS_OHOS)
+  size_t result = length + ((do_encrypt && mode_ == CBC) ? 16 :
+                                (do_encrypt && mode_ == GCM) ? 12 : 0);
+#else
   size_t result = length + ((do_encrypt && mode_ == CBC) ? 16 : 0);
+#endif
+
   CHECK_GE(result, length);  // Overflow
   return result;
 }
@@ -206,5 +276,131 @@ absl::optional<size_t> Encryptor::CryptCTR(bool do_encrypt,
                      iv_.data(), ecount_buf, &block_offset);
   return input.size();
 }
+
+#if BUILDFLAG(IS_OHOS)
+absl::optional<size_t> Encryptor::EncryptGCM(base::span<const uint8_t> input,
+                                             base::span<uint8_t> output,
+                                             std::string* tag) {
+  DCHECK(key_);
+  DCHECK(output.data());
+
+  const EVP_CIPHER* cipher = GetCipherForKeyGCM(key_);
+  DCHECK(cipher);
+
+  const std::string& key = key_->key();
+  DCHECK_EQ(EVP_CIPHER_iv_length(cipher), iv_.size());
+  DCHECK_EQ(EVP_CIPHER_key_length(cipher), key.size());
+
+  OpenSSLErrStackTracer err_tracer(FROM_HERE);
+
+  bssl::ScopedEVP_CIPHER_CTX ctx;
+  /* Initialise the encryption operation */
+  if (!EVP_EncryptInit_ex(ctx.get(), cipher, nullptr, nullptr, nullptr))
+    return absl::nullopt;
+
+  /* Set the IV length, default is 12 byte which is not appropriate */
+  if (!EVP_CIPHER_CTX_ctrl(ctx.get(), EVP_CTRL_GCM_SET_IVLEN, iv_.size(),
+                           nullptr))
+    return absl::nullopt;
+
+  /* Initialise Key and IV */
+  if (!EVP_EncryptInit_ex(ctx.get(), nullptr, nullptr,
+                          reinterpret_cast<const uint8_t*>(key.data()),
+                          iv_.data())) {
+    return absl::nullopt;
+  }
+
+  const size_t output_size = input.size() + (iv_.size());
+  CHECK_GT(output_size, 0u);
+  CHECK_GT(output_size + 1, input.size());
+
+  int out_len;
+
+  /* Provide the plaintext and obtain the encrypted update
+   *  EVP_EncryptUpdate may call multiples times if necessary
+   */
+  if (!EVP_EncryptUpdate(ctx.get(), output.data(), &out_len,
+                         reinterpret_cast<const uint8_t*>(input.data()),
+                         input.size()))
+    return absl::nullopt;
+
+  /* Finalise the encryption. Usually ciphertext byte may be
+   * written in this stage but this does not occure in GCM mode
+   */
+  int len;
+  if (!EVP_EncryptFinal_ex(ctx.get(), output.data() + out_len, &len))
+    return absl::nullopt;
+
+  out_len += len;
+
+  /*Get the tag */
+  if (!EVP_CIPHER_CTX_ctrl(ctx.get(), EVP_CTRL_GCM_GET_TAG, GCM_TAG_SIZE,
+                           (void*)tag->data()))
+    return absl::nullopt;
+
+  DCHECK_LE(out_len, static_cast<int>(output_size));
+
+  return out_len;
+}
+
+absl::optional<size_t> Encryptor::DecryptGCM(const std::string& input,
+                                             base::span<uint8_t> output,
+                                             std::string* tag) {
+  DCHECK(key_);
+  DCHECK(output.data());
+
+  const EVP_CIPHER* cipher = GetCipherForKeyGCM(key_);
+  DCHECK(cipher);
+
+  const std::string& key = key_->key();
+  DCHECK_EQ(EVP_CIPHER_iv_length(cipher), iv_.size());
+  DCHECK_EQ(EVP_CIPHER_key_length(cipher), key.size());
+
+  OpenSSLErrStackTracer err_tracer(FROM_HERE);
+  bssl::ScopedEVP_CIPHER_CTX ctx;
+
+  /* Initialise the decryption process */
+  if (!EVP_DecryptInit_ex(ctx.get(), cipher, nullptr, nullptr, nullptr))
+    return absl::nullopt;
+
+  /* Set the IV length */
+  if (!EVP_CIPHER_CTX_ctrl(ctx.get(), EVP_CTRL_GCM_SET_IVLEN, iv_.size(),
+                           nullptr))
+    return absl::nullopt;
+
+  /* Initialise Key and IV */
+  if (!EVP_DecryptInit_ex(ctx.get(), nullptr, nullptr,
+                          reinterpret_cast<const uint8_t*>(key.data()),
+                          iv_.data()))
+    return absl::nullopt;
+
+  int out_len;
+
+  /* Provide the cipher text and get the output as plaintext */
+  if (!EVP_DecryptUpdate(ctx.get(), output.data(), &out_len,
+                         reinterpret_cast<const uint8_t*>(input.data()),
+                         input.length()))
+    return absl::nullopt;
+
+  /* Set expected tag which is used during encryption */
+  if (!EVP_CIPHER_CTX_ctrl(ctx.get(), EVP_CTRL_GCM_SET_TAG, GCM_TAG_SIZE,
+                           (void*)tag->data()))
+    return absl::nullopt;
+  /* Finalise the decryption. If plaintext is not trustworthy then
+   * it return as failure.
+   */
+  int len;
+  int ret = EVP_DecryptFinal_ex(ctx.get(), output.data() + out_len, &len);
+  if (ret > 0) {
+    out_len += len;
+  } else {
+    return absl::nullopt;
+  }
+
+  DCHECK_LE(out_len, static_cast<int>(input.length()));
+
+  return out_len;
+}
+#endif
 
 }  // namespace crypto

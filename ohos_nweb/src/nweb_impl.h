@@ -34,8 +34,8 @@
 namespace OHOS::NWeb {
 class NWebImpl : public NWeb {
  public:
-  NWebImpl(uint32_t id);
-  ~NWebImpl();
+  explicit NWebImpl(uint32_t id);
+  ~NWebImpl() override;
 
   bool Init(const NWebCreateInfo& create_info);
   void OnDestroy() override;
@@ -82,6 +82,8 @@ class NWebImpl : public NWeb {
   void InitialScale(float scale) const override;
   void OnPause() const override;
   void OnContinue() const override;
+  void OnOccluded() const override;
+  void OnUnoccluded() const override;
   const std::shared_ptr<NWebPreference> GetPreference() const override;
   void PutDownloadCallback(
       std::shared_ptr<NWebDownloadCallback> downloadListener) override;
@@ -158,6 +160,7 @@ class NWebImpl : public NWeb {
   void NotifyMemoryLevel(int32_t level) override;
   void OnWebviewHide() const override;
   void OnWebviewShow() const override;
+  void SetWindowId(uint32_t window_id) override;
 
   // For NWebEx
   static NWebImpl* FromID(int32_t nweb_id);
@@ -178,19 +181,24 @@ class NWebImpl : public NWeb {
   static const std::vector<std::string>& GetCommandLineArgsForNWebEx();
   static void InitBrowserServiceApi(std::vector<std::string>& browser_args);
   static bool GetBrowserServiceApiEnabled();
-  static void SetConnectTimeout(int32_t seconds);
-  static void SetUrlExceptionList(int contentType,
-                                  std::vector<std::string>& urls,
-                                  bool accept);
+
   void PutWebAppClientExtensionCallback(
       std::shared_ptr<NWebAppClientExtensionCallback>
           web_app_client_extension_listener);
   void RemoveWebAppClientExtensionCallback();
 
   void ReloadOriginalUrl() const;
+  void PasswordSuggestionSelected(int list_index) const;
   void SetBrowserUserAgentString(const std::string& user_agent);
   void SetForceEnableZoom(bool forceEnableZoom) const;
   bool GetForceEnableZoom() const;
+
+  void SetSavePasswordAutomatically(bool enable) const;
+  bool GetSavePasswordAutomatically() const;
+  void SetSavePassword(bool enable) const;
+  bool GetSavePassword() const;
+  void SaveOrUpdatePassword(bool is_update);
+
   void SelectAndCopy() const;
   bool ShouldShowFreeCopy() const;
   void PutWebDownloadDelegateCallback(
@@ -222,7 +230,6 @@ class NWebImpl : public NWeb {
   std::list<std::string> web_engine_args_;
   float device_pixel_ratio_ = 0.f;
   bool is_enhance_surface_ = false;
-  static std::set<uint32_t> focus_nweb_id_;
 };
 }  // namespace OHOS::NWeb
 

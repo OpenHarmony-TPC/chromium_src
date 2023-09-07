@@ -79,6 +79,11 @@ class PasswordStoreBackendMigrationDecorator : public PasswordStoreBackend {
   CreateSyncControllerDelegate() override;
   void ClearAllLocalPasswords() override;
 
+#if BUILDFLAG(IS_OHOS)
+  LoginsResult FillMatchingLogins(
+      bool include_psl,
+      const std::vector<PasswordFormDigest>& forms) override;
+#endif
   // Creates 'migrator_' and starts migration process.
   void StartMigration();
 

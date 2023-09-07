@@ -1,6 +1,7 @@
 #ifndef COMPONENTS_VIZ_SERVICE_FRAME_SINKS_EXTERNAL_BEGIN_FRAME_SOURCE_OHOS_H_
 #define COMPONENTS_VIZ_SERVICE_FRAME_SINKS_EXTERNAL_BEGIN_FRAME_SOURCE_OHOS_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 
@@ -16,7 +17,9 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
     : public ExternalBeginFrameSource,
       public ExternalBeginFrameSourceClient {
  public:
-  explicit ExternalBeginFrameSourceOHOS(uint32_t restart_id, FrameSinkManagerImpl* frame_sink_manager);
+  explicit ExternalBeginFrameSourceOHOS(
+      uint32_t restart_id,
+      FrameSinkManagerImpl* frame_sink_manager);
   ~ExternalBeginFrameSourceOHOS() override;
   ExternalBeginFrameSourceOHOS(const ExternalBeginFrameSourceOHOS&) = delete;
   ExternalBeginFrameSourceOHOS& operator=(const ExternalBeginFrameSourceOHOS&) =
@@ -28,7 +31,8 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
           dynamic_begin_frame_deadline_offset_source) override;
 
   static void OnVSync(int64_t timestamp, void* data);
-  void OnVSyncImpl(int64_t timestamp);
+  class VSyncUserData;
+  void OnVSyncImpl(int64_t timestamp, VSyncUserData* user_data);
 
   // ExternalBeginFrameSource implementation.
   void SetCurrentFrameSinkId(const FrameSinkId& frame_sink_id) override {
@@ -44,7 +48,6 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
   BeginFrameArgsGenerator begin_frame_args_generator_;
   bool vsync_notification_enabled_;
 
-  class VSyncUserData;
   std::unique_ptr<VSyncUserData> user_data_;
   std::unique_ptr<OHOS::NWeb::VSyncAdapter> vsync_adapter_;
 
@@ -53,6 +56,7 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
   int64_t vsync_period_ = 16666666;
   int64_t pre_vsync_period_ = 0;
   int64_t last_vsync_period_ = 0;
+  base::WeakPtrFactory<ExternalBeginFrameSourceOHOS> weak_factory_{this};
 };
 }  // namespace viz
 

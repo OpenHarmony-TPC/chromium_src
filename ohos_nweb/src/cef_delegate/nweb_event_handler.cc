@@ -23,6 +23,7 @@
 #include "cef/include/internal/cef_types_wrappers.h"
 
 #include "base/trace_event/common/trace_event_common.h"
+#include "res_sched_client_adapter.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
 #include "ui/events/keycodes/keysym_to_unicode.h"
 
@@ -69,7 +70,9 @@ void NWebEventHandler::OnTouchPress(int32_t id,
                                     bool from_overlay) {
   TRACE_EVENT0("input",
                "NWebEventHandler::OnTouchPress sliding response begin");
-  LOG(DEBUG) << "NWebEventHandler::OnTouchPress sliding response begin";
+  LOG(DEBUG) << "NWebEventHandler::OnTouchPress sliding response begin. id = "
+             << id << ", x = " << x << ", y = " << y
+             << ", from_overlay = " << from_overlay;
   CefTouchEvent touch_pressed;
   touch_pressed.type = CEF_TET_PRESSED;
   touch_pressed.pointer_type = CEF_POINTER_TYPE_TOUCH;
@@ -87,6 +90,8 @@ void NWebEventHandler::OnTouchMove(int32_t id,
                                    double x,
                                    double y,
                                    bool from_overlay) {
+  LOG(DEBUG) << "NWebEventHandler::OnTouchMove id = " << id << ", x = " << x
+             << ", y = " << y << ", from_overlay = " << from_overlay;
   CefTouchEvent touch_move;
   touch_move.type = CEF_TET_MOVED;
   touch_move.pointer_type = CEF_POINTER_TYPE_TOUCH;
@@ -241,6 +246,9 @@ void NWebEventHandler::SendMouseEvent(int x,
 
   if (browser_ && browser_->GetHost()) {
     if (NWebInputDelegate::IsMouseDown(action)) {
+      if (buttonType == MBT_LEFT) {
+        browser_->GetHost()->SetFocus(true);
+      }
       browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, false,
                                                count);
     } else if (NWebInputDelegate::IsMouseUp(action)) {

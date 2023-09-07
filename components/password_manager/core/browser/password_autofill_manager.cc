@@ -53,6 +53,11 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "url/gurl.h"
 
+#if defined(OHOS_NWEB_EX)
+#include "base/base_switches.h"
+#include "content/public/common/content_switches.h"
+#endif
+
 namespace password_manager {
 
 namespace {
@@ -220,6 +225,12 @@ void MaybeAppendManagePasswordsEntry(
     suggestions->back().frontend_id = autofill::POPUP_ITEM_ID_SEPARATOR;
   }
 
+#if defined(OHOS_NWEB_EX)
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kForBrowser)) {
+    return;
+  }
+#endif
   autofill::Suggestion suggestion(
       l10n_util::GetStringUTF16(IDS_PASSWORD_MANAGER_MANAGE_PASSWORDS));
   suggestion.frontend_id = autofill::POPUP_ITEM_ID_ALL_SAVED_PASSWORDS_ENTRY;
