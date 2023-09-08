@@ -189,8 +189,51 @@ used to filter file path.
             </filefilter>
 
             <filefilter name="defaultFilter">
-                <filteritem type="filepath" name="README.OpenSource"
-                    desc="" />
+                <filteritem type="filepath" name="README.OpenSource" desc="" />
+                <filteritem type="filepath" name=".*png" desc="" />
+                <filteritem type="filepath" name=".*xtb" desc="" />
+                <filteritem type="filepath" name=".*ogg" desc="" />
+                <filteritem type="filepath" name=".*ttf" desc="" />
+                <filteritem type="filepath" name=".*so.*" desc="" />
+                <filteritem type="filepath" name=".*a" desc="" />
+                <filteritem type="filepath" name=".*zip" desc="" />
+                <filteritem type="filepath" name="components/cbor/reader_fuzzer_corpus.*" desc="" />
+                <filteritem type="filepath" name=".*webm" desc="" />
+                <filteritem type="filepath" name=".*pem" desc="" />
+                <filteritem type="filepath" name=".*jpg" desc="" />
+                <filteritem type="filepath" name=".*exe" desc="" />
+                <filteritem type="filepath" name=".*wav" desc="" />
+                <filteritem type="filepath" name=".*mp4" desc="" />
+                <filteritem type="filepath" name=".*cbor" desc="" />
+                <filteritem type="filepath" name=".*mp3" desc="" />
+                <filteritem type="filepath" name=".*ivf" desc="" />
+                <filteritem type="filepath" name=".*m4a" desc="" />
+                <filteritem type="filepath" name=".*ts" desc="" />
+                <filteritem type="filepath" name=".*jar" desc="" />
+                <filteritem type="filepath" name=".*gz" desc="" />
+                <filteritem type="filepath" name=".*wbn" desc="" />
+                <filteritem type="filepath" name=".*gif" desc="" />
+                <filteritem type="filepath" name=".*crl" desc="" />
+                <filteritem type="filepath" name=".*ico" desc="" />
+                <filteritem type="filepath" name=".*o" desc="" />
+                <filteritem type="filepath" name=".*dll" desc="" />
+                <filteritem type="filepath" name=".*bin" desc="" />
+                <filteritem type="filepath" name=".*cs" desc="" />
+                <filteritem type="filepath" name=".*dat" desc="" />
+                <filteritem type="filepath" name=".*crx*" desc="" />
+                <filteritem type="filepath" name=".*avi" desc="" />
+                <filteritem type="filepath" name=".*h264" desc="" />
+                <filteritem type="filepath" name=".*mp2" desc="" />
+                <filteritem type="filepath" name=".*ogv" desc="" />
+                <filteritem type="filepath" name=".*webp" desc="" />
+                <filteritem type="filepath" name=".*out" desc="" />
+                <filteritem type="filepath" name=".*pdf" desc="" />
+                <filteritem type="filepath" name=".*h263" desc="" />
+                <filteritem type="filepath" name=".*pk8" desc="" />
+                <filteritem type="filepath" name=".*der" desc="" />
+                <filteritem type="filepath" name=".*pyd" desc="" />
+                <filteritem type="filepath" name=".*pyd" desc="" />
+                <filteritem type="filepath" name="net/data/fuzzer_data/ntlm_client_fuzzer.*" desc="" />
             </filefilter>
         </filefilterlist>
         <licensematcherlist>
