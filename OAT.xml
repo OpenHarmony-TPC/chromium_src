@@ -248,6 +248,39 @@ used to filter file path.
                 <filteritem type="filepath" name=".*bc" desc="" />
                 <filteritem type="filepath" name=".*icns" desc="" />
                 <filteritem type="filepath" name="net/data/cache_tests.*" desc="" />
+                <filteritem type="filepath" name="components/test/data/paint_preview/PaintPreviewTestService/wikipedia.*" desc="" />
+                <filteritem type="filepath" name="content/browser/devtools/devtools_protocol_encoding_cbor_fuzzer_corpus.*" desc="" />
+                <filteritem type="filepath" name="content/test/data/indexeddb/corrupt_leveldb/file__0.indexeddb.leveldb.*" desc="" />
+                <filteritem type="filepath" name="ios/chrome/browser/crash_report/seed_corpuses.*" desc="" />
+                <filteritem type="filepath" name="net/data/pac_file_fetcher_unittest.*" desc="" />
+                <filteritem type="filepath" name="services/device/hid/fuzz_corpus.*" desc="" />
+                <filteritem type="filepath" name="ui/display/util/fuzz_corpus.*" desc="" />
+                <filteritem type="filepath" name="content/test/data/indexeddb.*" desc="" />
+                <filteritem type="filepath" name="content/browser/indexed_db/fuzzer_corpus/indexed_db_key.*" desc="" />
+                <filteritem type="filepath" name="build/linux/debian_sid_i386-sysroot/usr/lib/i386-linux-gnu/glib-2.0.*" desc="" />
+                <filteritem type="filepath" name="build/config/c++.*" desc="" />
+                <filteritem type="filepath" name="sql/test/data.*" desc="" />
+                <filteritem type="filepath" name="device/fido/response_data_fuzzer_corpus.*" desc="" />
+                <filteritem type="filepath" name="tools/mac/icons/additional_tools.*" desc="" />
+                <filteritem type="filepath" name="components/test/data/update_client/ihfokbkgjpifnbbojhneepfflplebdkc.*" desc="" />
+                <filteritem type="filepath" name="tools/resultdb.*" desc="" />
+                <filteritem type="filepath" name="courgette/testdata.*" desc="" />
+                <filteritem type="filepath" name="build/linux/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu.*" desc="" />
+                <filteritem type="filepath" name="build/linux/debian_sid_i386-sysroot/usr/lib/i386-linux-gnu.*" desc="" />
+                <filteritem type="filepath" name="testing/scripts/variations_smoke_test_data.*" desc="" />
+                <filteritem type="filepath" name="extensions/test/data.*" desc="" />
+                <filteritem type="filepath" name="build/android.*" desc="" />
+                <filteritem type="filepath" name="tools/luci-go.*" desc="" />
+                <filteritem type="filepath" name="net/data/url_request_unittest.*" desc="" />
+                <filteritem type="filepath" name="tools/traffic_annotation/bin/linux64/traffic_annotation_auditor" desc="" />
+                <filteritem type="filepath" name="components/cast_channel/fuzz_corpus.*" desc="" />
+                <filteritem type="filepath" name="components/test/data/history.*" desc="" />
+                <filteritem type="filepath" name="components/services/storage/test_data.*" desc="" />
+                <filteritem type="filepath" name="components/test/data/value_store/MANIFEST-000004" desc="" />
+                <filteritem type="filepath" name="content/browser/indexed_db/fuzzer_corpus/encoded_indexed_db_key_path.*" desc="" />
+                <filteritem type="filepath" name="tools/win/DebugVisualizers.*" desc="" />
+                <filteritem type="filepath" name="tools/skia_goldctl/linux/goldctl" desc="" />
+                <filteritem type="filepath" name="content/test/data/cache_storage/padding_v2/0430f1a484a0ea6d8de562488c5fbeec0111d16f/676288ed-4de0-44af-97d6-dbd75b07a8a3/4bfb34f348c2269e_0" desc="" />
                 <filteritem type="filepath" name=".*res" desc="" />
                 <filteritem type="filepath" name=".*crx3" desc="" />
                 <filteritem type="filepath" name=".*aac" desc="" />
@@ -352,12 +385,32 @@ used to filter file path.
                 <filteritem type="filepath" name=".*xls" desc="" />
                 <filteritem type="filepath" name=".*spc" desc="" />
                 <filteritem type="filepath" name=".*db" desc="" />
+                <filteritem type="filepath" name=".*usdz" desc="" />
+                <filteritem type="filepath" name=".*vsct" desc="" />
+                <filteritem type="filepath" name=".*jp2" desc="" />
+                <filteritem type="filepath" name=".*sctlist" desc="" />
+                <filteritem type="filepath" name=".*resx" desc="" />
+                <filteritem type="filepath" name=".*cc" desc="" />
+                <filteritem type="filepath" name=".*pak" desc="" />
+                <filteritem type="filepath" name=".*csproj" desc="" />
+                <filteritem type="filepath" name=".*sst" desc="" />
+                <filteritem type="filepath" name=".*settings" desc="" />
+                <filteritem type="filepath" name=".*rst" desc="" />
+                <filteritem type="filepath" name=".*inf" desc="" />
+                <filteritem type="filepath" name=".*zuc" desc="" />
+                <filteritem type="filepath" name="test/data.*" desc="" />
+                <filteritem type="filepath" name="services/device/usb/fuzz_corpus.*" desc="" />
+                <filteritem type="filepath" name="buildtools/linux64.*" desc="" />
                 <filteritem type="filepath" name="components/payments/content/utility/payment_web_app_manifest_fuzzer_corpus.*" desc="" />
                 <filteritem type="filepath" name="components/test/data/update_client/ihfokbkgjpifnbbojhneepfflplebdkc/ihfokbkgjpifnbbojhneepfflplebdkc_2.*" desc="" />
                 <filteritem type="filepath" name="media/midi/fuzz/corpus.*" desc="" />
                 <filteritem type="filepath" name="media/midi/fuzz/usb_midi_descriptor_corpus.*" desc="" />
                 <filteritem type="filepath" name="media/test/data.*" desc="" />
                 <filteritem type="filepath" name="net/data/fuzzer_data.*" desc="" />
+                <filteritem type="filepath" name="buildtools/third_party/eu-strip/bin.*" desc="" />
+                <filteritem type="filepath" name="build/linux/debian_sid_i386-sysroot/usr/lib/i386-linux-gnu/libgtk2.0-0.*" desc="" />
+                <filteritem type="filepath" name="build/linux/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0.*" desc="" />
+                <filteritem type="filepath" name="build/linux/debian_sid_i386-sysroot/usr/bin.*" desc="" />
                 <filteritem type="filepath" name="build/linux/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu/valgrind.*" desc="" />
                 <filteritem type="filepath" name="build/linux/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu/libgtk-3-0/gtk-query-immodules-3.0" desc="" />
                 <filteritem type="filepath" name="build/linux/debian_sid_amd64-sysroot/usr/bin.*" desc="" />
