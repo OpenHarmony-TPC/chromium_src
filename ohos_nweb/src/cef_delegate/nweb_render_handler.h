@@ -139,7 +139,7 @@ class NWebRenderHandler : public CefRenderHandler {
 
   std::function<void(const char*)> render_update_cb_ = nullptr;
   CefRefPtr<NWebInputMethodClient> inputmethod_client_ = nullptr;
-  std::shared_ptr<NWebDelegateInterface> delegate_interface_ = nullptr;
+  std::weak_ptr<NWebDelegateInterface> delegate_interface_;
   uint32_t width_ = 0;
   uint32_t height_ = 0;
   int content_height_ = 0;
