@@ -16,18 +16,30 @@
 * Chromium： Chromium是一个由Google主导开发的网页浏览器，以BSD许可证等多重自由版权发行并开放源代码。
 ## 使用说明
 1. 下载代码
+   
     repo init -u https://gitee.com/openharmony-sig/manifest -b master -m chromium.xml --no-repo-verify
+    
     repo sync -c
+
     repo forall -c 'git lfs pull'
 
 2. 编译
+   
     ./build.sh  -t w -A -without-nweb-ex rk3568
+
+    ***如若找不到sdk压缩包，可以下载大文件***
+    
+    cd src
+    
+    git lfs pull
     
 3. 签名
+   
    执行./sign.sh
 
 4. 运行
-    编译完成后，在out目录下找到NWeb-rk3568.hap
+   
+    编译完成后，在out目录下找到NWeb-rk3568.hap,
     将它推送到设备中。
   ```
   hdc shell "mount -o remount, rw /"
