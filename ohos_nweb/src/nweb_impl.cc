@@ -1374,7 +1374,6 @@ extern "C" OHOS_NWEB_EXPORT void InitializeWebEngine(
   settings.windowless_rendering_enabled = true;
   settings.log_severity = LOGSEVERITY_INFO;
   settings.multi_threaded_message_loop = false;
-  settings.persist_session_cookies = true;
 
 #if !defined(CEF_USE_SANDBOX)
   settings.no_sandbox = true;
