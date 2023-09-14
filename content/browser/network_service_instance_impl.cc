@@ -68,6 +68,10 @@
 #include "content/common/android/cpu_affinity_setter.h"
 #endif  // BUILDFLAG(IS_WIN)
 
+#if BUILDFLAG(IS_OHOS)
+#include "res_sched_client_adapter.h"
+#endif
+
 namespace content {
 
 namespace {
@@ -554,6 +558,13 @@ void CreateInProcessNetworkService(
     base::Thread::Options options(base::MessagePumpType::IO, 0);
     GetNetworkServiceDedicatedThread().StartWithOptions(std::move(options));
     task_runner = GetNetworkServiceDedicatedThread().task_runner();
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+  ResSchedClientAdapter::ReportKeyThread(
+    ResSchedStatusAdapter::THREAD_CREATED, base::GetCurrentProcId(),
+    GetNetworkServiceDedicatedThread().GetThreadId(),
+    ResSchedRoleAdapter::USER_INTERACT);
+#endif
   } else {
     task_runner = GetIOThreadTaskRunner({});
   }
