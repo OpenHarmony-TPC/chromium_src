@@ -1539,7 +1539,16 @@ void WebContentsImpl::ExecutePageBroadcastMethodForAllPages(
 }
 
 RenderViewHostImpl* WebContentsImpl::GetRenderViewHost() {
+#if BUILDFLAG(IS_OHOS)
+  if (GetRenderManager() && GetRenderManager()->current_frame_host()) {
+    return GetRenderManager()->current_frame_host()->render_view_host();
+  }
+
+  LOG(WARNING) << "get render manager is nullptr";
+  return nullptr;
+#else
   return GetRenderManager()->current_frame_host()->render_view_host();
+#endif
 }
 
 void WebContentsImpl::CancelActiveAndPendingDialogs() {
@@ -2792,11 +2801,19 @@ const blink::web_pref::WebPreferences WebContentsImpl::ComputeWebPreferences() {
 
   prefs.prefers_reduced_motion = gfx::Animation::PrefersReducedMotion();
 
+#if BUILDFLAG(IS_OHOS)
+  if (GetRenderViewHost() && GetRenderViewHost()->GetProcess() &&
+      ChildProcessSecurityPolicyImpl::GetInstance()->HasWebUIBindings(GetRenderViewHost()->GetProcess()->GetID())) {
+    prefs.loads_images_automatically = true;
+    prefs.javascript_enabled = true;
+  }
+#else
   if (ChildProcessSecurityPolicyImpl::GetInstance()->HasWebUIBindings(
           GetRenderViewHost()->GetProcess()->GetID())) {
     prefs.loads_images_automatically = true;
     prefs.javascript_enabled = true;
   }
+#endif
 
   prefs.viewport_enabled = command_line.HasSwitch(switches::kEnableViewport);
 

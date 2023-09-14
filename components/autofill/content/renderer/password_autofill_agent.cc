@@ -731,7 +731,13 @@ void PasswordAutofillAgent::UpdateStateForTextChange(
 
 void PasswordAutofillAgent::TrackAutofilledElement(
     const blink::WebFormControlElement& element) {
+#if BUILDFLAG(IS_OHOS)
+  if (autofill_agent_) {
+    autofill_agent_->TrackAutofilledElement(element);
+  }
+#else
   autofill_agent_->TrackAutofilledElement(element);
+#endif
 }
 
 bool PasswordAutofillAgent::FillSuggestion(
