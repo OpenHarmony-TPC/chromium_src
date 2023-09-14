@@ -285,6 +285,7 @@ CONTENT_EXPORT extern const char kForBrowser[];
 CONTENT_EXPORT extern const char kOhosCustomScheme[];
 CONTENT_EXPORT extern const char kOhosHanceSurface[];
 CONTENT_EXPORT extern const char kOhosEnableDrDc[];
+CONTENT_EXPORT extern const char kOhosDisableTouchEvent[];
 #endif
 
 #if BUILDFLAG(IS_WIN)

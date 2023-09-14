@@ -2907,13 +2907,8 @@ void WebContentsImpl::SetSlowWebPreferences(
     std::string touch_enabled_default_switch =
         switches::kTouchEventFeatureDetectionDisabled;
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
-    auto& system_properties_adapter =
-        OHOS::NWeb::OhosAdapterHelper::GetInstance()
-            .GetSystemPropertiesInstance();
-    OHOS::NWeb::ProductDeviceType deviceType =
-        system_properties_adapter.GetProductDeviceType();
-    if (deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_TABLET ||
-        deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_MOBILE) {
+    if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+            switches::kOhosDisableTouchEvent)) {
       touch_enabled_default_switch =
           switches::kTouchEventFeatureDetectionEnabled;
     }

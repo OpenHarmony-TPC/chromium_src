@@ -1010,6 +1010,7 @@ const char kForBrowser[] = "for-browser";
 const char kOhosCustomScheme[] = "ohos-custom-scheme";
 const char kOhosHanceSurface[] = "ohos-enhance-surface";
 const char kOhosEnableDrDc[] = "ohos-enable-drdc";
+const char kOhosDisableTouchEvent[] = "disable-touch-event-register";
 #endif
 
 #if BUILDFLAG(IS_WIN)
