@@ -84,6 +84,9 @@ class NWebRenderHandler : public CefRenderHandler {
                           const CefString& text,
                           const CefRange& selected_range) override;
 
+  void OnEditableChanged(CefRefPtr<CefBrowser> browser,
+                         bool is_editable_node) override;
+
   void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
                                   TextInputMode input_mode,
                                   bool show_keyboard) override;

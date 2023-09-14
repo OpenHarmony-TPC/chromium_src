@@ -188,7 +188,7 @@ void NWebInputMethodHandler::Attach(CefRefPtr<CefBrowser> browser,
 
 bool NWebInputMethodHandler::Reattach(uint32_t nwebId, ReattachType type) {
   nweb_id_ = nwebId;
-  if (type == ReattachType::FROM_CONTINUE) {
+  if (type == ReattachType::FROM_CONTINUE || !is_editable_node_) {
     if (!isNeedReattachOncontinue_) {
       LOG(INFO) << "don't need reattach input method";
       return false;
@@ -196,7 +196,7 @@ bool NWebInputMethodHandler::Reattach(uint32_t nwebId, ReattachType type) {
     isNeedReattachOncontinue_ = false;
   }
 
-  if (type == ReattachType::FROM_ONFOCUS) {
+  if (type == ReattachType::FROM_ONFOCUS || !is_editable_node_) {
     if (!isNeedReattachOnfocus_) {
       LOG(INFO) << "ReAttchOnfocus, don't need reattach input method";
       return false;
@@ -610,6 +610,11 @@ void NWebInputMethodHandler::SetFocusStatus(bool focus_status) {
     }
   }
   focus_status_ = focus_status;
+}
+
+void NWebInputMethodHandler::OnEditableChanged(CefRefPtr<CefBrowser> browser,
+                                               bool is_editable_node) {
+  is_editable_node_ = is_editable_node;
 }
 
 int32_t NWebInputMethodHandler::GetTextIndexAtCursor() {

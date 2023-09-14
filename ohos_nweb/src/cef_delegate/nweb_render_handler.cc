@@ -232,6 +232,15 @@ void NWebRenderHandler::OnSelectionChanged(CefRefPtr<CefBrowser> browser,
   }
 }
 
+void NWebRenderHandler::OnEditableChanged(CefRefPtr<CefBrowser> browser,
+                                          bool is_editable_node) {
+  if (!inputmethod_client_) {
+    LOG(ERROR) << "inputmethod_client_ is nullptr.";
+    return;
+  }
+  inputmethod_client_->OnEditableChanged(browser, is_editable_node);
+}
+
 void NWebRenderHandler::OnVirtualKeyboardRequested(
     CefRefPtr<CefBrowser> browser,
     TextInputMode input_mode,
