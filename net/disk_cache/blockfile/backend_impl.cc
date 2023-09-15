@@ -42,6 +42,10 @@
 #include "net/disk_cache/blockfile/histogram_macros.h"
 #include "net/disk_cache/cache_util.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "res_sched_client_adapter.h"
+#endif
+
 // Provide a BackendImpl object to macros from histogram_macros.h.
 #define CACHE_UMA_BACKEND_IMPL_OBJ this
 
@@ -120,11 +124,23 @@ class CacheThread : public base::Thread {
   CacheThread() : base::Thread("CacheThread_BlockFile") {
     CHECK(
         StartWithOptions(base::Thread::Options(base::MessagePumpType::IO, 0)));
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+  ResSchedClientAdapter::ReportKeyThread(
+    ResSchedStatusAdapter::THREAD_CREATED, base::GetCurrentProcId(),
+    GetThreadId(), ResSchedRoleAdapter::USER_INTERACT);
+#endif
   }
 
   ~CacheThread() override {
     // We don't expect to be deleted, but call Stop() in dtor 'cause docs
     // say we should.
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+  ResSchedClientAdapter::ReportKeyThread(
+    ResSchedStatusAdapter::THREAD_DESTROYED, base::GetCurrentProcId(),
+    GetThreadId(), ResSchedRoleAdapter::USER_INTERACT);
+#endif
     Stop();
   }
 };

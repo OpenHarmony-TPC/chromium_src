@@ -36,6 +36,10 @@
 #include "base/win/scoped_com_initializer.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "res_sched_client_adapter.h"
+#endif
+
 namespace content {
 
 BrowserProcessIOThread::BrowserProcessIOThread()
@@ -45,6 +49,12 @@ BrowserProcessIOThread::BrowserProcessIOThread()
 }
 
 BrowserProcessIOThread::~BrowserProcessIOThread() {
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+  ResSchedClientAdapter::ReportKeyThread(
+    ResSchedStatusAdapter::THREAD_DESTROYED, base::GetCurrentProcId(),
+    GetThreadId(), ResSchedRoleAdapter::USER_INTERACT);
+#endif
   Stop();
 }
 
@@ -97,6 +107,13 @@ void BrowserProcessIOThread::Run(base::RunLoop* run_loop) {
     SetCpuAffinityForCurrentThread(base::CpuAffinityMode::kBigCoresOnly);
   }
 
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+  ResSchedClientAdapter::ReportKeyThread(
+    ResSchedStatusAdapter::THREAD_CREATED, base::GetCurrentProcId(),
+    GetThreadId(), ResSchedRoleAdapter::USER_INTERACT);
 #endif
 
   IOThreadRun(run_loop);
