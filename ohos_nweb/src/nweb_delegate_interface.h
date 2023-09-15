@@ -78,7 +78,9 @@ class NWebDelegateInterface
       std::shared_ptr<NWebDelegateInterface> client) = 0;
 
   /* event interface */
-  virtual void Resize(uint32_t width, uint32_t height) = 0;
+  virtual void Resize(uint32_t width,
+                      uint32_t height,
+                      bool isKeyboard = false) = 0;
   virtual void OnTouchPress(int32_t id,
                             double x,
                             double y,

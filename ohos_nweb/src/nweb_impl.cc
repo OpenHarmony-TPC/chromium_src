@@ -369,7 +369,7 @@ const std::shared_ptr<NWebHandler> NWebImpl::GetNWebHandler() const {
   return nweb_handle_;
 }
 
-void NWebImpl::Resize(uint32_t width, uint32_t height) {
+void NWebImpl::Resize(uint32_t width, uint32_t height, bool isKeyboard) {
   if (input_handler_ == nullptr || output_handler_ == nullptr) {
     return;
   }
@@ -378,7 +378,7 @@ void NWebImpl::Resize(uint32_t width, uint32_t height) {
   if (width > kSurfaceMaxWidth || height > kSurfaceMaxHeight) {
     return;
   }
-  nweb_delegate_->Resize(width, height);
+  nweb_delegate_->Resize(width, height, isKeyboard);
   output_handler_->Resize(width, height);
 }
 

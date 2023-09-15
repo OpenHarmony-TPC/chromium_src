@@ -479,7 +479,7 @@ void NWebDelegate::RegisterRenderCb(
   }
 }
 
-void NWebDelegate::Resize(uint32_t width, uint32_t height) {
+void NWebDelegate::Resize(uint32_t width, uint32_t height, bool isKeyboard) {
   if (width == width_ && height == height_) {
     render_handler_->OnResizeNotWork();
     return;
@@ -495,7 +495,11 @@ void NWebDelegate::Resize(uint32_t width, uint32_t height) {
 
   auto browser = GetBrowser();
   if (browser != nullptr && browser->GetHost() != nullptr) {
-    browser->GetHost()->WasResized();
+    if (isKeyboard) {
+      browser->GetHost()->WasKeyboardResized();
+    } else {
+      browser->GetHost()->WasResized();
+    }
   }
 }
 
