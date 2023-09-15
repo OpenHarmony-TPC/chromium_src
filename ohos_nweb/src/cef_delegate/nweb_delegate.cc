@@ -907,7 +907,7 @@ void NWebDelegate::InitialScale(float scale) const {
 }
 
 void NWebDelegate::OnPause() {
-  LOG(DEBUG) << "NWebDelegate::OnPause";
+  LOG(DEBUG) << "NWebDelegate::OnPause, nweb_id = " << nweb_id_;
   if (!GetBrowser().get()) {
     return;
   }
@@ -923,7 +923,7 @@ void NWebDelegate::OnPause() {
 
   if (!hidden_) {
     // Set the browser as hidden.
-    LOG(DEBUG) << "NWebDelegate::OnPause set hidden";
+    LOG(DEBUG) << "NWebDelegate::OnPause set hidden, nweb_id = " << nweb_id_;
     GetBrowser()->GetHost()->WasHidden(true);
     hidden_ = true;
   }
@@ -931,13 +931,13 @@ void NWebDelegate::OnPause() {
 }
 
 void NWebDelegate::OnContinue() {
-  LOG(DEBUG) << "NWebDelegate::OnContinue";
+  LOG(DEBUG) << "NWebDelegate::OnContinue, nweb_id = " << nweb_id_;
   if (!GetBrowser().get()) {
     return;
   }
 
   if (occluded_) {
-    LOG(DEBUG) << "NWebDelegate::OnContinue set occluded";
+    LOG(DEBUG) << "NWebDelegate::OnContinue set occluded, nweb_id = " << nweb_id_;
     hidden_ = false;
     GetBrowser()->GetHost()->WasOccluded(true);
     return;
@@ -945,7 +945,7 @@ void NWebDelegate::OnContinue() {
 
   if (hidden_) {
     // Set the browser as visible.
-    LOG(DEBUG) << "NWebDelegate::OnContinue set unhidden";
+    LOG(DEBUG) << "NWebDelegate::OnContinue set unhidden, nweb_id = " << nweb_id_;
     GetBrowser()->GetHost()->WasHidden(false);
     hidden_ = false;
   }
@@ -962,28 +962,28 @@ void NWebDelegate::OnContinue() {
 }
 
 void NWebDelegate::OnOccluded() {
-  LOG(DEBUG) << "NWebDelegate::OnOccluded";
+  LOG(DEBUG) << "NWebDelegate::OnOccluded, nweb_id = " << nweb_id_;
   if (!GetBrowser().get()) {
     return;
   }
 
   if (!hidden_ && !occluded_) {
     // Set the browser as occluded.
-    LOG(DEBUG) << "NWebDelegate::OnOccluded set occluded";
+    LOG(DEBUG) << "NWebDelegate::OnOccluded set occluded, nweb_id = " << nweb_id_;
     GetBrowser()->GetHost()->WasOccluded(true);
   }
   occluded_ = true;
 }
 
 void NWebDelegate::OnUnoccluded() {
-  LOG(DEBUG) << "NWebDelegate::OnUnoccluded";
+  LOG(DEBUG) << "NWebDelegate::OnUnoccluded, nweb_id = " << nweb_id_;
   if (!GetBrowser().get()) {
     return;
   }
 
   if (!hidden_ && occluded_) {
     // Set the browser as visible.
-    LOG(DEBUG) << "NWebDelegate::OnUnoccluded set unoccluded";
+    LOG(DEBUG) << "NWebDelegate::OnUnoccluded set unoccluded, nweb_id = " << nweb_id_;
     GetBrowser()->GetHost()->WasOccluded(false);
   }
   occluded_ = false;
