@@ -136,6 +136,8 @@ bool GetProxyRules(const GetPropertyCallback& get_property,
   AddBypassRules("ftp", get_property, &rules->bypass_rules);
   AddBypassRules("http", get_property, &rules->bypass_rules);
   AddBypassRules("https", get_property, &rules->bypass_rules);
+  AddBypassRules("ws", get_property, &rules->bypass_rules);
+  AddBypassRules("wss", get_property, &rules->bypass_rules);
   // We know a proxy was found if not all of the proxy lists are empty.
   return !(rules->proxies_for_http.IsEmpty() &&
       rules->proxies_for_https.IsEmpty() &&
@@ -186,7 +188,8 @@ std::string GetProperty(const std::string& property) {
     return FixupProxyHostScheme(host);
   } else if (property == "http.proxyPort" || property == "https.proxyPort") {
     return std::to_string(port);
-  } else if (property == "http.nonProxyHosts" || property == "https.nonProxyHosts") {
+  } else if (property == "http.nonProxyHosts" || property == "https.nonProxyHosts" ||
+    property == "ws.nonProxyHosts" || property == "wss.nonProxyHosts" ) {
     return exclusion;
   }
 
