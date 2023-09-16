@@ -275,6 +275,8 @@ component("capture_lib") {
       "video/ohos/ohos_capture_delegate.h",
       "video/ohos/video_capture_common_ohos.cc",
       "video/ohos/video_capture_common_ohos.h",
+      "video/ohos/video_capture_status_callback_listener_ohos.cc",
+      "video/ohos/video_capture_status_callback_listener_ohos.h",
     ]
   }
 

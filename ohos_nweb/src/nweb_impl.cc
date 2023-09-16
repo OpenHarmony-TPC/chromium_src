@@ -653,33 +653,14 @@ void NWebImpl::OnUnoccluded() const {
 }
 
 void NWebImpl::StopCameraSession() const {
-  if (!OhosAdapterHelper::GetInstance()
-          .GetCameraManagerAdapter()
-          .IsExistCaptureTask()) {
-        return;
-  }
-  if (OhosAdapterHelper::GetInstance()
-          .GetCameraManagerAdapter()
-          .GetCameraStatus() ==
-      CameraStatus::CLOSED) {
-    LOG(ERROR) << "camera is closed, no need to stop session";
-    return;
-  }
-  WVLOG_I("StopSession");
-  OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().StopSession(CameraStopType::TO_BACK);
+  OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().SetForegroundFlag(false);
 }
 
 void NWebImpl::RestartCameraSession() const {
+  OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().SetForegroundFlag(true);
   if (!OhosAdapterHelper::GetInstance()
            .GetCameraManagerAdapter()
            .IsExistCaptureTask()) {
-    return;
-  }
-  if (OhosAdapterHelper::GetInstance()
-          .GetCameraManagerAdapter()
-          .GetCameraStatus() !=
-      CameraStatus::CLOSED) {
-    LOG(ERROR) << "camera is closed, no need to restart session";
     return;
   }
   WVLOG_I("RestartSession");

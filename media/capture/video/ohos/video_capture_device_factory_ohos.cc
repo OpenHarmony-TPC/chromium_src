@@ -19,9 +19,11 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "build/build_config.h"
+#include "camera_manager_adapter.h"
 #include "media/capture/video/ohos/video_capture_device_ohos.h"
 #include "ohos_adapter_helper.h"
 #include "video_capture_common_ohos.h"
+#include "video_capture_status_callback_listener_ohos.h"
 
 namespace media {
 
@@ -36,7 +38,10 @@ bool CompareCaptureDevices(const VideoCaptureDeviceInfo& a,
 VideoCaptureDeviceFactoryOHOS::VideoCaptureDeviceFactoryOHOS(
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner)
     : ui_task_runner_(ui_task_runner) {
-  OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().Create();
+  auto status_callback =
+    std::make_shared<VideoCaptureCameraStatusCallbackListenerOHOS>
+    (ui_task_runner_, weak_factory_.GetWeakPtr());
+  OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().Create(status_callback);
 }
 
 VideoCaptureDeviceFactoryOHOS::~VideoCaptureDeviceFactoryOHOS() {
@@ -101,4 +106,20 @@ void VideoCaptureDeviceFactoryOHOS::GetDevicesInfo(
   std::move(callback).Run(std::move(devices_info));
 }
 
+void VideoCaptureDeviceFactoryOHOS::OnCameraStatusChanged(
+    CameraStatusAdapter camera_status) {
+  DCHECK(thread_checker_.CalledOnValidThread());
+  LOG(INFO) << "camera status changed";
+  if (camera_status == CameraStatusAdapter::AVAILABLE) {
+    OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().
+      SetCameraStatus(CameraStatusAdapter::AVAILABLE);
+    if (!OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().
+        IsExistCaptureTask()) {
+          return;
+    }
+
+    OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().
+      RestartSession();
+  }
+}
 }  // namespace media
