@@ -168,12 +168,16 @@ void NWebInputMethodHandler::Attach(CefRefPtr<CefBrowser> browser,
   IMFAdapterCursorInfo cursorInfo = GetCursorInfo();
 
   IMFAdapterTextConfig textConfig = { .inputAttribute = inputAttribute, .cursorInfo = cursorInfo };
+  if (!show_keyboard_ && isAttached_) {
+    LOG(ERROR) << "do not need attach";
+    return;
+  }
   if (!inputmethod_adapter_->Attach(inputmethod_listener_, show_keyboard_, textConfig)) {
     LOG(ERROR) << "inputmethod_adapter_ attach failed";
     return;
   }
   isAttached_ = true;
-  lastAttachNWebId_ = nweb_Id_;
+  lastAttachNWebId_ = nweb_id_;
 
   if (focus_status_ && focus_rect_status_) {
     if (inputmethod_adapter_) {
@@ -183,7 +187,7 @@ void NWebInputMethodHandler::Attach(CefRefPtr<CefBrowser> browser,
 }
 
 bool NWebInputMethodHandler::Reattach(uint32_t nwebId, ReattachType type) {
-  nweb_Id_ = nwebId;
+  nweb_id_ = nwebId;
   if (type == ReattachType::FROM_CONTINUE) {
     if (!isNeedReattachOncontinue_) {
       LOG(INFO) << "don't need reattach input method";
@@ -220,6 +224,10 @@ bool NWebInputMethodHandler::Reattach(uint32_t nwebId, ReattachType type) {
   IMFAdapterCursorInfo cursorInfo = GetCursorInfo();
 
   IMFAdapterTextConfig textConfig = { .inputAttribute = inputAttribute, .cursorInfo = cursorInfo };
+  if (!show_keyboard_ && isAttached_) {
+    LOG(ERROR) << "do not need attach";
+    return true;
+  }
   if (!inputmethod_adapter_->Attach(inputmethod_listener_, show_keyboard_, textConfig)) {
     LOG(ERROR) << "inputmethod_adapter_ attach failed";
     return false;
