@@ -69,7 +69,7 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
   IMFAdapterCursorInfo GetCursorInfo();
 
   static uint32_t lastAttachNWebId_;
-  uint32_t nweb_Id_ = 0;
+  uint32_t nweb_id_ = 0;
   CefRefPtr<CefBrowser> browser_;
   bool ime_shown_ = false;
   bool ime_text_composing_ = false;
