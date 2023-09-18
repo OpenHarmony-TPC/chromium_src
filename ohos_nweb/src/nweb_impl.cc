@@ -74,6 +74,12 @@ bool g_browser_service_api_enabled = false;
 uint32_t g_nweb_max_count = 0;
 #endif
 
+bool GetWebOptimizationValue() {
+  auto& system_properties_adapter = OHOS::NWeb::OhosAdapterHelper::GetInstance()
+                                    .GetSystemPropertiesInstance();
+  return system_properties_adapter.GetWebOptimizationValue();
+}
+
 }  // namespace
 
 namespace OHOS::NWeb {
@@ -596,6 +602,10 @@ void NWebImpl::InitialScale(float scale) const {
 }
 
 void NWebImpl::OnPause() const {
+  if (!GetWebOptimizationValue()) {
+    LOG(DEBUG) << "WebOptimization disabled.";
+    return;
+  }
   if (nweb_delegate_ == nullptr) {
     LOG(ERROR) << "nweb_delegate_ is nullptr.";
     return;
@@ -627,6 +637,10 @@ void NWebImpl::OnContinue() const {
 }
 
 void NWebImpl::OnOccluded() const {
+  if (!GetWebOptimizationValue()) {
+    LOG(DEBUG) << "WebOptimization disabled.";
+    return;
+  }
   if (nweb_delegate_ == nullptr) {
     LOG(ERROR) << "nweb_delegate_ is nullptr.";
     return;
