@@ -45,6 +45,8 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
                           const CefString& text,
                           const CefRange& selected_range) override;
   void SetFocusStatus(bool focus_status) override;
+  void OnEditableChanged(CefRefPtr<CefBrowser> browser,
+                         bool is_editable_node) override;
 
   bool Reattach(uint32_t nwebId, ReattachType type);
   void SetIMEStatus(bool status);
@@ -88,6 +90,7 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
   std::shared_ptr<IMFTextListenerAdapter> inputmethod_listener_ = nullptr;
   bool isAttached_ = false;
   bool show_keyboard_ = false;
+  bool is_editable_node_ = false;
   bool isNeedReattachOncontinue_ = false;
   IMFAdapterTextInputType input_mode_ = IMFAdapterTextInputType::TEXT;
   std::chrono::high_resolution_clock::time_point lastCloseInputMethodTime_;

@@ -108,7 +108,7 @@ void NWebRenderHandler::SetInputMethodClient(
 
 void NWebRenderHandler::SetNWebDelegateInterface(
     std::shared_ptr<NWebDelegateInterface> client) {
-  delegate_interface_ = client;
+  delegate_interface_ = std::weak_ptr<NWebDelegateInterface>(client);
 }
 
 void NWebRenderHandler::Resize(uint32_t width, uint32_t height) {
@@ -233,6 +233,15 @@ void NWebRenderHandler::OnSelectionChanged(CefRefPtr<CefBrowser> browser,
   }
 }
 
+void NWebRenderHandler::OnEditableChanged(CefRefPtr<CefBrowser> browser,
+                                          bool is_editable_node) {
+  if (!inputmethod_client_) {
+    LOG(ERROR) << "inputmethod_client_ is nullptr.";
+    return;
+  }
+  inputmethod_client_->OnEditableChanged(browser, is_editable_node);
+}
+
 void NWebRenderHandler::OnVirtualKeyboardRequested(
     CefRefPtr<CefBrowser> browser,
     TextInputMode input_mode,
@@ -245,7 +254,8 @@ void NWebRenderHandler::OnVirtualKeyboardRequested(
   }
 
   if (input_mode != CEF_TEXT_INPUT_MODE_NONE) {
-    if (delegate_interface_->OnFocus()) {
+    auto delegete = delegate_interface_.lock();
+    if (delegete && delegete->OnFocus()) {
       inputmethod_client_->Attach(browser, show_keyboard, input_mode);
     }
   } else {

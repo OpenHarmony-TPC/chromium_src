@@ -84,6 +84,9 @@ class NWebRenderHandler : public CefRenderHandler {
                           const CefString& text,
                           const CefRange& selected_range) override;
 
+  void OnEditableChanged(CefRefPtr<CefBrowser> browser,
+                         bool is_editable_node) override;
+
   void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
                                   TextInputMode input_mode,
                                   bool show_keyboard) override;
@@ -139,7 +142,7 @@ class NWebRenderHandler : public CefRenderHandler {
 
   std::function<void(const char*)> render_update_cb_ = nullptr;
   CefRefPtr<NWebInputMethodClient> inputmethod_client_ = nullptr;
-  std::shared_ptr<NWebDelegateInterface> delegate_interface_ = nullptr;
+  std::weak_ptr<NWebDelegateInterface> delegate_interface_;
   uint32_t width_ = 0;
   uint32_t height_ = 0;
   int content_height_ = 0;
