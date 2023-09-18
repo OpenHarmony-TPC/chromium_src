@@ -124,8 +124,9 @@ void NWebRenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser,
     rect.width = width_;
     rect.height = height_;
   } else {
-    rect.width = width_ / screen_info_.display_ratio;
-    rect.height = height_ / screen_info_.display_ratio;
+    // Surface greater than Web Compoment in case show black line.
+    rect.width = std::ceil(width_ / screen_info_.display_ratio);
+    rect.height = std::ceil(height_ / screen_info_.display_ratio);
   }
 
   if (rect.width <= 0) {

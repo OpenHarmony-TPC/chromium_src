@@ -215,7 +215,6 @@ class NWebImpl : public NWeb {
   void InitWebEngineArgs(const NWebInitArgs& init_args);
   bool InitWebEngine(const NWebCreateInfo& create_info);
   bool SetVirtualDeviceRatio();
-  uint32_t NormalizeVirtualDeviceRatio(uint32_t length);
   void StopCameraSession() const;
   void RestartCameraSession() const;
 

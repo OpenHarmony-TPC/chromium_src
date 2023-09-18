@@ -263,12 +263,6 @@ bool NWebImpl::SetVirtualDeviceRatio() {
   return true;
 }
 
-uint32_t NWebImpl::NormalizeVirtualDeviceRatio(uint32_t length) {
-  float ratio =
-      static_cast<int>(length / device_pixel_ratio_) * device_pixel_ratio_;
-  return std::ceil(ratio);
-}
-
 bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
   if (output_handler_ == nullptr) {
     WVLOG_E("fail to init web engine, NWeb output handler is not ready");
@@ -323,8 +317,6 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
 
   uint32_t width, height;
   output_handler_->GetWindowInfo(width, height);
-  width = NormalizeVirtualDeviceRatio(width);
-  height = NormalizeVirtualDeviceRatio(height);
   nweb_delegate_->Resize(width, height);
   nweb_delegate_->RegisterRenderCb(render_update_cb);
 
@@ -373,8 +365,6 @@ void NWebImpl::Resize(uint32_t width, uint32_t height) {
   if (input_handler_ == nullptr || output_handler_ == nullptr) {
     return;
   }
-  width = NormalizeVirtualDeviceRatio(width);
-  height = NormalizeVirtualDeviceRatio(height);
   if (width > kSurfaceMaxWidth || height > kSurfaceMaxHeight) {
     return;
   }
