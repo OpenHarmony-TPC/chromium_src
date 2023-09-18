@@ -1,3 +1,7 @@
+// Copyright (c) 2023 Huawei Device Co., Ltd. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 #include "video_capture_surface_buffer_listener_ohos.h"
 #include "base/logging.h"
 #include "ohos_adapter_helper.h"

@@ -37,10 +37,12 @@ class CAPTURE_EXPORT VideoCaptureDeviceFactoryOHOS
   VideoCaptureErrorOrDevice CreateDevice(
       const VideoCaptureDeviceDescriptor& device_descriptor) override;
   void GetDevicesInfo(GetDevicesInfoCallback callback) override;
+  void OnCameraStatusChanged(CameraStatusAdapter camera_status);
 
  private:
   scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner_;
   std::shared_ptr<CameraManagerAdapter> camera_manager_adapter_;
+  base::WeakPtrFactory<VideoCaptureDeviceFactoryOHOS> weak_factory_{this};
 };
 
 }  // namespace media

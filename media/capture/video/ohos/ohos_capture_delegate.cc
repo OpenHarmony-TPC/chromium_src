@@ -321,7 +321,7 @@ bool OHOSCaptureDelegate::StartStream() {
   DCHECK(!is_capturing_);
   if (OhosAdapterHelper::GetInstance()
           .GetCameraManagerAdapter()
-          .GetCameraStatus() != CameraStatus::CLOSED) {
+          .GetCameraStatus() == CameraStatusAdapter::UNAVAILABLE) {
     LOG(ERROR) << "camera is not closed";
     return false;
   }
