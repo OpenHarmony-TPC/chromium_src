@@ -147,14 +147,20 @@ bool Encryptor::CryptString(bool do_encrypt,
                        base::make_span(out_ptr, out_size), &tag);
     } else {
       // Get the tag that we attached with cipher during encryption from input
+      if (input.length() <= GCM_TAG_SIZE) {
+        LOG(WARNING) << "input size less than gcm tag size";
+        return false;
+      }
       tag =
           std::string(input.substr(input.length() - GCM_TAG_SIZE, GCM_TAG_SIZE));
       // Get the cipher part only from input
       std::string ciphertext = std::string(
         input.substr(0, input.length() - GCM_TAG_SIZE));
       const size_t output_size = ciphertext.length();
-      CHECK_GT(output_size, 0u);
-      CHECK_GT(output_size + 1, ciphertext.length());
+      if (output_size + 1 <= ciphertext.length()) {
+        LOG(WARNING) << "output size occur overflow";
+        return false;
+      }
       out_ptr =
           reinterpret_cast<uint8_t*>(base::WriteInto(&result, output_size + 1));
       len = DecryptGCM(ciphertext, base::make_span(out_ptr, output_size), &tag);
