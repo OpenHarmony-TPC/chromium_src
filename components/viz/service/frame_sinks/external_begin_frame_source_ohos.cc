@@ -101,6 +101,10 @@ void ExternalBeginFrameSourceOHOS::OnVSyncImpl(int64_t timestamp,
     frame_sink_manager_->OnVsync(frame_sink_id_);
   }
 
+  if (!vsync_notification_enabled_ || user_data_ == nullptr) {
+    return;
+  }
+
   vsync_adapter_->RequestVsync(user_data_.release(),
                                ExternalBeginFrameSourceOHOS::OnVSync);
 }
@@ -116,7 +120,7 @@ void ExternalBeginFrameSourceOHOS::SetEnabled(bool enabled) {
   TRACE_EVENT1("viz", "ExternalBeginFrameSourceOHOS::SetEnabled", "enabled",
                enabled);
   vsync_notification_enabled_ = enabled;
-  if (vsync_notification_enabled_) {
+  if (vsync_notification_enabled_ && user_data_ != nullptr) {
     vsync_adapter_->RequestVsync(user_data_.release(),
                                  ExternalBeginFrameSourceOHOS::OnVSync);
   }
