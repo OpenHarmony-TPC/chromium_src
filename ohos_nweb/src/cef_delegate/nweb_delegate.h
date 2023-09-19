@@ -66,7 +66,9 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void SetInputMethodClient(CefRefPtr<NWebInputMethodClient> client) override;
   void SetNWebDelegateInterface(std::shared_ptr<NWebDelegateInterface> client) override;
 
-  void Resize(uint32_t width, uint32_t height) override;
+  void Resize(uint32_t width,
+              uint32_t height,
+              bool isKeyboard = false) override;
   void OnTouchPress(int32_t id,
                     double x,
                     double y,

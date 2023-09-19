@@ -41,7 +41,7 @@ class NWebImpl : public NWeb {
   void OnDestroy() override;
 
   /* event interface */
-  void Resize(uint32_t width, uint32_t height) override;
+  void Resize(uint32_t width, uint32_t height, bool isKeyboard = false) override;
   void OnTouchPress(int32_t id, double x, double y, bool from_overlay) override;
   void OnTouchRelease(int32_t id,
                       double x,
