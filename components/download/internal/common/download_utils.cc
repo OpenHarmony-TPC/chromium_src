@@ -587,6 +587,10 @@ ResumeMode GetDownloadResumeMode(const GURL& url,
       break;
 
     case DOWNLOAD_INTERRUPT_REASON_NETWORK_FAILED:
+#if BUILDFLAG(IS_OHOS)
+      // Auto resume if network failed.
+      break;
+#endif
     case DOWNLOAD_INTERRUPT_REASON_NETWORK_DISCONNECTED:
     case DOWNLOAD_INTERRUPT_REASON_NETWORK_SERVER_DOWN:
     case DOWNLOAD_INTERRUPT_REASON_SERVER_FAILED:
