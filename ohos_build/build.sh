@@ -66,7 +66,7 @@ build_product_name="product_name=\"rk3568\""
 build_target="${BUILD_TARGET_NATIVE}"
 build_output=""
 artifact_mode=0
-without_nweb_ex=0
+with_nweb_ex=0
 build_sysroot="use_ohos_sdk_sysroot=false"
 build_asan=0
 
@@ -143,8 +143,8 @@ while [ "$1" != "" ]; do
     "-asan")
       build_asan=1
       ;;
-    "-without-nweb-ex")
-      without_nweb_ex=1
+    "-ex")
+      with_nweb_ex=1
       ;;
     "-h")
       usage
@@ -235,7 +235,7 @@ if [ -f "${ROOT_DIR}/third_party/ohos_nweb_hap/BUILD.gn" ]; then
   enable_ohos_nweb_hap=true"
 fi
 
-if [ ${without_nweb_ex} -ne 1 -a ${artifact_mode} -eq 1 ]; then
+if [ ${with_nweb_ex} -eq 1 -a ${artifact_mode} -eq 1 ]; then
   if ! [ -d "${ROOT_DIR}"/"${build_dir}" ]; then
     mkdir -p "${ROOT_DIR}"/"${build_dir}"
   fi
