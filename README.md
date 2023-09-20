@@ -25,9 +25,9 @@
 
 2. 编译
    
-    编译同时构建未签名Hap包：./build.sh  -t w -A -without-nweb-ex rk3568
+    编译同时构建未签名Hap包：./build.sh  -t w -A rk3568
 
-    仅编译so库：./build.sh -A -without-nweb-ex rk3568
+    仅编译so库：./build.sh -A rk3568
 
     ***如若找不到sdk压缩包，可以下载大文件***
     
