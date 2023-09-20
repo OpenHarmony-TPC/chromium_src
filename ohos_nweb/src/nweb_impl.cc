@@ -349,6 +349,11 @@ void NWebImpl::InitWebEngineArgs(const NWebInitArgs& init_args) {
 
 void NWebImpl::PutDownloadCallback(
     std::shared_ptr<NWebDownloadCallback> downloadListener) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("set download callback failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
   nweb_delegate_->RegisterDownLoadListener(downloadListener);
 }
 
@@ -374,6 +379,12 @@ void NWebImpl::Resize(uint32_t width, uint32_t height, bool isKeyboard) {
   if (width > kSurfaceMaxWidth || height > kSurfaceMaxHeight) {
     return;
   }
+
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("resize failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
   nweb_delegate_->Resize(width, height, isKeyboard);
   output_handler_->Resize(width, height);
 }
@@ -751,6 +762,11 @@ uint32_t NWebImpl::GetWebId() const {
 }
 
 HitTestResult NWebImpl::GetHitTestResult() const {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("get hit test result failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return HitTestResult();
+  }
+
   return nweb_delegate_->GetHitTestResult();
 }
 
@@ -1020,6 +1036,11 @@ bool NWebImpl::RestoreWebState(WebState state) {
 
 void NWebImpl::PutReleaseSurfaceCallback(
     std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("set release surface callback failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
   nweb_delegate_->RegisterReleaseSurfaceListener(releaseSurfaceListener);
 }
 
@@ -1139,11 +1160,21 @@ void NWebImpl::SetBrowserUserAgentString(const std::string& user_agent) {
 void NWebImpl::PutWebAppClientExtensionCallback(
     std::shared_ptr<NWebAppClientExtensionCallback>
         web_app_client_extension_listener) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("set web app client extension callback failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
   nweb_delegate_->RegisterWebAppClientExtensionListener(
       web_app_client_extension_listener);
 }
 
 void NWebImpl::RemoveWebAppClientExtensionCallback() {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("remove web app client extension callback failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
   nweb_delegate_->UnRegisterWebAppClientExtensionListener();
 }
 
@@ -1185,15 +1216,30 @@ bool NWebImpl::GetForceEnableZoom() const {
 void NWebImpl::PutWebDownloadDelegateCallback(
     std::shared_ptr<NWebDownloadDelegateCallback>
         web_download_delegate_listener) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("set web download delegate callback failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
   nweb_delegate_->RegisterWebDownloadDelegateListener(
       web_download_delegate_listener);
 }
 
 void NWebImpl::StartDownload(const char* url) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("start download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
   nweb_delegate_->StartDownload(url);
 }
 
 void NWebImpl::ResumeDownload(std::shared_ptr<NWebDownloadItem> web_download) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("resume download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
   nweb_delegate_->ResumeDownload(web_download);
 }
 
