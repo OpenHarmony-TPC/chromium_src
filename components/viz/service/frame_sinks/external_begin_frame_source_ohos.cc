@@ -17,6 +17,7 @@ using namespace OHOS::NWeb;
 constexpr int64_t VSYNC_PERIOD_90HZ = 11111111;
 constexpr int64_t VSYNC_PERIOD_60HZ = 16666666;
 constexpr int64_t VSYNC_PERIOD_6090HZ_MID = 13000000;
+bool g_skip_vsync = false;
 
 class ExternalBeginFrameSourceOHOS::VSyncUserData {
  public:
@@ -93,12 +94,18 @@ void ExternalBeginFrameSourceOHOS::OnVSyncImpl(int64_t timestamp,
                                                VSyncUserData* user_data) {
   user_data_.reset(user_data);
   last_vsync_period_ = timestamp;
-  int64_t period = last_vsync_period_ - pre_vsync_period_;
-  pre_vsync_period_ = last_vsync_period_;
-  if (period > 0 && period < VSYNC_PERIOD_6090HZ_MID) {
-    vsync_period_ = VSYNC_PERIOD_90HZ;
-  } else {
-    vsync_period_ = VSYNC_PERIOD_60HZ;
+  vsync_period_ = vsync_adapter_.GetVSyncPeriod();
+  if (vsync_period_ == 0) {
+    int64_t period = last_vsync_period_ - pre_vsync_period_;
+    pre_vsync_period_ = last_vsync_period_;
+    if (period > 0 && period < VSYNC_PERIOD_6090HZ_MID) {
+      vsync_period_ = VSYNC_PERIOD_90HZ;
+    } else {
+      vsync_period_ = VSYNC_PERIOD_60HZ;
+    }
+  }
+  if (lower_frame_rate_enabled_) {
+    vsync_period_ = vsync_period_ * 2;
   }
   
 #if BUILDFLAG(IS_OHOS)
@@ -111,14 +118,22 @@ ReportLossFrame::GetInstance()->SetVsyncPeriod(vsync_period_);
   last_dead_line_ = deadline;
   TRACE_EVENT2("viz", "ExternalBeginFrameSourceOHOS::OnVSyncImpl", "frame_time",
                frame_time, "deadline", deadline);
-  auto begin_frame_args = begin_frame_args_generator_.GenerateBeginFrameArgs(
-      source_id(), frame_time, deadline, vsync_period);
-  OnBeginFrame(begin_frame_args);
+  
+  if (lower_frame_rate_enabled_ && g_skip_vsync) {
+    TRACE_EVENT0("viz", "vsync skip");
+    g_skip_vsync = false;
+  } else {
+    TRACE_EVENT0("viz", "vsync not skip");
+    auto begin_frame_args = begin_frame_args_generator_.GenerateBeginFrameArgs(
+        source_id(), frame_time, deadline, vsync_period);
+    OnBeginFrame(begin_frame_args);
 
-  if (frame_sink_manager_) {
-    TRACE_EVENT0("viz",
-                 "ExternalBeginFrameSourceOHOS::OnVSyncImpl::BackToMainThread");
-    frame_sink_manager_->OnVsync(frame_sink_id_);
+    if (frame_sink_manager_) {
+      TRACE_EVENT0("viz",
+                    "ExternalBeginFrameSourceOHOS::OnVSyncImpl::BackToMainThread");
+      frame_sink_manager_->OnVsync(frame_sink_id_);
+    }
+    g_skip_vsync = true;
   }
 
   if (!vsync_notification_enabled_ || user_data_ == nullptr) {

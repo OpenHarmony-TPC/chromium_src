@@ -135,6 +135,7 @@ class NWebDelegateInterface
   virtual void OnContinue() = 0;
   virtual void OnOccluded() = 0;
   virtual void OnUnoccluded() = 0;
+  virtual void SetEnableLowerFrameRate(bool enabled) = 0;
   virtual std::shared_ptr<NWebPreference> GetPreference() const = 0;
   virtual std::string Title() = 0;
   virtual void CreateWebMessagePorts(std::vector<std::string>& ports) = 0;

@@ -119,6 +119,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void OnContinue() override;
   void OnOccluded() override;
   void OnUnoccluded() override;
+  void SetEnableLowerFrameRate(bool enabled) override;
   std::shared_ptr<NWebPreference> GetPreference() const override;
   std::string Title() override;
   void CreateWebMessagePorts(std::vector<std::string>& ports) override;

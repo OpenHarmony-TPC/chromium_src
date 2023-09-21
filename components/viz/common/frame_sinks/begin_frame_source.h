@@ -442,6 +442,7 @@ class VIZ_COMMON_EXPORT ExternalBeginFrameSource : public BeginFrameSource {
 #if BUILDFLAG(IS_OHOS)
   // Set Current display client Frame sink ID.
   virtual void SetCurrentFrameSinkId(const FrameSinkId& frame_sink_id) {}
+  virtual void SetEnableLowerFrameRate(bool enabled) {}
 #endif
 
   // Notifies the begin frame source of the desired frame interval for the

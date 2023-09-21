@@ -742,6 +742,14 @@ void FrameSinkManagerImpl::OnVsync(const FrameSinkId& frame_sink_id) {
   if (client_)
     client_->OnVsync(frame_sink_id.client_id(), frame_sink_id.sink_id());
 }
+
+void FrameSinkManagerImpl::SetEnableLowerFrameRate(bool enabled, const FrameSinkId& frame_sink_id) {
+  auto it = root_sink_map_.find(frame_sink_id);
+  if (it == root_sink_map_.end()) {
+    return;
+  }
+  it->second->SetEnableLowerFrameRate(enabled);
+}
 #endif
 
 }  // namespace viz
