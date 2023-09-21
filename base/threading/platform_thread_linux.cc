@@ -294,13 +294,18 @@ const struct sched_param kRealTimePrio = {8};
 const ThreadPriorityToNiceValuePair kThreadPriorityToNiceValueMap[4] = {
     {ThreadPriority::BACKGROUND, 10},
     {ThreadPriority::NORMAL, 0},
-#if BUILDFLAG(IS_OHOS)
-    {ThreadPriority::DISPLAY, -20},
-    {ThreadPriority::REALTIME_AUDIO, -20},
-#else
-    {ThreadPriority::DISPLAY, -8},
-    {ThreadPriority::REALTIME_AUDIO, -10},
-#endif
+    if (base::SysInfo::IsLowEndDevice()) {
+      {ThreadPriority::DISPLAY, -8},
+      {ThreadPriority::REALTIME_AUDIO, -10},
+    } else {
+      {ThreadPriority::DISPLAY, -20},
+      {ThreadPriority::REALTIME_AUDIO, -20},
+    }
+// #if BUILDFLAG(IS_OHOS)
+//     {ThreadPriority::DISPLAY, -20},
+//     {ThreadPriority::REALTIME_AUDIO, -20},
+// #else
+// #endif
 };
 
 bool CanSetThreadPriorityToRealtimeAudio() {
