@@ -233,6 +233,7 @@ class NWebDelegateInterface
   virtual void SetAudioExclusive(bool audioExclusive) = 0;
   virtual void NotifyPopupWindowResult(bool result) = 0;
   virtual void SetWindowId(uint32_t window_id);
+  virtual void SetToken(void* token) = 0;
 };
 }  // namespace OHOS::NWeb
 

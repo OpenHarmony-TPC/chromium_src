@@ -224,6 +224,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
 
   void NotifyPopupWindowResult(bool result) override;
   void SetWindowId(uint32_t window_id) override;
+  void SetToken(void* token) override;
 
  public:
   int argc_;

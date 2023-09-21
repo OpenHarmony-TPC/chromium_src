@@ -161,6 +161,7 @@ class NWebImpl : public NWeb {
   void OnWebviewHide() const override;
   void OnWebviewShow() const override;
   void SetWindowId(uint32_t window_id) override;
+  void SetToken(void* token) override;
 
   // For NWebEx
   static NWebImpl* FromID(int32_t nweb_id);

@@ -126,7 +126,6 @@ void InitialWebEngineArgs(std::list<std::string>& web_engine_args,
   web_engine_args.emplace_back("--ohos-enable-drdc");
 
   web_engine_args.emplace_back("--enable-media-stream");
-
   if (init_args.is_enhance_surface) {
     WVLOG_I("is_enhance_surface is true");
     web_engine_args.emplace_back("--ohos-enhance-surface");
@@ -696,6 +695,14 @@ void NWebImpl::SetWindowId(uint32_t window_id) {
     return;
   }
   nweb_delegate_->SetWindowId(window_id);
+}
+
+void NWebImpl::SetToken(void* token) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("SetToken nweb delegate is null");
+    return;
+  }
+  nweb_delegate_->SetToken(token);
 }
 
 const std::shared_ptr<NWebPreference> NWebImpl::GetPreference() const {

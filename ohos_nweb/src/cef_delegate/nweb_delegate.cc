@@ -1744,6 +1744,15 @@ void NWebDelegate::SetWindowId(uint32_t window_id) {
   GetBrowser()->GetHost()->SetWindowId(window_id, nweb_id_);
 }
 
+void NWebDelegate::SetToken(void* token) {
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "SetToken can not get browser";
+    return;
+  }
+
+  GetBrowser()->GetHost()->SetToken(token);
+}
+
 void NWebDelegate::PrefetchPage(
     std::string& url,
     std::map<std::string, std::string> additionalHttpHeaders) {
