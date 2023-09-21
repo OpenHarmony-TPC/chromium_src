@@ -188,16 +188,16 @@ void NWebInputMethodHandler::Attach(CefRefPtr<CefBrowser> browser,
 
 bool NWebInputMethodHandler::Reattach(uint32_t nwebId, ReattachType type) {
   nweb_id_ = nwebId;
-  if (type == ReattachType::FROM_CONTINUE || !is_editable_node_) {
-    if (!isNeedReattachOncontinue_) {
+  if (type == ReattachType::FROM_CONTINUE) {
+    if (!isNeedReattachOncontinue_ || !is_editable_node_) {
       LOG(INFO) << "don't need reattach input method";
       return false;
     }
     isNeedReattachOncontinue_ = false;
   }
 
-  if (type == ReattachType::FROM_ONFOCUS || !is_editable_node_) {
-    if (!isNeedReattachOnfocus_) {
+  if (type == ReattachType::FROM_ONFOCUS) {
+    if (!isNeedReattachOnfocus_ || !is_editable_node_) {
       LOG(INFO) << "ReAttchOnfocus, don't need reattach input method";
       return false;
     }
