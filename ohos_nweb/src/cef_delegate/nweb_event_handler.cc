@@ -242,6 +242,10 @@ void NWebEventHandler::SendMouseEvent(int x,
   mouseEvent.y = y;
   cef_mouse_button_type_t buttonType = static_cast<cef_mouse_button_type_t>(
       NWebInputDelegate::CefConverter("mousebutton", button));
+  if (static_cast<int>(buttonType) < 0) {
+    LOG(ERROR) << "invalid button type " << buttonType;
+    return;
+  }
   mouseEvent.modifiers = input_delegate_.GetModifiers(buttonType);
 
   if (browser_ && browser_->GetHost()) {
