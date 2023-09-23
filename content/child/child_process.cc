@@ -11,6 +11,7 @@
 #include "base/lazy_instance.h"
 #include "base/message_loop/message_pump_type.h"
 #include "base/process/process_handle.h"
+#include "base/system/sys_info.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "base/threading/thread.h"
@@ -107,6 +108,9 @@ ChildProcess::ChildProcess(base::ThreadPriority io_thread_priority,
   if (base::FeatureList::IsEnabled(
           blink::features::kBlinkCompositorUseDisplayThreadPriority)) {
     thread_options.priority = base::ThreadPriority::DISPLAY;
+  }
+  if (base::SysInfo::IsLowEndDevice()) {
+    thread_options.priority = base::ThreadPriority::NORMAL;
   }
 #endif
   CHECK(io_thread_.StartWithOptions(std::move(thread_options)));
