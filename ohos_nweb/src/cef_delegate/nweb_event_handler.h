@@ -54,6 +54,9 @@ class NWebEventHandler {
   int32_t mmi_id_ = -1;
   bool isFocus_ = false;
   double sum_deltaY_ = 0.0;
+// last mouse move coordinates
+  int last_mouse_x_ = -1;
+  int last_mouse_y_ = -1;
 };
 }  // namespace OHOS::NWeb
 
