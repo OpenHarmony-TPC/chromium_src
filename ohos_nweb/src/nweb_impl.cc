@@ -1426,11 +1426,7 @@ extern "C" OHOS_NWEB_EXPORT void SetHttpDns(const NWebDOHConfig& config) {
   net_service::NetHelpers::doh_mode = config.doh_mode;
   net_service::NetHelpers::doh_config = config.doh_config;
 
-  if (g_nweb_count != 0) {
-    CefApplyHttpDns();
-  } else {
-    WVLOG_I("nweb hadn't initiated try to set http dns config later");
-  }
+  CefApplyHttpDns();
 }
 
 extern "C" OHOS_NWEB_EXPORT void PrepareForPageLoad(std::string url,
