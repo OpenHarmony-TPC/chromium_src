@@ -29,11 +29,6 @@
 
 namespace OHOS::NWeb {
 
-constexpr double MAX_ZOOM_FACTOR = 10.0;
-constexpr double MIN_ZOOM_FACTOR = -10.0;
-constexpr double ZOOM_FACTOR = 2.0;
-constexpr double ZOOM_TARGET = 5.5;
-
 // static
 std::shared_ptr<NWebEventHandler> NWebEventHandler::Create() {
   auto event_handler = std::make_shared<NWebEventHandler>();
@@ -200,25 +195,7 @@ void NWebEventHandler::SendMouseWheelEvent(double x,
   if (!browser_ || !browser_->GetHost()) {
     return;
   }
-  if ((mouseEvent.modifiers & EVENTFLAG_CONTROL_DOWN) && (deltaY != 0)) {
-    if (sum_deltaY_ != 0 && sum_deltaY_ * deltaY < 0) {
-      sum_deltaY_ = 0;
-    }
-    sum_deltaY_ += deltaY;
-    if (std::abs(sum_deltaY_) < ZOOM_TARGET) {
-      return;
-    }
-    double curFactor = browser_->GetHost()->GetZoomLevel();
-    double tempZoomFactor =
-        sum_deltaY_ < 0 ? curFactor + ZOOM_FACTOR : curFactor - ZOOM_FACTOR;
-    sum_deltaY_ = 0;
-    if (tempZoomFactor > MAX_ZOOM_FACTOR || tempZoomFactor < MIN_ZOOM_FACTOR) {
-      LOG(ERROR) << "The mouse wheel event can no longer be zoomed in or out.";
-      return;
-    }
-    browser_->GetHost()->SetZoomLevel(tempZoomFactor);
-    return;
-  }
+
   double horizontalDelta;
   double verticalDelta;
   if (mmi_id_ > 0 && (mouseEvent.modifiers & EVENTFLAG_SHIFT_DOWN)) {
@@ -258,6 +235,13 @@ void NWebEventHandler::SendMouseEvent(int x,
     } else if (NWebInputDelegate::IsMouseUp(action)) {
       browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, true, 1);
     } else if (NWebInputDelegate::IsMouseMove(action)) {
+      if (last_mouse_x_ == x && last_mouse_y_ == y) {
+        LOG(INFO) << "no change in coordinates, cancel mouse move event";
+        return;
+      }
+
+      last_mouse_x_ = x;
+      last_mouse_y_ = y;
       browser_->GetHost()->SendMouseMoveEvent(mouseEvent, false);
     } else if (NWebInputDelegate::IsMouseLeave(action)) {
       browser_->GetHost()->SendMouseMoveEvent(mouseEvent, true);
