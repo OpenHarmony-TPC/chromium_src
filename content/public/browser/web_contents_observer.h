@@ -790,6 +790,10 @@ class CONTENT_EXPORT WebContentsObserver {
   // be invoked before DidUpdateFaviconURL().
   virtual void DidUpdateWebManifestURL(RenderFrameHost* target_frame,
                                        const GURL& manifest_url) {}
+#if BUILDFLAG(IS_OHOS)
+  // Called when form editing state changed
+  virtual void OnFormEditingStateChanged(bool state) {}
+#endif
 
   // Called when "audible" playback starts or stops on a WebAudio AudioContext.
   using AudioContextId = std::pair<RenderFrameHost*, int>;

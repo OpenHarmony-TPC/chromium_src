@@ -18,6 +18,8 @@
 #include "components/performance_manager/public/mojom/coordination_unit.mojom.h"
 #include "components/performance_manager/public/mojom/web_memory.mojom.h"
 #include "components/performance_manager/public/render_frame_host_proxy.h"
+#include "content/public/browser/web_contents.h"
+#include "content/browser/web_contents/web_contents_impl.h"
 #include "content/public/browser/browsing_instance_id.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -74,7 +76,9 @@ class FrameNodeImpl
   void OnWebMemoryMeasurementRequested(
       mojom::WebMemoryMeasurement::Mode mode,
       OnWebMemoryMeasurementRequestedCallback callback) override;
-
+#if BUILDFLAG(IS_OHOS)
+  void OnFormEditingStateChanged(uint64_t form_id, bool did_submit) override;
+#endif
   // Partial FrameNodbase::TimeDelta time_since_navigatione implementation:
   bool IsMainFrame() const override;
 

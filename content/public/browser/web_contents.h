@@ -1406,6 +1406,10 @@ class WebContents : public PageNavigator,
       PrerenderTriggerType trigger_type,
       const std::string& embedder_histogram_suffix) = 0;
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void OnFormEditingStateChanged(uint64_t form_id, bool did_submit) = 0; 
+#endif
+
  #ifdef BUILDFLAG(IS_OHOS)
   virtual void ClearContextMenu() = 0;
 #endif //BUILDFLAG(IS_OHOS)

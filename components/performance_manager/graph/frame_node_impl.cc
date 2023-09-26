@@ -93,6 +93,17 @@ void FrameNodeImpl::SetHadFormInteraction() {
   document_.had_form_interaction.SetAndMaybeNotify(this, true);
 }
 
+#if BUILDFLAG(IS_OHOS)
+void FrameNodeImpl::OnFormEditingStateChanged(uint64_t form_id, bool did_submit) {
+  LOG(INFO) << "FrameNodeImpl::OnFormEditingStateChanged id: " << form_id << "did submit: " << did_submit;
+  content::GlobalRenderFrameHostId global_frame_routing_id = render_frame_host_proxy().global_frame_routing_id();
+  content::WebContents* web_contents = content::WebContentsImpl::FromRenderFrameHostID(global_frame_routing_id);
+  if (web_contents) {
+    web_contents->OnFormEditingStateChanged(form_id, did_submit);
+  }
+}
+#endif
+
 void FrameNodeImpl::OnNonPersistentNotificationCreated() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   for (auto* observer : GetObservers())

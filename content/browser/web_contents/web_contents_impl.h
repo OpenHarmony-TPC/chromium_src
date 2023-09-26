@@ -640,7 +640,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
                                   bool animate) override;
   void SetTabSwitchStartTime(base::TimeTicks start_time,
                              bool destination_is_loaded) final;
-
+#if BUILDFLAG(IS_OHOS)
+  void OnFormEditingStateChanged(uint64_t form_id, bool did_submit) override;
+#endif
   // Implementation of PageNavigator.
   WebContents* OpenURL(const OpenURLParams& params) override;
 
@@ -2374,6 +2376,10 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
 
   VisibleTimeRequestTrigger visible_time_request_trigger_;
 
+#if BUILDFLAG(IS_OHOS)
+  std::vector<uint64_t> edited_forms_id_;
+#endif
+  
 #if defined(OHOS_NWEB_EX)
   bool force_enable_zoom_;
   bool is_selectable_;

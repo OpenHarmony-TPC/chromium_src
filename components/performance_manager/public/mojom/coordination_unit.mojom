@@ -55,6 +55,10 @@ interface DocumentCoordinationUnit {
   // the performance.measureUserAgentSpecificMemory API.
   OnWebMemoryMeasurementRequested(WebMemoryMeasurement.Mode mode) =>
       (WebMemoryMeasurement measurement);
+
+  // Called when form editing state is changed
+  [EnableIf=is_ohos]
+  OnFormEditingStateChanged(uint64 form_id, bool did_submit);
 };
 
 // Interface used by the RendererResourceCoordinator singleton to send state
