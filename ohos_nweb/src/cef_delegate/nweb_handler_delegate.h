@@ -440,6 +440,9 @@ class NWebHandlerDelegate : public CefClient,
   /* CefMediaHandler methods begin */
   void OnAudioStateChanged(CefRefPtr<CefBrowser> browser,
                            bool audible) override;
+  void OnMediaStateChanged(CefRefPtr<CefBrowser> browser,
+                           MediaType type,
+                           MediaPlayingState state) override;
   /* CefMediaHandler methods end */
   /* CefPrintHandler method begin */
   void OnPrintStart(CefRefPtr<CefBrowser> browser) override;

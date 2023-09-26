@@ -917,6 +917,20 @@ void NWebHandlerDelegate::OnAudioStateChanged(CefRefPtr<CefBrowser> browser,
     nweb_handler_->OnAudioStateChanged(audible);
   }
 }
+
+void NWebHandlerDelegate::OnMediaStateChanged(CefRefPtr<CefBrowser> browser,
+                           MediaType type,
+                           MediaPlayingState state) {
+  LOG(INFO) 
+       << "NWebHandlerDelegate::OnMediaStateChanged, MediaType: " << static_cast<int>(type) 
+       << " MediaPlayingState: " << static_cast<int>(state)
+       << "nweb_id: " << nweb_id_;
+  ActivityType mediaType = static_cast<ActivityType>(type);
+
+  if (nweb_handler_ != nullptr) {
+    nweb_handler_->OnActivityStateChanged(static_cast<int>(state), mediaType);
+  }
+}
 /* CefLoadHandler methods end */
 
 /* CefRequestHandler methods begin */
