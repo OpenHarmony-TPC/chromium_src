@@ -69,6 +69,7 @@ artifact_mode=0
 with_nweb_ex=0
 build_sysroot="use_ohos_sdk_sysroot=false"
 build_asan=0
+use_thin_lto=0
 
 usage() {
   echo -ne "USAGE: $0 [OPTIONS] [PRODUCT]
@@ -142,6 +143,9 @@ while [ "$1" != "" ]; do
       ;;
     "-asan")
       build_asan=1
+      ;;
+    "-nolto")
+      use_thin_lto=1
       ;;
     "-ex")
       with_nweb_ex=1
@@ -219,6 +223,10 @@ if [ ${build_asan} -eq 1 ]; then
   GN_ARGS="${GN_ARGS} is_asan=true"
 else
   GN_ARGS="${GN_ARGS} is_asan=false"
+fi
+
+if [ ${use_thin_lto} -eq 1 ]; then
+  GN_ARGS="${GN_ARGS} use_thin_lto=false"
 fi
 
 # Extract ohos-sdk.
