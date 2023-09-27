@@ -17,11 +17,14 @@
 #define EVENT_REPORT_H
 
 #include <string>
+#include <vector>
 
 void ReportPageLoadStats(int instanceId, int accessSumCount, int accessSuccCount, int accessFailCount);
 
 void ReportMultiInstanceStats(int instanceId, int nwebCount, int nwebMaxCount);
 
 void ReportPageLoadErrorInfo(int instanceId, const std::string errorType, int errorCode, const std::string errorDesc);
+
+void ReportJankStats(int64_t startTime, int duration, std::string pageUrl, std::vector<uint16_t> jankStats, int jankStatsVer);
 
 #endif

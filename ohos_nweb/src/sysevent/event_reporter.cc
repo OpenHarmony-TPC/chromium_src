@@ -37,6 +37,13 @@ constexpr char PAGE_LOAD_ERROR[] = "PAGE_LOAD_ERROR";
 constexpr char ERROR_TYPE[] = "ERROR_TYPE";
 constexpr char ERROR_CODE[] = "ERROR_CODE";
 constexpr char ERROR_DESC[] = "ERROR_DESC";
+
+constexpr char JANK_STATS_APP[] = "JANK_STATS_APP";
+constexpr char STARTTIME[] = "STARTTIME";
+constexpr char DURATION[] = "DURATION";
+constexpr char PAGE_URL[] = "PAGE_URL";
+constexpr char JANK_STATS[] = "JANK_STATS";
+constexpr char JANK_STATS_VER[] = "JANK_STATS_VER";
 }  // namespace
 
 void ReportPageLoadStats(int instanceId,
@@ -75,4 +82,15 @@ void ReportPageLoadErrorInfo(int instanceId,
       PAGE_LOAD_ERROR, HiSysEventAdapter::EventType::FAULT,
       {CURRENT_INSTANCE_ID, instanceId, ERROR_TYPE, error_type, ERROR_CODE,
        error_code, ERROR_DESC, error_desc});
+}
+
+void ReportJankStats(int64_t startTime,
+                    int duration,
+                    std::string pageUrl,
+                    std::vector<uint16_t> jankStats,
+                    int jankStatsVer) {
+  OhosAdapterHelper::GetInstance().GetHiSysEventAdapterInstance().Write(
+      JANK_STATS_APP, HiSysEventAdapter::EventType::STATISTIC,
+      {STARTTIME, startTime, DURATION, duration, PAGE_URL,
+       pageUrl, JANK_STATS, jankStats, JANK_STATS_VER, jankStatsVer});
 }
