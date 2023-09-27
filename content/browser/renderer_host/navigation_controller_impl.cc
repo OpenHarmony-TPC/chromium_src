@@ -109,6 +109,7 @@
 #include "third_party/blink/public/mojom/navigation/navigation_params.mojom.h"
 #include "third_party/blink/public/mojom/navigation/prefetched_signed_exchange_info.mojom.h"
 #include "url/url_constants.h"
+#include "base/report_loss_frame.h"
 
 namespace content {
 namespace {
@@ -1143,6 +1144,9 @@ base::WeakPtr<NavigationHandle> NavigationControllerImpl::LoadURL(
 
 base::WeakPtr<NavigationHandle> NavigationControllerImpl::LoadURLWithParams(
     const LoadURLParams& params) {
+#if BUILDFLAG(IS_OHOS)
+  ReportLossFrame::GetInstance()->SetPageUrl(params.url.spec());
+#endif
   if (params.is_renderer_initiated)
     DCHECK(params.initiator_origin.has_value());
 
