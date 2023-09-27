@@ -247,14 +247,22 @@ static size_t PartitionPurgeSlotSpan(
         slot_size;
     PA_DCHECK(slot_index < num_slots);
     slot_usage[slot_index] = 0;
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    entry = entry->GetNext(slot_size, slot_span->bucket->random_cookie);
+#else
     entry = entry->GetNext(slot_size);
+#endif
 #if !BUILDFLAG(IS_WIN)
     // If we have a slot where the masked freelist entry is 0, we can actually
     // discard that freelist entry because touching a discarded page is
     // guaranteed to return original content or 0. (Note that this optimization
     // won't fire on big-endian machines because the masking function is
     // negation.)
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    if (!internal::PartitionFreelistEntry::Encode(entry, slot_span->bucket->random_cookie))
+#else
     if (!internal::PartitionFreelistEntry::Encode(entry))
+#endif
       last_slot = slot_index;
 #endif
   }
@@ -304,7 +312,11 @@ static size_t PartitionPurgeSlotSpan(
           head = entry;
           back = entry;
         } else {
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+          back->SetNext(entry, slot_span->bucket->random_cookie);
+#else
           back->SetNext(entry);
+#endif
           back = entry;
         }
         num_new_entries++;

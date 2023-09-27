@@ -266,7 +266,11 @@ void SlotSpanMetadata<thread_safe>::SortFreelist() {
   size_t num_free_slots = 0;
   size_t slot_size = bucket->slot_size;
   for (PartitionFreelistEntry* head = freelist_head; head;
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+       head = head->GetNext(slot_size, this->bucket->random_cookie)) {
+#else
        head = head->GetNext(slot_size)) {
+#endif
     ++num_free_slots;
     size_t offset_in_slot_span =
         memory::UnmaskPtr(reinterpret_cast<uintptr_t>(head)) - slot_span_start;
@@ -291,8 +295,11 @@ void SlotSpanMetadata<thread_safe>::SortFreelist() {
         if (!head)
           head = entry;
         else
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+          back->SetNext(entry, this->bucket->random_cookie);
+#else
           back->SetNext(entry);
-
+#endif
         back = entry;
       }
     }

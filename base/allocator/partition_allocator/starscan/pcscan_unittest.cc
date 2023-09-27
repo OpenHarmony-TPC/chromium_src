@@ -168,7 +168,11 @@ bool IsInFreeList(uintptr_t slot_start) {
   slot_start = memory::RemaskPtr(slot_start);
   auto* slot_span = SlotSpan::FromSlotStart(slot_start);
   for (auto* entry = slot_span->get_freelist_head(); entry;
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+       entry = entry->GetNext(slot_span->bucket->slot_size, slot_span->bucket->random_cookie)) {
+#else
        entry = entry->GetNext(slot_span->bucket->slot_size)) {
+#endif
     if (reinterpret_cast<uintptr_t>(entry) == slot_start)
       return true;
   }

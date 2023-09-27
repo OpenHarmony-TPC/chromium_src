@@ -848,7 +848,11 @@ TEST_F(PartitionAllocThreadCacheTest, ClearFromTail) {
     uint8_t count = 0;
     auto* head = tcache->buckets_[index].freelist_head;
     while (head) {
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+      head = head->GetNext(tcache->buckets_[index].slot_size, tcache->buckets_[index].random_cookie);
+#else
       head = head->GetNext(tcache->buckets_[index].slot_size);
+#endif
       count++;
     }
     return count;

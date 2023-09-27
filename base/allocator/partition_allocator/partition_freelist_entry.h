@@ -62,17 +62,29 @@ static_assert(
 // the rationale and mechanism, respectively.
 class PartitionFreelistEntry {
  public:
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  PartitionFreelistEntry() { SetNext(nullptr, 0); }
+#else
   PartitionFreelistEntry() { SetNext(nullptr); }
+#endif
   ~PartitionFreelistEntry() = delete;
 
   // Creates a new entry, with |next| following it.
   static ALWAYS_INLINE PartitionFreelistEntry* InitForThreadCache(
       uintptr_t slot_start,
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+      PartitionFreelistEntry* next, uintptr_t random_cookie) {
+#else
       PartitionFreelistEntry* next) {
+#endif
     auto* entry = reinterpret_cast<PartitionFreelistEntry*>(slot_start);
     // ThreadCache freelists can point to entries across superpage boundaries,
     // no check contrary to |SetNext()|.
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    entry->SetNextInternal(next, random_cookie);
+#else
     entry->SetNextInternal(next);
+#endif
     return entry;
   }
 
@@ -82,34 +94,62 @@ class PartitionFreelistEntry {
   void* operator new(size_t, void* buffer) { return buffer; }
 
   ALWAYS_INLINE static EncodedPartitionFreelistEntry* Encode(
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+      PartitionFreelistEntry* ptr, uintptr_t random_cookie) {
+    return reinterpret_cast<EncodedPartitionFreelistEntry*>(Transform(ptr, random_cookie));
+#else
       PartitionFreelistEntry* ptr) {
     return reinterpret_cast<EncodedPartitionFreelistEntry*>(Transform(ptr));
+#endif
   }
 
   // Puts |extra| on the stack before crashing in case of memory
   // corruption. Meant to be used to report the failed allocation size.
   ALWAYS_INLINE PartitionFreelistEntry* GetNextForThreadCache(
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+      size_t extra, uintptr_t random_cookie) const;
+  ALWAYS_INLINE PartitionFreelistEntry* GetNext(size_t extra, uintptr_t random_cookie) const;
+
+  NOINLINE void CheckFreeList(size_t extra, uintptr_t random_cookie) const {
+#else
       size_t extra) const;
   ALWAYS_INLINE PartitionFreelistEntry* GetNext(size_t extra) const;
 
   NOINLINE void CheckFreeList(size_t extra) const {
+#endif
 #if defined(PA_HAS_FREELIST_HARDENING)
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    for (auto* entry = this; entry; entry = entry->GetNext(extra, random_cookie)) {
+#else
     for (auto* entry = this; entry; entry = entry->GetNext(extra)) {
+#endif
       // |GetNext()| checks freelist integrity.
     }
 #endif
   }
 
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  NOINLINE void CheckFreeListForThreadCache(size_t extra, uintptr_t random_cookie) const {
+#else
   NOINLINE void CheckFreeListForThreadCache(size_t extra) const {
+#endif
 #if defined(PA_HAS_FREELIST_HARDENING)
     for (auto* entry = this; entry;
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+         entry = entry->GetNextForThreadCache(extra, random_cookie)) {
+#else
          entry = entry->GetNextForThreadCache(extra)) {
+#endif
       // |GetNextForThreadCache()| checks freelist integrity.
     }
 #endif
   }
 
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  ALWAYS_INLINE void SetNext(PartitionFreelistEntry* ptr, uintptr_t random_cookie) {
+#else
   ALWAYS_INLINE void SetNext(PartitionFreelistEntry* ptr) {
+#endif
     // SetNext() is either called on the freelist head, when provisioning new
     // slots, or when GetNext() has been called before, no need to pass the
     // size.
@@ -123,7 +163,11 @@ class PartitionFreelistEntry {
       FreelistCorruptionDetected(0);
     }
 #endif  // DCHECK_IS_ON()
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    SetNextInternal(ptr, random_cookie);
+#else
     SetNextInternal(ptr);
+#endif
   }
 
   // Zeroes out |this| before returning it.
@@ -137,7 +181,11 @@ class PartitionFreelistEntry {
 
  private:
   friend struct EncodedPartitionFreelistEntry;
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  ALWAYS_INLINE static void* Transform(void* ptr, uintptr_t random_cookie) {
+#else
   ALWAYS_INLINE static void* Transform(void* ptr) {
+#endif
     // We use bswap on little endian as a fast mask for two reasons:
     // 1) If an object is freed and its vtable used where the attacker doesn't
     // get the chance to run allocations between the free and use, the vtable
@@ -146,16 +194,30 @@ class PartitionFreelistEntry {
     // corrupt a freelist pointer, partial pointer overwrite attacks are
     // thwarted.
     // For big endian, similar guarantees are arrived at with a negation.
+
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    if (ptr == nullptr) {
+      return nullptr;
+    }
+
+    return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(ptr) ^ random_cookie);
+#else
 #if defined(ARCH_CPU_BIG_ENDIAN)
     uintptr_t masked = ~reinterpret_cast<uintptr_t>(ptr);
 #else
     uintptr_t masked = ByteSwapUintPtrT(reinterpret_cast<uintptr_t>(ptr));
 #endif
     return reinterpret_cast<void*>(masked);
+#endif
   }
 
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  ALWAYS_INLINE void SetNextInternal(PartitionFreelistEntry* ptr, uintptr_t random_cookie) {
+    next_ = Encode(ptr, random_cookie);
+#else
   ALWAYS_INLINE void SetNextInternal(PartitionFreelistEntry* ptr) {
     next_ = Encode(ptr);
+#endif
 #if defined(PA_HAS_FREELIST_HARDENING)
     inverted_next_ = ~reinterpret_cast<uintptr_t>(next_);
 #endif
@@ -163,7 +225,11 @@ class PartitionFreelistEntry {
 
   ALWAYS_INLINE PartitionFreelistEntry* GetNextInternal(
       size_t extra,
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+      bool for_thread_cache, uintptr_t random_cookie) const;
+#else
       bool for_thread_cache) const;
+#endif
 #if defined(PA_HAS_FREELIST_HARDENING)
   static ALWAYS_INLINE bool IsSane(const PartitionFreelistEntry* here,
                                    const PartitionFreelistEntry* next,
@@ -216,9 +282,15 @@ struct EncodedPartitionFreelistEntry {
   ~EncodedPartitionFreelistEntry() = delete;
 
   ALWAYS_INLINE static PartitionFreelistEntry* Decode(
+#if defined(OHOS_ENABLE_FREELIST_HARDENED) 
+      EncodedPartitionFreelistEntry* ptr, uintptr_t random_cookie) {
+    return reinterpret_cast<PartitionFreelistEntry*>(
+        PartitionFreelistEntry::Transform(ptr, random_cookie));
+#else
       EncodedPartitionFreelistEntry* ptr) {
     return reinterpret_cast<PartitionFreelistEntry*>(
         PartitionFreelistEntry::Transform(ptr));
+#endif
   }
 };
 
@@ -228,8 +300,13 @@ static_assert(sizeof(PartitionFreelistEntry) ==
 
 ALWAYS_INLINE PartitionFreelistEntry* PartitionFreelistEntry::GetNextInternal(
     size_t extra,
+#if defined(OHOS_ENABLE_FREELIST_HARDENED) 
+    bool for_thread_cache, uintptr_t random_cookie) const {
+  auto* ret = EncodedPartitionFreelistEntry::Decode(next_, random_cookie);
+#else
     bool for_thread_cache) const {
   auto* ret = EncodedPartitionFreelistEntry::Decode(next_);
+#endif
   // GetNext() can be called on decommitted memory, in which case |next| is
   // nullptr, and none of the checks apply. Don't prefetch nullptr either.
   if (!ret)
@@ -253,6 +330,17 @@ ALWAYS_INLINE PartitionFreelistEntry* PartitionFreelistEntry::GetNextInternal(
   return ret;
 }
 
+#if defined(OHOS_ENABLE_FREELIST_HARDENED) 
+ALWAYS_INLINE PartitionFreelistEntry*
+PartitionFreelistEntry::GetNextForThreadCache(size_t extra, uintptr_t random_cookie) const {
+  return GetNextInternal(extra, true, random_cookie);
+}
+
+ALWAYS_INLINE PartitionFreelistEntry* PartitionFreelistEntry::GetNext(
+    size_t extra, uintptr_t random_cookie) const {
+  return GetNextInternal(extra, false, random_cookie);
+}
+#else
 ALWAYS_INLINE PartitionFreelistEntry*
 PartitionFreelistEntry::GetNextForThreadCache(size_t extra) const {
   return GetNextInternal(extra, true);
@@ -262,7 +350,7 @@ ALWAYS_INLINE PartitionFreelistEntry* PartitionFreelistEntry::GetNext(
     size_t extra) const {
   return GetNextInternal(extra, false);
 }
-
+#endif
 }  // namespace internal
 }  // namespace base
 
