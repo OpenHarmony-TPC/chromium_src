@@ -109,8 +109,9 @@
 #include "third_party/blink/public/mojom/navigation/navigation_params.mojom.h"
 #include "third_party/blink/public/mojom/navigation/prefetched_signed_exchange_info.mojom.h"
 #include "url/url_constants.h"
+#if BUILDFLAG(IS_OHOS)
 #include "base/report_loss_frame.h"
-
+#endif
 namespace content {
 namespace {
 

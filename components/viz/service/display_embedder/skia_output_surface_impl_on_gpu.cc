@@ -58,8 +58,9 @@
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/gpu_fence_handle.h"
 #include "ui/gl/gl_surface.h"
+#if BUILDFLAG(IS_OHOS)
 #include "base/report_loss_frame.h"
-
+#endif
 #if BUILDFLAG(ENABLE_VULKAN)
 #include "components/viz/service/display_embedder/skia_output_device_vulkan.h"
 #include "gpu/vulkan/vulkan_util.h"

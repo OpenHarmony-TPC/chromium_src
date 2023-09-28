@@ -11,8 +11,9 @@
 #include "content/public/common/content_client.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/events/gestures/blink/web_gesture_curve_impl.h"
+#if BUILDFLAG(IS_OHOS)
 #include "base/report_loss_frame.h"
-
+#endif
 using blink::WebInputEvent;
 using blink::WebGestureEvent;
 
