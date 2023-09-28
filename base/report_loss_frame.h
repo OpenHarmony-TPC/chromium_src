@@ -3,6 +3,7 @@
 #define BASE_REPORT_LOSS_FRAME_H_
 
 #include <vector>
+#include <string>
 
 enum ScrollMode { START, STOP };
 
