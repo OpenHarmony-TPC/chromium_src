@@ -483,9 +483,9 @@ void SkiaOutputSurfaceImplOnGpu::SwapBuffers(OutputSurfaceFrame frame,
                                              bool release_frame_buffer) {
   TRACE_EVENT0("viz", "SkiaOutputSurfaceImplOnGpu::SwapBuffers");
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
-  #if BUILDFLAG(IS_OHOS)
-    ReportLossFrame::GetInstance()->Record();
-  #endif
+#if BUILDFLAG(IS_OHOS)
+  ReportLossFrame::GetInstance()->Record();
+#endif
   if (release_frame_buffer)
     output_device_->ReleaseOneFrameBuffer();
 

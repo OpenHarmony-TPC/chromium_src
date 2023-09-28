@@ -138,9 +138,9 @@ bool FlingController::ObserveAndMaybeConsumeGestureEvent(
   if (gesture_event.event.GetType() ==
       WebInputEvent::Type::kGestureFlingStart) {
     ProcessGestureFlingStart(gesture_event);
-    #if BUILDFLAG(IS_OHOS)
-      ReportLossFrame::GetInstance()->SetScrollState(ScrollMode::START);
-    #endif
+#if BUILDFLAG(IS_OHOS)
+  ReportLossFrame::GetInstance()->SetScrollState(ScrollMode::START);
+#endif
     return true;
   }
 
@@ -366,10 +366,10 @@ void FlingController::EndCurrentFling(base::TimeTicks current_time) {
   last_progress_time_ = base::TimeTicks();
 
   GenerateAndSendFlingEndEvents(current_time);
-  #if BUILDFLAG(IS_OHOS)
-    ReportLossFrame::GetInstance()->SetScrollState(ScrollMode::STOP);
-    ReportLossFrame::GetInstance()->Report();
-  #endif
+#if BUILDFLAG(IS_OHOS)
+  ReportLossFrame::GetInstance()->SetScrollState(ScrollMode::STOP);
+  ReportLossFrame::GetInstance()->Report();
+#endif
   current_fling_parameters_ = ActiveFlingParameters();
 
   if (fling_curve_) {

@@ -51,7 +51,7 @@ class ReportLossFrame {
 
         std::string page_url_;
 
-        std::vector<uint16_t> jank_stats = std::vector<uint16_t>(0, 7);
+        std::vector<uint16_t> jank_stats = std::vector<uint16_t>(0, 8);
 
         static ReportLossFrame* instance;
 };

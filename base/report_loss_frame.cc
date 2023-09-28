@@ -53,7 +53,7 @@ void ReportLossFrame::Record()
 
     int64_t now = GetCurrentTimestampMS();
     int duration = start_time_ - now;
-    start_time_ = now;
+    start_time_for_scroll = now;
 
     if(duration <= VSYNC_PERIOD)
     {
