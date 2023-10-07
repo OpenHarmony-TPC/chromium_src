@@ -72,7 +72,7 @@ source_set("tests") {
     "util_unittest.cc",
   ]
 
-  if (is_posix && !is_android) {
+  if (is_posix && !is_android && !is_ohos) {
     sources += [ "resolv_reader_unittest.cc" ]
   }
 

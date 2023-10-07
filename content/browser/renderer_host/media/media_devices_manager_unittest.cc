@@ -140,6 +140,15 @@ class MockAudioManager : public media::FakeAudioManager {
                                   media::CHANNEL_LAYOUT_STEREO, 48000, 128);
   }
 
+  media::AudioParameters GetPreferredInputStreamParameters(
+    const std::string& input_device_id) override {
+   media::AudioParameters params =
+       media::AudioParameters( media::AudioParameters::AUDIO_PCM_LOW_LATENCY,
+                      media::CHANNEL_LAYOUT_STEREO,
+                      48000, 2048);
+  return params;
+}
+
   void RemoveInputAudioDeviceById(const std::string& device_id) {
     --num_input_devices_;
     removed_input_audio_device_ids_.insert(device_id);

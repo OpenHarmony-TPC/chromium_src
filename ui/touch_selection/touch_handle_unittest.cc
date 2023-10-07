@@ -53,6 +53,9 @@ class MockTouchHandleDrawable : public TouchHandleDrawable {
     data_->alpha = alpha;
     data_->visible = alpha > 0;
   }
+#if BUILDFLAG(IS_OHOS)
+  void SetEdge(const gfx::PointF& top, const gfx::PointF& bottom) override {}
+#endif
 
   // TODO(AviD): Add unittests for non-zero values of padding ratio once the
   // code refactoring is completed.

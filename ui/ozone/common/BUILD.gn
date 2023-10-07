@@ -35,7 +35,7 @@ source_set("common") {
     "//ui/ozone:ozone_base",
   ]
   
-  if (product_name == "rk3568") {
+  if (is_ohos && product_name == "rk3568") {
     defines = [ "GL_RK3568" ]
   }
 

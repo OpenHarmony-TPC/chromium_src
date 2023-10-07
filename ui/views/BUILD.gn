@@ -1185,6 +1185,9 @@ test("views_unittests") {
   deps = [
     ":test_support",
     ":views",
+    "//content/public/common",
+    "//content/public/browser:browser",
+    "//cef:libcef_static",
     "//base",
     "//base:i18n",
     "//base/test:test_support",

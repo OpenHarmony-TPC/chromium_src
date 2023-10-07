@@ -56,6 +56,7 @@ class OfflinePageTestArchivePublisher : public OfflinePageArchivePublisher {
   mutable PublishedArchiveId last_removed_id_;
 
   raw_ptr<ArchiveManager> archive_manager_;
+  base::WeakPtrFactory<OfflinePageArchivePublisher> weak_ptr_factory_{this};
 };
 
 }  // namespace offline_pages
