@@ -178,7 +178,7 @@ TEST_F(StructTraitsTest, GpuMemoryBufferHandle) {
   handle2.id = kId;
   handle2.offset = kOffset;
   handle2.stride = kStride;
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OHOS)
   const uint64_t kModifier = 2;
   base::ScopedFD buffer_handle;
   handle2.native_pixmap_handle.modifier = kModifier;

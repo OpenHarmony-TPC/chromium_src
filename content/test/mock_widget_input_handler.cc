@@ -106,6 +106,14 @@ void MockWidgetInputHandler::DispatchEvent(
       std::move(event), std::move(callback)));
 }
 
+#if BUILDFLAG(IS_OHOS)
+void MockWidgetInputHandler::TryStartFling() {
+}
+
+void MockWidgetInputHandler::TryFinishFling() {
+}
+#endif
+
 void MockWidgetInputHandler::DispatchNonBlockingEvent(
     std::unique_ptr<blink::WebCoalescedInputEvent> event) {
   dispatched_messages_.emplace_back(std::make_unique<DispatchedEventMessage>(

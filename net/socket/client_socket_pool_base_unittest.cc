@@ -364,7 +364,7 @@ class TestConnectJob : public ConnectJob {
     return nullptr;
   }
 
-#if defined(HW_BUILD_NETWORK)
+#if BUILDFLAG(IS_OHOS)
   void SetConnectTimeout(int timeout_override) override {}
 #endif
 

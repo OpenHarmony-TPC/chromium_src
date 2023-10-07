@@ -239,6 +239,14 @@ group("gn_all") {
     ]
   }
 
+  if (is_ohos) {
+    deps += [
+      "//chrome/test/chromedriver:chromedriver_unittests",
+      "//components/viz:viz_unittests",
+      "//storage:storage_unittests"
+    ]
+  }
+
   if (is_win || (is_linux && !is_chromeos_lacros) || is_android) {
     deps += [
       "//weblayer/shell:weblayer_shell",
@@ -326,7 +334,7 @@ group("gn_all") {
     deps += [ "//remoting:remoting_all" ]
   }
 
-  if (toolkit_views) {
+  if (toolkit_views || is_ohos) {
     deps += [
       "//ui/views:views_unittests",
       "//ui/views/examples:views_examples",
@@ -776,6 +784,7 @@ group("gn_all") {
       "//ui/display/types",
       "//ui/shell_dialogs:shell_dialogs_unittests",
     ]
+
 
     if (enable_nacl) {
       deps += [ "//native_client/src/trusted/debug_stub:gdb_rsp_unittest" ]

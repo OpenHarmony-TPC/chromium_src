@@ -346,6 +346,8 @@ class PolicyTestCase {
     const std::string os("mac");
 #elif BUILDFLAG(IS_WIN)
     const std::string os("win");
+#elif BUILDFLAG(IS_OHOS)
+    const std::string os("ohos");
 #else
 #error "Unknown platform"
 #endif
