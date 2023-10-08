@@ -448,4 +448,13 @@ void NWebRenderHandler::OnOverscroll(CefRefPtr<CefBrowser> browser,
 void NWebRenderHandler::SetIrregularDragBackground(bool is_irregular_background) {
   is_irregular_drag_background_ = is_irregular_background;
 }
+
+void NWebRenderHandler::OnOverScrollFlingVelocity(CefRefPtr<CefBrowser> browser,
+                                                  const float x,
+                                                  const float y,
+                                                  bool is_fling) {
+}
+
+void NWebRenderHandler::OnOverScrollFlingEnd(CefRefPtr<CefBrowser> browser) {
+}
 }  // namespace OHOS::NWeb
