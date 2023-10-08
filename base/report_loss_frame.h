@@ -31,6 +31,8 @@ class ReportLossFrame {
 
   void SetPageUrl(std::string url);
 
+  void SetVsyncPeriod(int64_t vsync_period);
+
   int64_t GetCurrentTimestampMS();
 
  private:
@@ -45,6 +47,8 @@ class ReportLossFrame {
   int64_t start_time_for_scroll = 0;
 
   int64_t start_time_;
+
+  int64_t vsync_period_;
 
   std::string page_url_;
 

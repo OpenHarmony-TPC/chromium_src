@@ -2,7 +2,6 @@
 #include <chrono>
 #include "ohos_nweb/src/sysevent/event_reporter.h"
 
-constexpr double VSYNC_PERIOD = 16.6;
 constexpr int JANK_STATS_VER = 1;
 
 ReportLossFrame* ReportLossFrame::instance = nullptr;
@@ -28,6 +27,10 @@ void ReportLossFrame::SetPageUrl(std::string url) {
   page_url_ = url;
 }
 
+void ReportLossFrame::SetVsyncPeriod(int64_t vsync_period) {
+  vsync_period_ = vsync_period;
+}
+
 int64_t ReportLossFrame::GetCurrentTimestampMS() {
   auto currentTime = std::chrono::system_clock::now().time_since_epoch();
   return std::chrono::duration_cast<std::chrono::milliseconds>(currentTime)
@@ -40,6 +43,7 @@ void ReportLossFrame::Report() {
   ReportJankStats(start_time_for_scroll, duration, page_url_, jank_stats,
                   JANK_STATS_VER);
   start_time_for_scroll = 0;
+  std::fill(jank_stats.begin(), jank_stats.end(), 0);
 }
 
 void ReportLossFrame::Record() {
@@ -55,13 +59,15 @@ void ReportLossFrame::Record() {
 
   int64_t now = GetCurrentTimestampMS();
   int duration = start_time_ - now;
-  start_time_for_scroll = now;
+  // ns->ms
+  double period = vsync_period_ / 1000000 * 2;
+  start_time_ = now;
 
-  if (duration <= VSYNC_PERIOD) {
+  if (duration <= period) {
     return;
   }
 
-  double loss_frame = duration / VSYNC_PERIOD;
+  double loss_frame = duration / period;
 
   size_t type = JANK_FREQ_EXCEED_FRAME;
   if (loss_frame < 6) {
