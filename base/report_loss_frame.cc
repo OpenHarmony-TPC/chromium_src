@@ -60,10 +60,10 @@ void ReportLossFrame::Record() {
   int64_t now = GetCurrentTimestampMS();
   int duration = start_time_ - now;
   // ns->ms
-  double period = vsync_period_ / 1000000 * 2;
+  double period = vsync_period_ / 1000000;
   start_time_ = now;
 
-  if (duration <= period) {
+  if (duration <= period * 2) {
     return;
   }
 
