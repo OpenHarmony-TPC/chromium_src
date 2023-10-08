@@ -126,10 +126,6 @@
 #endif  // BUILDFLAG(IS_ANDROID)
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
-#if defined(OS_OHOS)
-#include "cef/libcef/browser/net_database/cef_dns_data_base.h"
-#endif
-
 namespace net {
 
 namespace {
@@ -3305,26 +3301,6 @@ int HostResolverManager::Resolve(RequestImpl* request) {
   return ERR_IO_PENDING;
 }
 
-#if defined(OS_OHOS)
-absl::optional<HostCache::Entry> ServeFromPreDns(const std::string& hostname) {
-  TRACE_EVENT1(NetTracingCategory(), "HostResolverManager::ServeFromPreDns", "hostname", hostname);
-  AddressList addr_list = GetAddrList(hostname);
-  if (addr_list.empty()) {
-    return absl::nullopt;
-  }
- 
-  int net_error = OK;
-  if (ContainsIcannNameCollisionIp(addr_list))
-      net_error = ERR_ICANN_NAME_COLLISION;
- 
-  return HostCache::Entry(net_error,
-                          net_error == OK
-                             ? AddressList::CopyWithPort(addr_list, 0)
-                             : AddressList(),
-                          HostCache::Entry::SOURCE_UNKNOWN);
-}
-#endif
-
 HostCache::Entry HostResolverManager::ResolveLocally(
     const JobKey& job_key,
     const IPAddress& ip_address,
@@ -3366,11 +3342,6 @@ HostCache::Entry HostResolverManager::ResolveLocally(
     return HostCache::Entry(ERR_NAME_NOT_RESOLVED,
                             HostCache::Entry::SOURCE_UNKNOWN);
   }
-
-#if defined(OS_OHOS)
- const std::string cache_host_name(GetHostname(job_key.host));
-  CacheHostName(cache_host_name);
-#endif
 
   if (ip_address.IsValid())
     return ResolveAsIP(job_key.query_types, resolve_canonname, ip_address);
@@ -3433,13 +3404,6 @@ HostCache::Entry HostResolverManager::ResolveLocally(
                             [&] { return NetLogResults(resolved.value()); });
     return resolved.value();
   }
-
-#if defined(OS_OHOS)
-  resolved = ServeFromPreDns(cache_host_name);
-  if (resolved) {
-    return resolved.value();
-  }
-#endif
 
   return HostCache::Entry(ERR_DNS_CACHE_MISS, HostCache::Entry::SOURCE_UNKNOWN);
 }
