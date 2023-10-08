@@ -10,7 +10,7 @@ ReportLossFrame::ReportLossFrame() {}
 
 ReportLossFrame* ReportLossFrame::GetInstance() {
   if (instance == nullptr) {
-    return new ReportLossFrame();
+    instance = new ReportLossFrame();
   }
   return instance;
 }
@@ -39,10 +39,10 @@ int64_t ReportLossFrame::GetCurrentTimestampMS() {
 
 void ReportLossFrame::Report() {
   int64_t now = GetCurrentTimestampMS();
-  int duration = start_time_for_scroll - now;
-  ReportJankStats(start_time_for_scroll, duration, page_url_, jank_stats,
+  int duration = start_time_for_scroll_ - now;
+  ReportJankStats(start_time_for_scroll_, duration, page_url_, jank_stats,
                   JANK_STATS_VER);
-  start_time_for_scroll = 0;
+  start_time_for_scroll_ = 0;
   std::fill(jank_stats.begin(), jank_stats.end(), 0);
 }
 
@@ -51,8 +51,8 @@ void ReportLossFrame::Record() {
     return;
   }
 
-  if (start_time_for_scroll == 0) {
-    start_time_for_scroll = GetCurrentTimestampMS();
+  if (start_time_for_scroll_ == 0) {
+    start_time_for_scroll_ = GetCurrentTimestampMS();
     start_time_ = GetCurrentTimestampMS();
     return;
   }

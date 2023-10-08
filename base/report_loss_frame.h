@@ -44,7 +44,7 @@ class ReportLossFrame {
 
   ScrollMode scroll_state_ = ScrollMode::STOP;
 
-  int64_t start_time_for_scroll = 0;
+  int64_t start_time_for_scroll_ = 0;
 
   int64_t start_time_;
 
