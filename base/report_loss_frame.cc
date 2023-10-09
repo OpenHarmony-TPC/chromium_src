@@ -34,16 +34,16 @@ int64_t ReportLossFrame::GetCurrentTimestampMS() {
 }
 
 void ReportLossFrame::Report() {
-  if(!needReport) {
+  if(!need_report_) {
     start_time_for_scroll_ = 0;
     return;
   }
   int64_t now = GetCurrentTimestampMS();
   int duration = start_time_for_scroll_ - now;
-  ReportJankStats(start_time_for_scroll_, duration, jank_stats, JANK_STATS_VER);
+  ReportJankStats(start_time_for_scroll_, duration, jank_stats_, JANK_STATS_VER);
   start_time_for_scroll_ = 0;
-  std::fill(jank_stats.begin(), jank_stats.end(), 0);
-  needReport = false;
+  std::fill(jank_stats_.begin(), jank_stats_.end(), 0);
+  need_report_ = false;
 }
 
 void ReportLossFrame::Record() {
@@ -58,7 +58,7 @@ void ReportLossFrame::Record() {
   }
 
   int64_t now = GetCurrentTimestampMS();
-  int duration = start_time_ - now;
+  int duration = now - start_time_;
   // ns->ms
   double period = vsync_period_ / 1000000;
   start_time_ = now;
@@ -88,6 +88,6 @@ void ReportLossFrame::Record() {
     type = JANK_FREQ_180_FRAME;
   }
 
-  jank_stats[type]++;
-  needReport = true;
+  jank_stats_[type]++;
+  need_report_ = true;
 }

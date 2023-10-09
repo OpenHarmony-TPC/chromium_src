@@ -48,9 +48,9 @@ class ReportLossFrame {
 
   int64_t vsync_period_;
 
-  bool needReport = false;
+  bool need_report_ = false;
 
-  std::vector<uint16_t> jank_stats = std::vector<uint16_t>(0, 8);
+  std::vector<uint16_t> jank_stats_ = std::vector<uint16_t>(8, 0);
 
   static ReportLossFrame* instance;
 };
