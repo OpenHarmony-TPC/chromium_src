@@ -18,6 +18,7 @@
 #include "base/posix/eintr_wrapper.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
+#include "base/system/system_monitor.h"
 #include "build/build_config.h"
 #include "camera_manager_adapter.h"
 #include "media/capture/video/ohos/video_capture_device_ohos.h"
@@ -38,8 +39,7 @@ bool CompareCaptureDevices(const VideoCaptureDeviceInfo& a,
 VideoCaptureDeviceFactoryOHOS::VideoCaptureDeviceFactoryOHOS(
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner)
     : ui_task_runner_(ui_task_runner) {
-  auto status_callback =
-    std::make_shared<VideoCaptureCameraStatusCallbackListenerOHOS>
+  auto status_callback = std::make_shared<VideoCaptureCameraStatusCallbackListenerOHOS>
     (ui_task_runner_, weak_factory_.GetWeakPtr());
   OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().Create(status_callback);
 }
@@ -107,9 +107,22 @@ void VideoCaptureDeviceFactoryOHOS::GetDevicesInfo(
 }
 
 void VideoCaptureDeviceFactoryOHOS::OnCameraStatusChanged(
-    CameraStatusAdapter camera_status) {
+    CameraStatusAdapter camera_status, std::string callback_device_id) {
   DCHECK(thread_checker_.CalledOnValidThread());
-  LOG(INFO) << "camera status changed";
+  LOG(INFO) << "camera status changed, status is " <<camera_status;
+  std::string current_device_Id =OhosAdapterHapler::GetInstance().GetCameraManagerAdapter().
+      GetCurrentDeviceId();
+  LOG(INFO) << "camera status changed, current_device_Id is " <<current_device_Id
+            << ", callback_device_id is " <<callback_device_id;
+  if (camera_status == CameraStatusAdapter::DISAPPEAR) {
+    if (current_device_Id == callback_device_id) {
+        OhosAdapterHelper::GetInstance().GerCameraManagerAdapter().StopSession(CameraStopType::NORMAL);
+    }
+    if(auto* monitor =base::SystemMonitor::Get()){
+      monitor->ProcessDevicesChanged(base::SystemMonitor::DEVTYPE_VIDEO_CAPTURE);
+    }
+  }
+
   if (camera_status == CameraStatusAdapter::AVAILABLE) {
     OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().
       SetCameraStatus(CameraStatusAdapter::AVAILABLE);
@@ -117,7 +130,6 @@ void VideoCaptureDeviceFactoryOHOS::OnCameraStatusChanged(
         IsExistCaptureTask()) {
           return;
     }
-
     OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().
       RestartSession();
   }
