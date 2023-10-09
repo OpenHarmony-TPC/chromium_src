@@ -644,6 +644,11 @@ void GpuChannel::RemoveRoute(int32_t route_id) {
 
 void GpuChannel::ExecuteDeferredRequest(
     mojom::DeferredRequestParamsPtr params) {
+#if BUILDFLAG(IS_OHOS)
+  if (params.get() == nullptr) {
+    return;
+  }
+#endif  // BUILDFLAG(IS_OHOS)
   switch (params->which()) {
 #if BUILDFLAG(IS_ANDROID)
     case mojom::DeferredRequestParams::Tag::kDestroyStreamTexture:
