@@ -37,7 +37,7 @@ class CAPTURE_EXPORT VideoCaptureDeviceFactoryOHOS
   VideoCaptureErrorOrDevice CreateDevice(
       const VideoCaptureDeviceDescriptor& device_descriptor) override;
   void GetDevicesInfo(GetDevicesInfoCallback callback) override;
-  void OnCameraStatusChanged(CameraStatusAdapter camera_statu, std::string callback_device_id);
+  void OnCameraStatusChanged(CameraStatusAdapter camera_status, std::string callback_device_id);
 
  private:
   scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner_;
