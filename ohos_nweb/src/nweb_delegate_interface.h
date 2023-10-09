@@ -195,6 +195,7 @@ class NWebDelegateInterface
   virtual bool GetFavicon(const void** data, size_t& width, size_t& height,
       ImageColorType& colorType, ImageAlphaType& alphaType) = 0;
   virtual void PutNetworkAvailable(bool available) = 0;
+  virtual std::string GetAppTempDir() const = 0;
 
   virtual CefRefPtr<CefClient> GetCefClient() const = 0;
 
