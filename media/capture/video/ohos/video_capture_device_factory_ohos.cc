@@ -118,7 +118,7 @@ void VideoCaptureDeviceFactoryOHOS::OnCameraStatusChanged(
     if ((current_device_Id == callback_device_id) && (camera_status == CameraStatusAdapter::DISAPPEAR)) {
         OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().StopSession(CameraStopType::NORMAL);
     }
-    if(auto* monitor =base::SystemMonitor::Get()){
+    if(auto* monitor = base::SystemMonitor::Get()){
       monitor->ProcessDevicesChanged(base::SystemMonitor::DEVTYPE_VIDEO_CAPTURE);
     }
   }
