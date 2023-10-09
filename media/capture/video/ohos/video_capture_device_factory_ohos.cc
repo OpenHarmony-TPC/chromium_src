@@ -109,13 +109,13 @@ void VideoCaptureDeviceFactoryOHOS::GetDevicesInfo(
 void VideoCaptureDeviceFactoryOHOS::OnCameraStatusChanged(
     CameraStatusAdapter camera_status, std::string callback_device_id) {
   DCHECK(thread_checker_.CalledOnValidThread());
-  LOG(INFO) << "camera status changed, status is " <<camera_status;
+  LOG(INFO) << "camera status changed, status is " << camera_status;
   std::string current_device_Id = OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().
       GetCurrentDeviceId();
-  LOG(INFO) << "camera status changed, current_device_Id is " <<current_device_Id
-            << ", callback_device_id is " <<callback_device_id;
-  if (camera_status == CameraStatusAdapter::DISAPPEAR) {
-    if (current_device_Id == callback_device_id) {
+  LOG(INFO) << "camera status changed, current_device_Id is " << current_device_Id
+            << ", callback_device_id is " << callback_device_id;
+  if ((camera_status == CameraStatusAdapter::DISAPPEAR) || (camera_status == CameraStatusAdapter::APPEAR)) {
+    if ((current_device_Id == callback_device_id) && (camera_status == CameraStatusAdapter::DISAPPEAR)) {
         OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().StopSession(CameraStopType::NORMAL);
     }
     if(auto* monitor =base::SystemMonitor::Get()){
