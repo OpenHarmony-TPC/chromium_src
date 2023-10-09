@@ -23,10 +23,6 @@ void ReportLossFrame::SetScrollState(ScrollMode state) {
   scroll_state_ = state;
 }
 
-void ReportLossFrame::SetPageUrl(std::string url) {
-  page_url_ = url;
-}
-
 void ReportLossFrame::SetVsyncPeriod(int64_t vsync_period) {
   vsync_period_ = vsync_period;
 }
@@ -38,12 +34,16 @@ int64_t ReportLossFrame::GetCurrentTimestampMS() {
 }
 
 void ReportLossFrame::Report() {
+  if(!needReport) {
+    start_time_for_scroll_ = 0;
+    return;
+  }
   int64_t now = GetCurrentTimestampMS();
   int duration = start_time_for_scroll_ - now;
-  ReportJankStats(start_time_for_scroll_, duration, page_url_, jank_stats,
-                  JANK_STATS_VER);
+  ReportJankStats(start_time_for_scroll_, duration, jank_stats, JANK_STATS_VER);
   start_time_for_scroll_ = 0;
   std::fill(jank_stats.begin(), jank_stats.end(), 0);
+  needReport = false;
 }
 
 void ReportLossFrame::Record() {
@@ -53,7 +53,7 @@ void ReportLossFrame::Record() {
 
   if (start_time_for_scroll_ == 0) {
     start_time_for_scroll_ = GetCurrentTimestampMS();
-    start_time_ = GetCurrentTimestampMS();
+    start_time_ = start_time_for_scroll_;
     return;
   }
 
@@ -89,4 +89,5 @@ void ReportLossFrame::Record() {
   }
 
   jank_stats[type]++;
+  needReport = true;
 }

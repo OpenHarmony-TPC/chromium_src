@@ -29,8 +29,6 @@ class ReportLossFrame {
 
   void SetScrollState(ScrollMode state);
 
-  void SetPageUrl(std::string url);
-
   void SetVsyncPeriod(int64_t vsync_period);
 
   int64_t GetCurrentTimestampMS();
@@ -50,7 +48,7 @@ class ReportLossFrame {
 
   int64_t vsync_period_;
 
-  std::string page_url_;
+  bool needReport = false;
 
   std::vector<uint16_t> jank_stats = std::vector<uint16_t>(0, 8);
 
