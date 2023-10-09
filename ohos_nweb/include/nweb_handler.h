@@ -557,7 +557,7 @@ public:
      * @param playing Whether the audio is playing or not.
      */
     virtual void OnAudioStateChanged(bool playing) {}
-    
+
     /**
      * @brief Called when the first content rendering of web page.
      * @param navigationStartTick Absolute navigation start time, as TimeTicks.
@@ -601,6 +601,10 @@ public:
      * screen capture permission.
      */
     virtual void OnScreenCaptureRequest(std::shared_ptr<NWebScreenCaptureAccessRequest> request) {}
+
+    virtual void OnOverScrollFlingVelocity(float xVelocity, float yVelocity, bool isFling) {}
+
+    virtual void OnOverScrollFlingEnd() {}
 };
 }  // namespace OHOS::NWeb
 

@@ -705,6 +705,8 @@ void NWebImpl::SetToken(void* token) {
   nweb_delegate_->SetToken(token);
 }
 
+void NWebImpl::SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) {}
+
 const std::shared_ptr<NWebPreference> NWebImpl::GetPreference() const {
   if (nweb_delegate_ == nullptr) {
     return nullptr;
