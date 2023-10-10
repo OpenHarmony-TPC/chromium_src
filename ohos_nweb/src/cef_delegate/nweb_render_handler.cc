@@ -19,6 +19,8 @@
 #include <cerrno>
 #include <cstring>
 
+#include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "cef/libcef/common/drag_data_impl.h"
 #include "content/public/common/drop_data.h"
@@ -350,6 +352,49 @@ void NWebRenderHandler::OnTouchSelectionChanged(
   }
 }
 
+void NWebRenderHandler::ImageDragForFileUri(CefRefPtr<CefDragData> drag_data) {
+  // default temp dir in sandbox
+  CefString tempPath("/data/storage/el2/base/haps/entry/temp/dragdrop/");
+  auto delegete = delegate_interface_.lock();
+  if (delegete && !delegete->GetAppTempDir().empty()) {
+    tempPath = delegete->GetAppTempDir() + "/dragdrop/";
+  }
+
+  if (base::DirectoryExists(base::FilePath(tempPath))) {
+    if (!base::IsDirectoryEmpty(base::FilePath(tempPath))) {
+      base::DeletePathRecursively(base::FilePath(tempPath));
+    }
+  } else {
+    LOG(INFO) << "DragDrop temp dir not exist, create it";
+  }
+  base::CreateDirectory(base::FilePath(tempPath));
+
+  CefString fileName = drag_data->GetFileName();
+  if (!fileName.ToString().empty()) {
+    CefString fullName(tempPath.ToString() + fileName.ToString());
+    if (base::PathExists(base::FilePath(fullName))) {
+      LOG(INFO) << "DragDrop image file already exist, delete it first";
+      base::DeleteFile(base::FilePath(fullName));
+    }
+
+    const int image_file_size_max = 10 * 1024 * 1024; // 10M
+    if (drag_data->GetImageFileSize() > image_file_size_max) {
+      LOG(WARNING) << "DragDrop The image size exceeds 10MB";
+      return;
+    }
+
+    CefRefPtr<CefStreamWriter> stream(CefStreamWriter::CreateForFile(fullName));
+    size_t size = drag_data->GetFileContents(stream);
+    if (size == drag_data->GetImageFileSize()) {
+      LOG(INFO) << "DragDrop image file write success, size:" << size;
+    } else {
+      LOG(ERROR) << "DragDrop image file write failed";
+    }
+  } else {
+    LOG(INFO) << "DragDrop this is not a image drag, pass";
+  }
+}
+
 // chromium内核上报的拖拽数据
 bool NWebRenderHandler::StartDragging(CefRefPtr<CefBrowser> browser,
                                       CefRefPtr<CefDragData> drag_data,
@@ -360,7 +405,7 @@ bool NWebRenderHandler::StartDragging(CefRefPtr<CefBrowser> browser,
                "dragging callback, operation = "
             << allowed_ops << ", x = " << x << ", y = " << y;
   if (!drag_data && !drag_data->HasImage()) {
-    LOG(ERROR) << "drag data invalid";
+    LOG(ERROR) << "DragDrop drag data invalid";
     return false;
   }
 
@@ -371,6 +416,7 @@ bool NWebRenderHandler::StartDragging(CefRefPtr<CefBrowser> browser,
   auto link_html = drag_data->GetFragmentHtml();
   LOG(INFO) << "DragDrop drag data GetFragmentHtml:" << link_html.ToString();
 
+  ImageDragForFileUri(drag_data);
   CefPoint drag_touch_point(x, y);
 
   std::vector<CefPoint> start_edge {CefPoint(start_selection_handle_.origin.x, start_selection_handle_.origin.y - start_selection_handle_.edge_height),

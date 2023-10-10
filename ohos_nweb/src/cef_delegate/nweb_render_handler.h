@@ -134,6 +134,7 @@ class NWebRenderHandler : public CefRenderHandler {
 
   CefRefPtr<CefDragData> GetDragData();
   void FreePixlMapData();
+  void ImageDragForFileUri(CefRefPtr<CefDragData> drag_data);
 
   float GetVirtualPixelRatio() const { return screen_info_.display_ratio; }
   float GetCefDeviceRatio() const { return cef_device_ratio_; }

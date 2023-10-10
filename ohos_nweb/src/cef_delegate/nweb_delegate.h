@@ -188,6 +188,10 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
     return handler_delegate_;
   }
 
+  std::string GetAppTempDir() const override {
+    return ohos_temp_dir_;
+  }
+  void InitAppTempDir();
   void ClearDragData() const;
   void GetImages(std::shared_ptr<NWebValueCallback<bool>> callback) override;
   void RemoveCache(bool include_disk_files) override;
@@ -247,6 +251,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void OnContextInitializeComplete(const std::string& url, void* windows);
 
  private:
+  std::string ohos_temp_dir_;
   float zoom_in_factor_ = 1.25f;
   float zoom_out_factor_ = 0.8f;
   float default_virtual_pixel_ratio_ = 2.0;
