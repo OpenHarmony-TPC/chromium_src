@@ -354,8 +354,14 @@ void DeviceService::BindSerialPortManager(
 
 void DeviceService::BindTimeZoneMonitor(
     mojo::PendingReceiver<mojom::TimeZoneMonitor> receiver) {
-  if (!time_zone_monitor_)
+  if (!time_zone_monitor_) {
+#if BUILDFLAG(IS_OHOS)
+    time_zone_monitor_ = TimeZoneMonitor::Create();
+#elif
     time_zone_monitor_ = TimeZoneMonitor::Create(file_task_runner_);
+#endif
+  }
+
   time_zone_monitor_->Bind(std::move(receiver));
 }
 

@@ -40,7 +40,10 @@ source_set("time_zone_monitor") {
   }
 
   if (is_linux || is_ohos) {
-    sources += [ "time_zone_monitor_linux.cc" ]
+    sources += [
+      "time_zone_monitor_linux.cc",
+      "time_zone_monitor_ohos.cc",
+    ]
     deps += [ "//build:chromeos_buildflags" ]
   }
 

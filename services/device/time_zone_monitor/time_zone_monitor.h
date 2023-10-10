@@ -55,6 +55,9 @@ class TimeZoneMonitor : public device::mojom::TimeZoneMonitor {
   static std::unique_ptr<TimeZoneMonitor> Create(
       scoped_refptr<base::SequencedTaskRunner> file_task_runner);
 
+  // On OHOS, Monitor get timezone from Time_service subsystem.
+  static std::unique_ptr<TimeZoneMonitor> Create();
+
   TimeZoneMonitor(const TimeZoneMonitor&) = delete;
   TimeZoneMonitor& operator=(const TimeZoneMonitor&) = delete;
   ~TimeZoneMonitor() override;
