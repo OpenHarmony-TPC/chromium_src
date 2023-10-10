@@ -125,6 +125,10 @@ class CC_EXPORT ThreadedInputHandler : public InputHandler,
   bool IsCurrentlyScrolling() const override;
   ActivelyScrollingType GetActivelyScrollingType() const override;
 
+#if BUILDFLAG(IS_OHOS)
+  void HandleScrollUpdateForInternalBeginFrame(const viz::BeginFrameArgs& args) override;
+#endif
+
   // =========== Public Interface
 
   bool CanConsumeDelta(const ScrollState& scroll_state,

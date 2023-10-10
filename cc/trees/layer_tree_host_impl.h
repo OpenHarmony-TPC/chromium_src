@@ -658,6 +658,10 @@ class CC_EXPORT LayerTreeHostImpl : public TileManagerClient,
   virtual void CreatePendingTree();
   virtual void ActivateSyncTree();
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void HandleScrollUpdateForInternalBeginFrame(const viz::BeginFrameArgs& args);
+#endif
+
   // Shortcuts to layers/nodes on the active tree.
   ScrollNode* InnerViewportScrollNode() const;
   ScrollNode* OuterViewportScrollNode() const;

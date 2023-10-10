@@ -1128,6 +1128,10 @@ class CONTENT_EXPORT RenderWidgetHostImpl
 
   raw_ptr<FrameTree> frame_tree_;
 
+#if BUILDFLAG(IS_OHOS)
+  bool send_internal_begin_frame = true;
+#endif
+
   // RenderWidgetHost are either:
   // - Owned by RenderViewHostImpl.
   // - Owned by RenderFrameHost, for local root iframes.

@@ -667,6 +667,12 @@ void Compositor::IssueExternalBeginFrame(
       args, force, std::move(callback));
 }
 
+#if BUILDFLAG(IS_OHOS)
+void Compositor::SendInternalBeginFrame() {
+  context_factory_->SendInternalBeginFrame(frame_sink_id());
+}
+#endif
+
 ThroughputTracker Compositor::RequestNewThroughputTracker() {
   return ThroughputTracker(next_throughput_tracker_id_++,
                            weak_ptr_factory_.GetWeakPtr());

@@ -89,7 +89,9 @@ class SchedulerClient {
 
   // Functions used for reporting animation targeting UMA, crbug.com/758439.
   virtual bool HasInvalidationAnimation() const = 0;
-
+#if BUILDFLAG(IS_OHOS)
+  virtual void HandleScrollUpdateForInternalBeginFrame(const viz::BeginFrameArgs& args) {};
+#endif
  protected:
   virtual ~SchedulerClient() {}
 };

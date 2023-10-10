@@ -221,6 +221,10 @@ class VIZ_HOST_EXPORT HostFrameSinkManager
     return debug_renderer_settings_;
   }
 
+#if BUILDFLAG(IS_OHOS)
+  void SendInternalBeginFrame(const FrameSinkId& id);
+#endif
+
  private:
   friend class HostFrameSinkManagerTest;
   friend class HostFrameSinkManagerTestApi;

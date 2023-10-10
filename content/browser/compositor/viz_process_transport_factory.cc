@@ -180,6 +180,12 @@ void VizProcessTransportFactory::ConnectHostFrameSinkManager() {
   }
 }
 
+#if BUILDFLAG(IS_OHOS)
+void VizProcessTransportFactory::SendInternalBeginFrame(const viz::FrameSinkId& id) {
+  GetHostFrameSinkManager()->SendInternalBeginFrame(id);
+}
+#endif
+
 void VizProcessTransportFactory::CreateLayerTreeFrameSink(
     base::WeakPtr<ui::Compositor> compositor) {
 #if BUILDFLAG(IS_WIN)

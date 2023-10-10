@@ -390,6 +390,10 @@ void HostFrameSinkManager::OnVsync(uint32_t client_id, uint32_t sink_id) {
     data.client->OnVsync();
   }
 }
+
+void HostFrameSinkManager::SendInternalBeginFrame(const FrameSinkId& id) {
+  frame_sink_manager_->SendInternalBeginFrame(id);
+}
 #endif
 
 uint32_t HostFrameSinkManager::CacheBackBufferForRootSink(

@@ -44,6 +44,17 @@ ExternalBeginFrameSourceOHOS::ExternalBeginFrameSourceOHOS(
       base::ThreadTaskRunnerHandle::Get(), weak_factory_.GetWeakPtr());
 }
 
+void ExternalBeginFrameSourceOHOS::SendInternalBeginFrame() {
+  TRACE_EVENT0("viz", "ExternalBeginFrameSourceOHOS::SendInternalBeginFrame");
+  base::TimeDelta vsync_period(base::Nanoseconds(vsync_period_));
+  base::TimeTicks frame_time = base::TimeTicks::Now();
+  auto begin_frame_args = begin_frame_args_generator_.GenerateBeginFrameArgs(
+      source_id(), frame_time, last_dead_line_, vsync_period);
+
+  begin_frame_args.internal_frame = true;
+  OnBeginFrame(begin_frame_args);
+}
+
 ExternalBeginFrameSourceOHOS::~ExternalBeginFrameSourceOHOS() {
   LOG(INFO) << "ExternalBeginFrameSourceOHOS destructor!!!";
   SetEnabled(false);
@@ -89,6 +100,7 @@ void ExternalBeginFrameSourceOHOS::OnVSyncImpl(int64_t timestamp,
   base::TimeDelta vsync_period(base::Nanoseconds(vsync_period_));
   base::TimeTicks frame_time = base::TimeTicks() + base::Nanoseconds(timestamp);
   base::TimeTicks deadline = frame_time + vsync_period;
+  last_dead_line_ = deadline;
   TRACE_EVENT2("viz", "ExternalBeginFrameSourceOHOS::OnVSyncImpl", "frame_time",
                frame_time, "deadline", deadline);
   auto begin_frame_args = begin_frame_args_generator_.GenerateBeginFrameArgs(

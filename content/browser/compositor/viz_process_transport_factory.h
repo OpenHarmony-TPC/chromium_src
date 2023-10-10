@@ -71,6 +71,9 @@ class VizProcessTransportFactory : public ui::ContextFactory,
       override;
   scoped_refptr<viz::RasterContextProvider>
   SharedMainThreadRasterContextProvider() override;
+#if BUILDFLAG(IS_OHOS)
+  void SendInternalBeginFrame(const viz::FrameSinkId& id) override;
+#endif
 
   void RemoveCompositor(ui::Compositor* compositor) override;
   gpu::GpuMemoryBufferManager* GetGpuMemoryBufferManager() override;
