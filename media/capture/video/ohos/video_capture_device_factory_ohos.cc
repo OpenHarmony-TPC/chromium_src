@@ -109,7 +109,6 @@ void VideoCaptureDeviceFactoryOHOS::GetDevicesInfo(
 void VideoCaptureDeviceFactoryOHOS::OnCameraStatusChanged(
     CameraStatusAdapter camera_status, std::string callback_device_id) {
   DCHECK(thread_checker_.CalledOnValidThread());
-  LOG(INFO) << "camera status changed, status is " << camera_status;
   std::string current_device_Id = OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().
       GetCurrentDeviceId();
   LOG(INFO) << "camera status changed, current_device_Id is " << current_device_Id
