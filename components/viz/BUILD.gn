@@ -18,6 +18,7 @@ viz_test("viz_unittests") {
   deps = [
     "//base",
     "//base/test:test_support",
+    "//cef:libcef_static",
     "//components/viz/client:unit_tests",
     "//components/viz/common:unit_tests",
     "//components/viz/host:unit_tests",
@@ -25,6 +26,7 @@ viz_test("viz_unittests") {
     "//components/viz/test:test_suite",
     "//components/viz/test:test_support",
     "//components/viz/test:unit_tests",
+    "//content/public/browser:browser",
     "//mojo/core/embedder",
   ]
 

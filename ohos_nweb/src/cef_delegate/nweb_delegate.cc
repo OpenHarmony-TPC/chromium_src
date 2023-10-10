@@ -257,6 +257,24 @@ bool NWebDelegate::HasBackgroundColorWithInit(int32_t& backgroundColor) {
   return false;
 }
 
+void NWebDelegate::InitAppTempDir() {
+  for (int i = 0; i < argc_; i++) {
+    if (argv_[i] == nullptr) {
+      continue;
+    }
+
+    if (!strncmp(argv_[i], "--ohos-temp-dir=", strlen("--ohos-temp-dir="))) {
+      const char* value = argv_[i] + strlen("--ohos-temp-dir=");
+      ohos_temp_dir_ = value;
+      LOG(INFO) << "DrapDrop InitAppTempDir --ohos-temp-dir=" << ohos_temp_dir_.c_str();
+      return;
+    }
+  }
+
+  // default temp dir
+  ohos_temp_dir_ = "/data/storage/el2/base/haps/entry/temp";
+}
+
 bool NWebDelegate::Init(bool is_enhance_surface,
                         void* window,
                         bool popup,
@@ -267,6 +285,9 @@ bool NWebDelegate::Init(bool is_enhance_surface,
     // background color should set when init in case of first white screen flash
     preference_delegate_->SetBackgroundColor(backgroundColor);
   }
+
+  InitAppTempDir();
+
   find_delegate_ = std::make_shared<NWebFindDelegate>();
   is_enhance_surface_ = is_enhance_surface;
   display_manager_adapter_ =

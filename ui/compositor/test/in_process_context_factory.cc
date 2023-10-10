@@ -192,6 +192,16 @@ class InProcessContextFactory::PerCompositorData
   void PreserveChildSurfaceControls() override {}
   void SetSwapCompletionCallbackEnabled(bool enabled) override {}
 #endif
+#if BUILDFLAG(IS_OHOS)
+  bool SetShouldFrameSubmissionBeforeDraw(bool should) override {
+    return true;
+  }
+
+  void SetShouldFrameSubmissionBeforeDraw(bool should, SetShouldFrameSubmissionBeforeDrawCallback callback) override {
+  }
+  void SetCurrentFrameSinkId(
+    const viz::FrameSinkId& frame_sink_id) override {}
+#endif
 
   void SetDelegatedInkPointRenderer(
       mojo::PendingReceiver<gfx::mojom::DelegatedInkPointRenderer> receiver)

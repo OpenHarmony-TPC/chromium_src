@@ -202,6 +202,9 @@ void CheckUserAgentStringOrdering(bool mobile_device) {
   ASSERT_EQ(2u, pieces.size());
   ASSERT_EQ("X11", pieces[0]);
   ASSERT_EQ("Fuchsia", pieces[1]);
+#elif BUILDFLAG(IS_OHOS)
+  ASSERT_EQ(2u, pieces.size());
+  ASSERT_EQ("OpenHarmony 4", pieces[0]);
 #else
 #error Unsupported platform
 #endif

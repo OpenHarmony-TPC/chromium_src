@@ -38,6 +38,9 @@ class MockTouchHandleDrawable : public TouchHandleDrawable {
                       bool mirror_horizontal) override {}
   void SetOrigin(const gfx::PointF& origin) override {}
   void SetAlpha(float alpha) override {}
+#if BUILDFLAG(IS_OHOS)
+  void SetEdge(const gfx::PointF& top, const gfx::PointF& bottom) override {}
+#endif
   gfx::RectF GetVisibleBounds() const override {
     return *intersects_rect_ ? gfx::RectF(-1000, -1000, 2000, 2000)
                              : gfx::RectF(-1000, -1000, 0, 0);

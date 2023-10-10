@@ -2229,14 +2229,19 @@ TEST(CanonicalCookieTest, SecureCookiePrefix) {
       {CookieInclusionStatus::EXCLUDE_INVALID_PREFIX}));
 
   // Hidden __Secure- prefixes should be rejected.
-  EXPECT_FALSE(CanonicalCookie::Create(https_url, "=__Secure-A=B; Secure",
-                                       creation_time, server_time, &status));
+#if !BUILDFLAG(IS_OHOS)
+    EXPECT_FALSE(CanonicalCookie::Create(https_url, "=__Secure-A=B; Secure",
+                                         creation_time, server_time, &status));
+#endif // !BUILDFLAG(IS_OHOS)
+
   EXPECT_TRUE(status.HasExactlyExclusionReasonsForTesting(
       {CookieInclusionStatus::EXCLUDE_INVALID_PREFIX}));
 
   // While tricky, this isn't considered hidden and is fine.
+#if !BUILDFLAG(IS_OHOS)
   EXPECT_TRUE(CanonicalCookie::Create(https_url, "A=__Secure-A=B; Secure",
                                       creation_time, server_time, &status));
+#endif // !BUILDFLAG(IS_OHOS)
 }
 
 TEST(CanonicalCookieTest, HostCookiePrefix) {
@@ -2323,6 +2328,7 @@ TEST(CanonicalCookieTest, HostCookiePrefix) {
       server_time, absl::nullopt /* cookie_partition_key */));
 
   // Hidden __Host- prefixes should be rejected.
+#if !BUILDFLAG(IS_OHOS)
   EXPECT_FALSE(CanonicalCookie::Create(https_url,
                                        "=__Host-A=B; Path=/; Secure;",
                                        creation_time, server_time, &status));
@@ -2333,6 +2339,7 @@ TEST(CanonicalCookieTest, HostCookiePrefix) {
   EXPECT_TRUE(CanonicalCookie::Create(https_url,
                                       "A=__Host-A=B; Path=/; Secure;",
                                       creation_time, server_time, &status));
+#endif // #if !BUILDFLAG(IS_OHOS)
 }
 
 TEST(CanonicalCookieTest, CanCreateSecureCookiesFromAnyScheme) {
@@ -3409,7 +3416,7 @@ TEST(CanonicalCookieTest, CreateSanitizedCookie_Logic) {
   EXPECT_TRUE(status.IsInclude());
 
   // Cookies with hidden prefixes should be rejected.
-
+#if !BUILDFLAG(IS_OHOS)
   EXPECT_FALSE(CanonicalCookie::CreateSanitizedCookie(
       GURL("https://www.foo.com"), "", "__Host-A=B", "", "/", two_hours_ago,
       one_hour_from_now, one_hour_ago, true, false,
@@ -3440,6 +3447,7 @@ TEST(CanonicalCookieTest, CreateSanitizedCookie_Logic) {
       CookieSameSite::NO_RESTRICTION, CookiePriority::COOKIE_PRIORITY_DEFAULT,
       false /*same_party*/, &status));
   EXPECT_TRUE(status.IsInclude());
+#endif // !BUILDFLAG(IS_OHOS)
 
   // SameParty attribute requires Secure and forbids SameSite=Strict.
   EXPECT_TRUE(CanonicalCookie::CreateSanitizedCookie(

@@ -49,7 +49,7 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
   bool vsync_notification_enabled_;
 
   std::unique_ptr<VSyncUserData> user_data_;
-  std::unique_ptr<OHOS::NWeb::VSyncAdapter> vsync_adapter_;
+  OHOS::NWeb::VSyncAdapter& vsync_adapter_;
 
   FrameSinkId frame_sink_id_;
   const raw_ptr<FrameSinkManagerImpl> frame_sink_manager_;

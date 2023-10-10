@@ -6,6 +6,8 @@
 #define CONTENT_PUBLIC_TEST_FAKE_LOCAL_FRAME_H_
 
 #include "build/build_config.h"
+#include "content/browser/renderer_host/render_frame_host_impl.h"
+#include "content/public/browser/render_frame_host.h"
 #include "mojo/public/cpp/bindings/associated_receiver_set.h"
 #include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -71,6 +73,11 @@ class FakeLocalFrame : public blink::mojom::LocalFrame {
       blink::mojom::ResourceTimingInfoPtr,
       const std::string& server_timing_value) override;
   void BeforeUnload(bool is_reload, BeforeUnloadCallback callback) override;
+#if BUILDFLAG(IS_OHOS)
+  void GetImageFromCache(const std::string& url,
+                         content::RenderFrameHost::ImageCacheCallback callback) override;
+#endif
+
   void MediaPlayerActionAt(const gfx::Point& location,
                            blink::mojom::MediaPlayerActionPtr action) override;
   void PluginActionAt(const gfx::Point& location,

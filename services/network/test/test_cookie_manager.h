@@ -64,7 +64,10 @@ class TestCookieManager : public network::mojom::CookieManager {
       SetStorageAccessGrantSettingsCallback callback) override {}
 
   void DispatchCookieChange(const net::CookieChangeInfo& change);
-
+  void SetCanonicalCookieSync(const ::net::CanonicalCookie& cookie, const ::GURL& source_url, const ::net::CookieOptions& cookie_options, SetCanonicalCookieSyncCallback callback) override {}
+  void GetCookieListSync(const ::GURL& url, const ::net::CookieOptions& cookie_options, const ::net::CookiePartitionKeyCollection& cookie_partition_key_collection, GetCookieListSyncCallback callback) override {}
+  void DeleteCookiesSync(network::mojom::CookieDeletionFilterPtr filter, DeleteCookiesSyncCallback callback) override {}
+  void GetAllCookiesSync(GetAllCookiesSyncCallback callback) override {};
  private:
   // List of observers receiving cookie change notifications.
   std::vector<mojo::Remote<network::mojom::CookieChangeListener>>

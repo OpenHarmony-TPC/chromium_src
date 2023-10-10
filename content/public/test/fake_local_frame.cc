@@ -49,6 +49,11 @@ void FakeLocalFrame::NotifyUserActivation(
 
 void FakeLocalFrame::NotifyVirtualKeyboardOverlayRect(const gfx::Rect&) {}
 
+#if BUILDFLAG(IS_OHOS)
+void FakeLocalFrame::GetImageFromCache(const std::string& url,
+                                            content::RenderFrameHost::ImageCacheCallback callback) {}
+#endif
+
 void FakeLocalFrame::AddMessageToConsole(
     blink::mojom::ConsoleMessageLevel level,
     const std::string& message,

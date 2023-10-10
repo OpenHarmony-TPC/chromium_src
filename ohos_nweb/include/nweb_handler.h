@@ -574,7 +574,7 @@ public:
      * @param playing Whether the audio is playing or not.
      */
     virtual void OnAudioStateChanged(bool playing) {}
-    
+
     /**
      * @brief Called when the first content rendering of web page.
      * @param navigationStartTick Absolute navigation start time, as TimeTicks.
@@ -625,6 +625,9 @@ public:
      * @param ActivityType it can be form, media, or audio
      */
     virtual void OnActivityStateChanged(int state, ActivityType type) {}
+    virtual void OnOverScrollFlingVelocity(float xVelocity, float yVelocity, bool isFling) {}
+
+    virtual void OnOverScrollFlingEnd() {}
 };
 }  // namespace OHOS::NWeb
 

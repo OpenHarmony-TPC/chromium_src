@@ -29,6 +29,7 @@ test("services_unittests") {
     "//services/network:tests",
     "//services/network/public/cpp:tests",
     "//services/test:run_all_unittests",
+    "//cef:libcef_static",
   ]
 
   if (!is_ios) {
