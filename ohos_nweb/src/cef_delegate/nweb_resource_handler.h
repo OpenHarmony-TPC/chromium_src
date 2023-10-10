@@ -43,6 +43,10 @@ class NWebResourceHandler : public CefResourceHandler {
                           int64& response_length,
                           CefString& redirectUrl) override;
 
+  bool Skip(int64 bytes_to_skip,
+            int64& bytes_skipped,
+            CefRefPtr<CefResourceSkipCallback> callback) override;
+
   void Cancel() override;
   /* CefResourceHandler method end */
 
@@ -56,6 +60,7 @@ class NWebResourceHandler : public CefResourceHandler {
   bool ReadFileData(void* data_out,
             int bytes_to_read,
             int& bytes_read);
+  bool ReadResourceDataByHap();
   bool ReadResourceData(void* data_out,
             int bytes_to_read,
             int& bytes_read);
