@@ -141,6 +141,10 @@ void NWebRenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser,
 
 void NWebRenderHandler::SetScreenInfo(const NWebScreenInfo& screen_info) {
   screen_info_ = screen_info;
+  auto delegete = delegate_interface_.lock();
+  if (delegete) {
+    delegete->SetVirtualPixelRatio(screen_info_.display_ratio);
+  }
 }
 
 bool NWebRenderHandler::GetScreenInfo(CefRefPtr<CefBrowser> browser,

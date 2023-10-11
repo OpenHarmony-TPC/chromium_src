@@ -229,6 +229,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void NotifyPopupWindowResult(bool result) override;
   void SetWindowId(uint32_t window_id) override;
   void SetToken(void* token) override;
+  void SetVirtualPixelRatio(float ratio) override;
 
  public:
   int argc_;
@@ -244,7 +245,6 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   const CefRefPtr<CefBrowser> GetBrowser() const;
   void ConvertNWebMsgToCefValue(std::shared_ptr<NWebMessage> data, CefRefPtr<CefValue> message);
   void RequestVisitedHistory();
-  void SetVirtualPixelRatio(float ratio);
   bool GetCertChainDerDataInner(CefRefPtr<CefX509Certificate> cert,
                                 std::vector<std::string>& certChainData, bool isSingleCert);
   bool HasBackgroundColorWithInit(int32_t& backgroundColor);
