@@ -163,6 +163,11 @@ enum class MediaPlayingState {
     END_OF_STREAM,
 };
 
+enum class FormState {
+    kHadInteraction,
+    kNoInteraction,
+};
+
 enum class ActivityType {
     VIDEO = 0,
     AUDIO,
@@ -618,6 +623,10 @@ public:
      * screen capture permission.
      */
     virtual void OnScreenCaptureRequest(std::shared_ptr<NWebScreenCaptureAccessRequest> request) {}
+    
+    virtual void OnOverScrollFlingVelocity(float xVelocity, float yVelocity, bool isFling) {}
+
+    virtual void OnOverScrollFlingEnd() {}
 
     /**
      * @brief Called when the media or form state on the web page changed.
@@ -625,9 +634,6 @@ public:
      * @param ActivityType it can be form, media, or audio
      */
     virtual void OnActivityStateChanged(int state, ActivityType type) {}
-    virtual void OnOverScrollFlingVelocity(float xVelocity, float yVelocity, bool isFling) {}
-
-    virtual void OnOverScrollFlingEnd() {}
 };
 }  // namespace OHOS::NWeb
 

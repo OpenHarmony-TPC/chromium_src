@@ -473,6 +473,10 @@ CefRefPtr<CefKeyboardHandler> NWebHandlerDelegate::GetKeyboardHandler() {
 CefRefPtr<CefPrintHandler> NWebHandlerDelegate::GetPrintHandler() {
   return this;
 }
+
+CefRefPtr<CefFormHandler> NWebHandlerDelegate::GetFormHandler() {
+  return this;
+}
 /* CefClient methods end */
 
 /* CefLifeSpanHandler methods begin */
@@ -1512,6 +1516,17 @@ bool NWebHandlerDelegate::OnSetFocus(CefRefPtr<CefBrowser> browser,
   return false;
 }
 /* CefFocusHandler method end */
+
+/* CefFormHandler method begin */
+void NWebHandlerDelegate::OnFormEditingStateChanged(CefRefPtr<CefBrowser> browser, bool is_editing) {
+  LOG(INFO) << "NWebHandlerDelegate::OnFormEditingStateChanged, is_editing: " << is_editing << "nweb_id: " << nweb_id_;
+  if (nweb_handler_ != nullptr) {
+    FormState state = is_editing ? FormState::kHadInteraction : FormState::kNoInteraction;
+    nweb_handler_->OnActivityStateChanged(static_cast<int>(state), ActivityType::FORM);
+  }
+}
+/* CefFormHandler method end */
+
 
 /* CefPermissionRequest method begin */
 void NWebHandlerDelegate::OnGeolocationShow(const CefString& origin) {

@@ -19,6 +19,7 @@
 #include "cef/include/base/cef_lock.h"
 #include "cef/include/cef_client.h"
 #include "cef/include/cef_dialog_handler.h"
+#include "cef/include/cef_form_handler.h"
 #include "cef/include/cef_jsdialog_handler.h"
 #include "cef/include/cef_media_handler.h"
 #include "cef/include/cef_permission_request.h"
@@ -63,7 +64,8 @@ class NWebHandlerDelegate : public CefClient,
                             public CefKeyboardHandler,
                             public CefMediaHandler,
                             public CefCookieAccessFilter,
-                            public CefPrintHandler {
+                            public CefPrintHandler,
+                            public CefFormHandler {
  public:
   static CefRefPtr<NWebHandlerDelegate> Create(
       std::shared_ptr<NWebPreferenceDelegate> preference_delegate,
@@ -127,6 +129,7 @@ class NWebHandlerDelegate : public CefClient,
                              const CefString& method,
                              const CefString& object_name,
                              CefRefPtr<CefListValue> result) override;
+  CefRefPtr<CefFormHandler> GetFormHandler() override;
   // #if defined(OHOS_NWEB_EX)
   void ShowPasswordDialog(bool is_update, const CefString& url) override;
   void OnShowAutofillPopup(
@@ -328,6 +331,10 @@ class NWebHandlerDelegate : public CefClient,
   /* CefFocusHandler method begin */
   bool OnSetFocus(CefRefPtr<CefBrowser> browser, FocusSource source) override;
   /* CefFocusHandler method end */
+
+  /* CefFormHandler method begin */
+  void OnFormEditingStateChanged(CefRefPtr<CefBrowser> browser, bool is_editing) override;
+  /* CefFormHandler method end */
 
   /* CefPermissionRequest method begin */
   void OnGeolocationShow(const CefString& origin) override;
