@@ -213,6 +213,7 @@ class NWebDelegateInterface
   virtual void PrefetchPage(
       std::string& url,
       std::map<std::string, std::string> additionalHttpHeaders) = 0;
+  virtual void SetVirtualPixelRatio(float ratio) = 0;
 
 #if defined (OHOS_NWEB_EX)
   virtual void SetForceEnableZoom(bool forceEnableZoom) = 0;
