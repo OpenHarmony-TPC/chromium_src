@@ -128,15 +128,13 @@ bool NWebResourceHandler::ReadFileData(void* data_out, int bytes_to_read, int& b
   return true;
 }
 
-bool NWebResourceHandler::ReadResourceData(void* data_out, int bytes_to_read, int& bytes_read)
-{
-  bool has_data = false;
+bool NWebResourceHandler::ReadResourceDataByHap() {
   if (resource_data_len_ == 0) {
     std::string resourceUrlHead("resource:/RAWFILE");
     std::string resourceUrl = response_->ResponseResourceUrl();
     if (resourceUrl.find(resourceUrlHead) == std::string::npos) {
       LOG(ERROR) << "intercept find resource head fail : " << resourceUrl;
-      return has_data;
+      return false;
     }
     resourceUrl.erase(0, resourceUrlHead.length());
     std::string resourcePath = "resources/rawfile" + resourceUrl;
@@ -144,9 +142,17 @@ bool NWebResourceHandler::ReadResourceData(void* data_out, int bytes_to_read, in
     std::string hapPath = base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(switches::kOhosHapPath);
     auto resourceInstance = OHOS::NWeb::OhosAdapterHelper::GetInstance().GetResourceAdapter(hapPath);
     if (!resourceInstance->GetRawFileData(resourcePath, resource_data_len_, resource_data_, false)) {
-        LOG(ERROR) << "intercept Read Resource path fail : " << resourcePath;
-        return has_data;
+      LOG(ERROR) << "intercept Read Resource path fail : " << resourcePath;
+      return false;
     }
+  }
+  return true;
+}
+
+bool NWebResourceHandler::ReadResourceData(void* data_out, int bytes_to_read, int& bytes_read) {
+  bool has_data = false;
+  if (ReadResourceDataByHap() == false) {
+    return has_data;
   }
   unsigned char* dataPtr = reinterpret_cast<unsigned char*>(resource_data_.get());
   if (resource_data_offset_ < resource_data_len_) {
@@ -180,6 +186,20 @@ bool NWebResourceHandler::Read(void* data_out,
   return false;
 }
 
+bool NWebResourceHandler::Skip(int64 bytes_to_skip,
+                               int64& bytes_skipped,
+                               CefRefPtr<CefResourceSkipCallback> callback) {
+  if (response_ == nullptr ||
+      response_->ResponseDataType() != NWebResponseDataType::NWEB_RESOURCE_URL_TYPE) {
+    return CefResourceHandler::Skip(bytes_to_skip, bytes_skipped, callback);
+  }
+  resource_data_offset_ += bytes_to_skip;
+  bytes_skipped = resource_data_offset_;
+  LOG(DEBUG) << "intercept Skip bytes_to_skip: " << bytes_to_skip
+             << ", resource_data_offset: " << resource_data_offset_;
+  return true;
+}
+
 void NWebResourceHandler::GetResponseHeaders(CefRefPtr<CefResponse> response,
                                              int64& response_length,
                                              CefString& redirectUrl) {
@@ -197,6 +217,12 @@ void NWebResourceHandler::GetResponseHeaders(CefRefPtr<CefResponse> response,
   }
   if (response_->ResponseDataType() == NWebResponseDataType::NWEB_STRING_TYPE) {
     response_length = data_.length();
+  } else if (response_->ResponseDataType() == NWebResponseDataType::NWEB_RESOURCE_URL_TYPE) {
+    if (ReadResourceDataByHap() == false) {
+      response_length = -1;
+      return;
+    }
+    response_length = resource_data_len_ - resource_data_offset_;
   } else {
     response_length = -1;
   }
@@ -207,6 +233,8 @@ void NWebResourceHandler::Cancel() {
   if (response_ == nullptr) {
     return;
   }
+  resource_data_offset_ = 0;
+  resource_data_len_ = 0;
   int fd = response_->ResponseFileHandle();
   if (fd <= 0) {
     return;

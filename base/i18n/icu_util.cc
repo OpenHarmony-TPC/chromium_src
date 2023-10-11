@@ -29,6 +29,8 @@
 #include "third_party/icu/source/common/unicode/putil.h"
 #include "third_party/icu/source/common/unicode/udata.h"
 #include "third_party/icu/source/common/unicode/utrace.h"
+#include "third_party/icu/source/common/unicode/unistr.h"
+#include "third_party/icu/source/i18n/unicode/timezone.h"
 
 #if BUILDFLAG(IS_ANDROID)
 #include "base/android/apk_assets.h"
@@ -373,7 +375,19 @@ bool InitializeICUFromDataFile() {
 // On some platforms, the time zone must be explicitly initialized zone rather
 // than relying on ICU's internal initialization.
 void InitializeIcuTimeZone() {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_OHOS)
+  // On OHOS, we can't use the method of obtaining the timezone as Linux, because
+  // it detects from the system file which render process doesn't have enough
+  // permission. On OHOS, we can get from OH TimeService Subsystem.
+  LOG(DEBUG) << "InitializeIcuTimeZone in OHOS.";
+
+  auto tzid = OHOS::NWeb::OhosAdapterHelper::GetInstance().CreateDateTimeFormatAdapter()->GetTimezone();
+
+  icu::TimeZone::createDefault();
+  std::unique_ptr<icu::TimeZone> timezone(icu::TimeZone::createTimeZone(
+    icu::UnicodeString::fromUTF8(tzid)));
+  icu::TimeZone::adoptDefault(timezone.release());
+#elif BUILDFLAG(IS_ANDROID)
   // On Android, we can't leave it up to ICU to set the default time zone
   // because ICU's time zone detection does not work in many time zones (e.g.
   // Australia/Sydney, Asia/Seoul, Europe/Paris ). Use JNI to detect the host

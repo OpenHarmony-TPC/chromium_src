@@ -68,6 +68,12 @@ class NWebDragDataImpl : public NWebDragData {
 
   bool IsSingleImageContent() override;
 
+  bool SetFileUri(std::string& uri) override;
+
+  std::string GetImageFileName() override;
+
+  void ClearImageFileNames() override;
+
   CefRefPtr<CefDragData> GetDragData() {
     return drag_data_;
   }

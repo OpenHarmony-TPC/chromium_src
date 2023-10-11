@@ -2444,6 +2444,7 @@ test("content_unittests") {
     "//cc",
     "//cc:test_support",
     "//cc/mojom",
+    "//cef:libcef_static",
     "//components/cbor",
     "//components/network_session_configurator/browser",
     "//components/network_session_configurator/common",

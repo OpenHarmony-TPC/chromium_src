@@ -11,7 +11,9 @@
 #include "content/public/common/content_client.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/events/gestures/blink/web_gesture_curve_impl.h"
-
+#if BUILDFLAG(IS_OHOS)
+#include "base/report_loss_frame.h"
+#endif
 using blink::WebInputEvent;
 using blink::WebGestureEvent;
 
@@ -137,6 +139,9 @@ bool FlingController::ObserveAndMaybeConsumeGestureEvent(
   if (gesture_event.event.GetType() ==
       WebInputEvent::Type::kGestureFlingStart) {
     ProcessGestureFlingStart(gesture_event);
+#if BUILDFLAG(IS_OHOS)
+  ReportLossFrame::GetInstance()->SetScrollState(ScrollMode::START);
+#endif
     return true;
   }
 
@@ -362,6 +367,10 @@ void FlingController::EndCurrentFling(base::TimeTicks current_time) {
   last_progress_time_ = base::TimeTicks();
 
   GenerateAndSendFlingEndEvents(current_time);
+#if BUILDFLAG(IS_OHOS)
+  ReportLossFrame::GetInstance()->SetScrollState(ScrollMode::STOP);
+  ReportLossFrame::GetInstance()->Report();
+#endif
   current_fling_parameters_ = ActiveFlingParameters();
 
   if (fling_curve_) {

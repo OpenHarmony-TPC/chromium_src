@@ -47,6 +47,12 @@ class MockDisplayClient : public mojom::DisplayClient {
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
   MOCK_METHOD1(DidCompleteSwapWithNewSize, void(const gfx::Size&));
 #endif
+void UseProxyOutputDevice(UseProxyOutputDeviceCallback callback) override {}
+void CreateLayeredWindowUpdater(
+      mojo::PendingReceiver<mojom::LayeredWindowUpdater> receiver) override {}
+#if BUILDFLAG(IS_OHOS)
+  void DidCompleteSwapWithNewSizeOHOS(const gfx::Size& size) override {}
+#endif
 
  private:
   mojo::Receiver<mojom::DisplayClient> receiver_{this};

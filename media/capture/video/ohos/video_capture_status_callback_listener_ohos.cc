@@ -19,11 +19,12 @@ VideoCaptureCameraStatusCallbackListenerOHOS::VideoCaptureCameraStatusCallbackLi
 VideoCaptureCameraStatusCallbackListenerOHOS::~VideoCaptureCameraStatusCallbackListenerOHOS() {}
 
 void VideoCaptureCameraStatusCallbackListenerOHOS::OnCameraStatusChanged(
-    CameraStatusAdapter camera_status) {
+    CameraStatusAdapter camera_status,
+    std::string callback_device_id) {
   task_runner_->PostTask(
       FROM_HERE,
       base::BindOnce(&VideoCaptureDeviceFactoryOHOS::OnCameraStatusChanged, capture_device_factory_,
-                     camera_status));
+                     camera_status, callback_device_id));
 }
 
 }  // namespace media

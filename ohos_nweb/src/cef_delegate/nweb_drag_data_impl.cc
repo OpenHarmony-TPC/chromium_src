@@ -15,6 +15,8 @@
 #include "nweb_drag_data_impl.h"
 
 #include <cmath>
+#include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "cef/libcef/common/drag_data_impl.h"
 #include "content/public/common/drop_data.h"
@@ -566,5 +568,40 @@ bool NWebDragDataImpl::IsSingleImageContent() {
   }
 
   return false;
+}
+
+bool NWebDragDataImpl::SetFileUri(std::string& uri) {
+  if (!drag_data_) {
+    return false;
+  }
+  base::FilePath fPath(uri);
+  if (drag_data_->IsReadOnly()) {
+    drag_data_->SetReadOnly(false);
+    drag_data_->AddFile(uri, fPath.BaseName().AsUTF8Unsafe());
+    drag_data_->SetReadOnly(true);
+  } else {
+    drag_data_->AddFile(uri, fPath.BaseName().AsUTF8Unsafe());
+  }
+
+  return true;
+}
+
+std::string NWebDragDataImpl::GetImageFileName() {
+  if (drag_data_) {
+    return drag_data_->GetFileName();
+  }
+  return "";
+}
+
+void NWebDragDataImpl::ClearImageFileNames() {
+  if (drag_data_) {
+    if (drag_data_->IsReadOnly()) {
+      drag_data_->SetReadOnly(false);
+      drag_data_->ClearFileNames();
+      drag_data_->SetReadOnly(true);
+    } else {
+      drag_data_->ClearFileNames();
+    }
+  }
 }
 }  // namespace OHOS::NWeb

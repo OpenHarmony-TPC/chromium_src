@@ -7,6 +7,9 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "ohos_adapter_helper.h"
+#if BUILDFLAG(IS_OHOS)
+#include "base/report_loss_frame.h"
+#endif
 
 namespace viz {
 using namespace OHOS::NWeb;
@@ -86,6 +89,11 @@ void ExternalBeginFrameSourceOHOS::OnVSyncImpl(int64_t timestamp,
   } else {
     vsync_period_ = VSYNC_PERIOD_60HZ;
   }
+  
+#if BUILDFLAG(IS_OHOS)
+ReportLossFrame::GetInstance()->SetVsyncPeriod(vsync_period_);
+#endif
+
   base::TimeDelta vsync_period(base::Nanoseconds(vsync_period_));
   base::TimeTicks frame_time = base::TimeTicks() + base::Nanoseconds(timestamp);
   base::TimeTicks deadline = frame_time + vsync_period;
@@ -105,7 +113,7 @@ void ExternalBeginFrameSourceOHOS::OnVSyncImpl(int64_t timestamp,
     return;
   }
 
-  vsync_adapter_->RequestVsync(user_data_.release(),
+  vsync_adapter_.RequestVsync(user_data_.release(),
                                ExternalBeginFrameSourceOHOS::OnVSync);
 }
 
@@ -121,7 +129,7 @@ void ExternalBeginFrameSourceOHOS::SetEnabled(bool enabled) {
                enabled);
   vsync_notification_enabled_ = enabled;
   if (vsync_notification_enabled_ && user_data_ != nullptr) {
-    vsync_adapter_->RequestVsync(user_data_.release(),
+    vsync_adapter_.RequestVsync(user_data_.release(),
                                  ExternalBeginFrameSourceOHOS::OnVSync);
   }
 }

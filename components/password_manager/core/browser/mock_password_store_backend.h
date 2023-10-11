@@ -28,6 +28,14 @@ class MockPasswordStoreBackend : public PasswordStoreBackend {
     return weak_ptr_factory_.GetWeakPtr();
   }
 
+#if BUILDFLAG(IS_OHOS)
+  LoginsResult FillMatchingLogins(
+      bool include_psl,
+      const std::vector<PasswordFormDigest>& forms) override {
+        return {};
+      }
+#endif
+
   MOCK_METHOD(void,
               InitBackend,
               (RemoteChangesReceived remote_form_changes_received,

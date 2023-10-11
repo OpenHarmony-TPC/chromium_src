@@ -71,9 +71,20 @@ public:
     // set the title associated with the link that is being dragged.
     virtual bool SetLinkTitle(std::string& title) = 0;
 
+    // get the positon of the drag point.
     virtual void GetDragStartPosition(int& x, int& y) = 0;
 
+    // is single iamge that is being dragged.
     virtual bool IsSingleImageContent() = 0;
+
+    // set the iamge file name that is being dragged.
+    virtual bool SetFileUri(std::string& uri) = 0;
+
+    // get the iamge file name that is being dragged.
+    virtual std::string GetImageFileName() = 0;
+
+    // clear the exist iamge file names.
+    virtual void ClearImageFileNames() = 0;
 };
 }
 #endif

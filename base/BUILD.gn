@@ -943,6 +943,8 @@ mixed_component("base") {
     sources += [
       "datashare_uri_utils.h",
       "datashare_uri_utils.cc",
+      "report_loss_frame.h",
+      "report_loss_frame.cc",
     ]
   }
 

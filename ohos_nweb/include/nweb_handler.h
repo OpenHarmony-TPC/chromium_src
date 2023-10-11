@@ -152,6 +152,17 @@ struct TouchHandleHotZone {
     double height = 0.0;
 };
 
+enum class MediaPlayingState {
+    // Media is playing
+    PLAYING,
+
+    // Media playing is paused
+    PAUSE,
+
+    // Media playing is end
+    END_OF_STREAM,
+};
+
 enum class FormState {
     kHadInteraction,
     kNoInteraction,
@@ -568,7 +579,7 @@ public:
      * @param playing Whether the audio is playing or not.
      */
     virtual void OnAudioStateChanged(bool playing) {}
-    
+
     /**
      * @brief Called when the first content rendering of web page.
      * @param navigationStartTick Absolute navigation start time, as TimeTicks.
@@ -613,6 +624,10 @@ public:
      */
     virtual void OnScreenCaptureRequest(std::shared_ptr<NWebScreenCaptureAccessRequest> request) {}
     
+    virtual void OnOverScrollFlingVelocity(float xVelocity, float yVelocity, bool isFling) {}
+
+    virtual void OnOverScrollFlingEnd() {}
+
     /**
      * @brief Called when the media or form state on the web page changed.
      * @param state state of the media or form. Refer to the enum class MediaPlayingState and FormState

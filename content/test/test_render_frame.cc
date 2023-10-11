@@ -108,6 +108,13 @@ class MockFrameHost : public mojom::FrameHost {
 
   bool is_url_opened() const { return is_url_opened_; }
 
+#if BUILDFLAG(IS_OHOS)
+  void GetCreateNewWindow(const GURL& target_url, WindowOpenDisposition disposition, bool allow_popup,
+      GetCreateNewWindowCallback callback) {
+
+  }
+#endif
+
  protected:
   // mojom::FrameHost:
   void CreateNewWindow(mojom::CreateNewWindowParamsPtr,
