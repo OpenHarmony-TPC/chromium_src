@@ -1,102 +1,98 @@
-# chromium
-- [简介](#简介)
-- [目录](#目录)
-- [使用说明](#使用说明)
-- [相关仓](#相关仓)
-## 简介
-### 内容介绍
-1. Chromium是由Google主导开发的网页浏览器，以BSD许可证等多重自由版权发行并开放源代码，是Google的Chrome浏览器背后的引擎，其目的是为了创建一个安全、稳定和快速的通用浏览器。
-2. OpenHarmony nweb基于Chromium构建。
-### 软件架构
-软件架构说明
-![](figures/Web-architecture_ZH.png "web软件架构图")
-* webview组件：OpenHarmony的UI组件。
-* nweb：基于CEF构建的OpenHarmony web组件的Native引擎。
-* CEF：CEF全称Chromium Embedded Framework，是一个基于Google Chromium 的开源项目。
-* Chromium： Chromium是一个由Google主导开发的网页浏览器，以BSD许可证等多重自由版权发行并开放源代码。
-## 使用说明
-1. 下载代码
+# Chromium
+
+## Introduction
+Chromium is an open-source web browser principally developed by Google and from which Google Chrome draws its source code. It is released under the BSD license and other permissive open-source licenses, aiming to build a safer, faster, and more stable way to experience the Internet.
+
+OpenHarmony nweb is built on Chromium.
+
+## Software Architecture
+Below is the software architecture.
+
+![](figures/Web-architecture.png "Web software architecture")
+
+* webview: UI component in OpenHarmony.
+* nweb: native engine of the OpenHarmony web component, which is built based on the Chromium Embedded Framework (CEF).
+* CEF: short for Chromium Embedded Framework, an open-source project based on Google Chromium.
+* Chromium: an open-source web browser principally developed by Google and released under the BSD license and other permissive open-source licenses.
+## How to Use
+1. Fork the **chromium_src** repository to your own repository (remote repository).
    
+   > **NOTE**
+   >
+   > There are many Chromium repositories, you can find the directory mappings in the [chromium.xml](https://gitee.com/openharmony-sig/manifest/blob/master/chromium.xml) file. The **chromium_src** repository here is an example.
+   
+2. Download the full code.
+
     repo init -u https://gitee.com/openharmony-sig/manifest -b master -m chromium.xml --no-repo-verify
-    
+
     repo sync -c
 
     repo forall -c 'git lfs pull'
 
-2. 编译
-   
-    编译同时构建未签名Hap包：./build.sh  -t w -A rk3568
+3. Build the code.
 
-    仅编译so库：./build.sh -A rk3568
+    To build an unsigned HAP file, run **./build.sh -t w -A rk3568**
 
-    ***如若找不到sdk压缩包，可以下载大文件***
-    
+    To build only the .so libraries, run **./build.sh -A rk3568**.
+
+    ***If you cannot find the SDK package, download the large file.***
+
     cd src
-    
+
     git lfs pull
-    
-3. 签名
-   
-   执行./sign.sh
 
-4. 调试方法
+4. Sign the HAP file.
 
-    方法一：替换so库
+   Run **./sign.sh** to sign the HAP file.
 
-    编译完成后，在out目录下找到对应so库产物，将它们推送到设备中
-    ```
-    hdc shell "mount -o remount, rw /"
-    hdc file send libnweb_render.so /data/app/el1/bundle/public/com.ohos.nweb/libs/arm
-    hdc file send libweb_engine.so /data/app/el1/bundle/public/com.ohos.nweb/libs/arm
-    pause
-    hdc shell reboot
-    pause
-    ```
+5. Debug the code.
 
-    方法二：替换hap包
-    
-    编译完成后，在out目录下找到NWeb-rk3568.hap, 将它推送到设备中。
+    - Method 1: replacing the .so libraries
 
-    ```
-    hdc shell "mount -o remount, rw /"
-    hdc file send NWeb-rk3568.hap /system/app/com.ohos.nweb/NWeb.hap
-    hdc shell "rm /data/* -rf"
-    hdc shell reboot
-    ```
-5. 所有chromium仓对应目录映射关系
+      After the build is complete, find the . so libraries in the **out** directory and push them to the device.
+      
+      ```
+      hdc shell "mount -o remount,rw /"
+      hdc file send libnweb_render.so /data/app/el1/bundle/public/com.ohos.nweb/libs/arm
+      hdc file send libweb_engine.so /data/app/el1/bundle/public/com.ohos.nweb/libs/arm
+      pause
+      hdc shell reboot
+      pause
+      ```
+      
+    - Method 2: replacing the HAP file
 
-    https://gitee.com/openharmony-sig/manifest/blob/master/chromium.xml
+      After the build is complete, find **NWeb-rk3568.hap** in the **out** directory and push it to the device.
 
-6. 上库流程推荐
+      ```
+      hdc shell "mount -o remount,rw /"
+      hdc file send NWeb-rk3568.hap /system/app/com.ohos.nweb/NWeb.hap
+      hdc shell "rm /data/* -rf"
+      hdc shell reboot
+      ```
 
-    6.1 将chromium_src 仓 fork到自己的私仓
+6. Add the code to the staging area.
 
-    6.2 下载全量代码
+    Run the **git add** command to add the modified files to the staging area.
 
-    6.3 修改调试代码
+7. Check the status of the workspace and staging area.
 
-    6.4 将文件添加到暂存区
+    Run the **git status** command to check whether your modifications are stored in the staging area. Run the **git log** command to view historical project information.
 
-    使用git add将修改后的文件添加到暂存区
+8. Commit the content in the workspace or staging area to the local repository.
 
-    6.5 显示工作区和暂存区的状态
+    Run the **git commit -sm** command to commit the modified files. Note that **-s** must be included, and you must sign DCO first. Otherwise, a DCO error will be reported when the PR is submitted.
 
-    使用git status查看自己的修改是否放到暂存区，查看项目历史信息使用git log。
+    To sign DCO, visit **https://dco.openharmony.cn/sign-dco**.
 
-    6.6 将工作区内容或暂存区内容提交到版本库
+9. Push the code to the remote repository.
 
-    使用git commit -sm”提交信息描述” 将修改后的文件进行提交，***注意-s一定不能漏，这个是签名，否则提的PR会报DCO错误***。
+    Example: git push https://gitee.com/[giteeUserName]/chromium_src
 
-    DCO签署链接：***https://dco.openharmony.cn/sign-dco***
+10. Create a PR.
 
-    6.7 将代码提交到对应fork出来的私仓地址上
+    If joint build is involved, create an issue and bind the issue to all the involved PRs.
 
-    如：git push ***https://gitee.com/[giteeUserName]/chromium_src***
+11. Comment on "start build" under the PR.
 
-    6.8 新建PR
-
-    6.9 如果涉及联合构建，建立ISSUE，并在需要联合构建的PR中都绑定该ISSUE
-
-    6.10 在PR下面评论start build开始构建
-
-    6.11 联系committer加分
+12. Contact the committer to merge the PR.
