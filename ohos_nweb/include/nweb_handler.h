@@ -628,6 +628,10 @@ public:
 
     virtual void OnOverScrollFlingEnd() {}
 
+    virtual void OnOverScrollFlingVelocity(float xVelocity, float yVelocity, bool isFling) {}
+
+    virtual void OnOverScrollFlingEnd() {}
+
     /**
      * @brief Called when the media or form state on the web page changed.
      * @param state state of the media or form. Refer to the enum class MediaPlayingState and FormState
