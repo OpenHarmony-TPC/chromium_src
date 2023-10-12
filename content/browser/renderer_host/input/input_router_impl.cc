@@ -71,7 +71,7 @@ std::unique_ptr<blink::WebCoalescedInputEvent> ScaleEvent(
       std::vector<std::unique_ptr<WebInputEvent>>(),
       std::vector<std::unique_ptr<WebInputEvent>>(), latency_info);
 }
-
+constexpr uint64_t GESTURE_MOVE_PERIOD = 250000000;
 }  // namespace
 
 InputRouterImpl::InputRouterImpl(
@@ -141,14 +141,17 @@ void InputRouterImpl::SendGestureEvent(
 
   GestureEventWithLatencyInfo gesture_event(original_gesture_event);
 #if BUILDFLAG(IS_OHOS)
-  if (gesture_event.event.GetType() ==
-      WebInputEvent::Type::kGestureFlingStart) {
-    LOG(INFO) << "InputRouterImpl::SendGestureEvent type=kGestureFlingStart";
+  timeStamp_ = ::base::subtle::TimeTicksNowIgnoringOverride().since_origin().InNanoseconds();
+  if (gesture_event.event.GetType() == WebInputEvent::Type::kGestureScrollUpdate &&
+      timeStamp_ - prePerfTimeStamp_ > GESTURE_MOVE_PERIOD) {
+    prePerfTimeStamp_ = timeStamp_;
+    LOG(INFO) << "InputRouterImpl::SendGestureEvent type=kGestureScrollUpdate success";
     client_->GetWidgetInputHandler()->TryStartFling();
   } else if (gesture_event.event.GetType() ==
              WebInputEvent::Type::kGestureScrollEnd) {
     LOG(INFO) << "InputRouterImpl::SendGestureEvent type=kGestureScrollEnd";
     client_->GetWidgetInputHandler()->TryFinishFling();
+    prePerfTimeStamp_ = 0;
   }
 #endif
   if (gesture_event_queue_.PassToFlingController(gesture_event)) {

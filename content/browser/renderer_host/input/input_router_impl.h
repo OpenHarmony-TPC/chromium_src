@@ -261,6 +261,8 @@ class CONTENT_EXPORT InputRouterImpl
 
   base::WeakPtr<InputRouterImpl> weak_this_;
   base::WeakPtrFactory<InputRouterImpl> weak_ptr_factory_{this};
+  uint64_t timeStamp_ = 0;
+  uint64_t prePerfTimeStamp_ = 0;
 };
 
 }  // namespace content
