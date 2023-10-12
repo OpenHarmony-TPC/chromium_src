@@ -57,6 +57,7 @@ class NWebResourceHandler : public CefResourceHandler {
   bool ReadStringData(void* data_out,
             int bytes_to_read,
             int& bytes_read);
+  int64_t GetFileSizeByFd();
   bool ReadFileData(void* data_out,
             int bytes_to_read,
             int& bytes_read);

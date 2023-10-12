@@ -14,7 +14,10 @@
  */
 
 #include "nweb_resource_handler.h"
+
+#include <sys/stat.h>
 #include <unistd.h>
+
 #include "base/logging.h"
 #include "base/command_line.h"
 #include "content/public/common/content_switches.h"
@@ -72,7 +75,7 @@ bool NWebResourceHandler::Open(CefRefPtr<CefRequest> request,
     handle_request = true;
     data_ = response_->ResponseData();
     return true;
-  } 
+  }
   LOG(INFO) << "intercept open async";
   handle_request = false;
   std::shared_ptr<NWebResourceReadyCallbackImpl> nwebCb = std::make_shared<NWebResourceReadyCallbackImpl>(callback);
@@ -80,8 +83,7 @@ bool NWebResourceHandler::Open(CefRefPtr<CefRequest> request,
   return true;
 }
 
-bool NWebResourceHandler::ReadStringData(void* data_out, int bytes_to_read, int& bytes_read)
-{
+bool NWebResourceHandler::ReadStringData(void* data_out, int bytes_to_read, int& bytes_read) {
   LOG(INFO) << "intercept ReadStringData";
   bool has_data = false;
   bytes_read = 0;
@@ -101,8 +103,23 @@ bool NWebResourceHandler::ReadStringData(void* data_out, int bytes_to_read, int&
   return has_data;
 }
 
-bool NWebResourceHandler::ReadFileData(void* data_out, int bytes_to_read, int& bytes_read)
-{
+int64_t NWebResourceHandler::GetFileSizeByFd() {
+  if (resource_data_len_ == 0) {
+    int fd = response_->ResponseFileHandle();
+    if (fd <= 0) {
+      LOG(ERROR) << "intercept get fd invalid : " << fd;
+      return -1;
+    }
+    struct stat st;
+    if (fstat(fd, &st) == -1) {
+      return -1;
+    }
+    resource_data_len_ = st.st_size;
+  }
+  return resource_data_len_;
+}
+
+bool NWebResourceHandler::ReadFileData(void* data_out, int bytes_to_read, int& bytes_read) {
   LOG(INFO) << "intercept ReadFileData";
   int fd = response_->ResponseFileHandle();
   if (fd <= 0) {
@@ -125,6 +142,7 @@ bool NWebResourceHandler::ReadFileData(void* data_out, int bytes_to_read, int& b
   }
   LOG(INFO) << "intercept contiunue to read:" << ret;
   bytes_read = ret;
+  resource_data_offset_ += bytes_read;
   return true;
 }
 
@@ -189,12 +207,24 @@ bool NWebResourceHandler::Read(void* data_out,
 bool NWebResourceHandler::Skip(int64 bytes_to_skip,
                                int64& bytes_skipped,
                                CefRefPtr<CefResourceSkipCallback> callback) {
-  if (response_ == nullptr ||
-      response_->ResponseDataType() != NWebResponseDataType::NWEB_RESOURCE_URL_TYPE) {
+  if (response_ == nullptr) {
     return CefResourceHandler::Skip(bytes_to_skip, bytes_skipped, callback);
   }
-  resource_data_offset_ += bytes_to_skip;
-  bytes_skipped = resource_data_offset_;
+  if (response_->ResponseDataType() == NWebResponseDataType::NWEB_RESOURCE_URL_TYPE) {
+    resource_data_offset_ += bytes_to_skip;
+    bytes_skipped = resource_data_offset_;
+  } else if (response_->ResponseDataType() == NWebResponseDataType::NWEB_FILE_TYPE) {
+    int fd = response_->ResponseFileHandle();
+    if (fd <= 0 || lseek(fd, bytes_to_skip, SEEK_CUR) == -1) {
+      LOG(ERROR) << "intercept Skip get fd invalid : " << fd;
+      return CefResourceHandler::Skip(bytes_to_skip, bytes_skipped, callback);
+    }
+    resource_data_offset_ += bytes_to_skip;
+    bytes_skipped = resource_data_offset_;
+  } else {
+    return CefResourceHandler::Skip(bytes_to_skip, bytes_skipped, callback);
+  }
+  
   LOG(DEBUG) << "intercept Skip bytes_to_skip: " << bytes_to_skip
              << ", resource_data_offset: " << resource_data_offset_;
   return true;
@@ -224,7 +254,11 @@ void NWebResourceHandler::GetResponseHeaders(CefRefPtr<CefResponse> response,
     }
     response_length = resource_data_len_ - resource_data_offset_;
   } else {
-    response_length = -1;
+    if (GetFileSizeByFd() == -1) {
+      response_length = -1;
+      return;
+    }
+    response_length = resource_data_len_ - resource_data_offset_;
   }
 }
 
