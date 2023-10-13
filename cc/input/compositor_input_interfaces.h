@@ -83,6 +83,10 @@ class InputDelegateForCompositor {
   // the touchmoves. In that case, we latch and have a CurrentlyScrollingNode()
   // but will never receive a ScrollUpdate.
   virtual ActivelyScrollingType GetActivelyScrollingType() const = 0;
+
+#if BUILDFLAG(IS_OHOS)
+  virtual void HandleScrollUpdateForInternalBeginFrame(const viz::BeginFrameArgs& args) {};
+#endif
 };
 
 // This is the interface that's exposed by the LayerTreeHostImpl to the input

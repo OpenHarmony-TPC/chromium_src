@@ -709,6 +709,12 @@ void FrameSinkManagerImpl::Throttle(const std::vector<FrameSinkId>& ids,
   UpdateThrottling();
 }
 
+#if BUILDFLAG(IS_OHOS)
+void FrameSinkManagerImpl::SendInternalBeginFrame(const FrameSinkId& id) {
+  root_sink_map_[id]->SendInternalBeginFrame();
+}
+#endif
+
 void FrameSinkManagerImpl::UpdateThrottling() {
   // Clear previous throttling effect on all frame sinks.
   for (auto& support_map_item : support_map_) {

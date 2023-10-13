@@ -150,6 +150,9 @@ class VIZ_SERVICE_EXPORT FrameSinkManagerImpl
       const DebugRendererSettings& debug_settings) override;
   void Throttle(const std::vector<FrameSinkId>& ids,
                 base::TimeDelta interval) override;
+#if BUILDFLAG(IS_OHOS)
+  void SendInternalBeginFrame(const FrameSinkId& id) override;
+#endif
 
   void DestroyFrameSinkBundle(const FrameSinkBundleId& id);
 

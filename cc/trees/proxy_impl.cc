@@ -432,6 +432,13 @@ bool ProxyImpl::HasInvalidationAnimation() const {
   return host_impl_->mutator_host()->HasInvalidationAnimation();
 }
 
+#if BUILDFLAG(IS_OHOS)
+void ProxyImpl::HandleScrollUpdateForInternalBeginFrame(const viz::BeginFrameArgs& args) {
+  DCHECK(IsImplThread());
+  host_impl_->HandleScrollUpdateForInternalBeginFrame(args);
+}
+#endif
+
 bool ProxyImpl::IsInsideDraw() {
   return inside_draw_;
 }

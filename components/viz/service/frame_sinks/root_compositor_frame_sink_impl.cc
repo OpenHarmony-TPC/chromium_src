@@ -566,6 +566,10 @@ void RootCompositorFrameSinkImpl::SetCurrentFrameSinkId(
     const FrameSinkId& frame_sink_id) {
   external_begin_frame_source_->SetCurrentFrameSinkId(frame_sink_id);
 };
+
+void RootCompositorFrameSinkImpl::SendInternalBeginFrame() {
+  external_begin_frame_source_->SendInternalBeginFrame();
+}
 #endif
 
 void RootCompositorFrameSinkImpl::SetWideColorEnabled(bool enabled) {

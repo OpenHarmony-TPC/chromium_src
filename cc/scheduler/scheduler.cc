@@ -365,6 +365,12 @@ void Scheduler::OnBeginFrameSourcePausedChanged(bool paused) {
 // a BeginRetroFrame.
 bool Scheduler::OnBeginFrameDerivedImpl(const viz::BeginFrameArgs& args) {
   TRACE_EVENT1("cc,benchmark", "Scheduler::BeginFrame", "args", args.AsValue());
+#if BUILDFLAG(IS_OHOS)
+  if (args.internal_frame) {
+    TRACE_EVENT0("cc,benchmark", "Scheduler::internal_frame::scrollupdate");
+    client_->HandleScrollUpdateForInternalBeginFrame(args);
+  }
+#endif
 
   // If the begin frame interval is different than last frame and bigger than
   // zero then let |client_| know about the new interval for animations. In

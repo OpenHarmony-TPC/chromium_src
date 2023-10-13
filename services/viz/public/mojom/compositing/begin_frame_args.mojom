@@ -24,6 +24,8 @@ struct BeginFrameArgs {
   BeginFrameArgsType type;
   bool on_critical_path;
   bool animate_only;
+  [EnableIf=is_ohos]
+  bool internal_frame;
 };
 
 // See components/viz/common/frame_sinks/begin_frame_args.h.

@@ -137,6 +137,10 @@ class COMPOSITOR_EXPORT ContextFactory {
 
   // Gets the frame sink manager host instance.
   virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
+
+#if BUILDFLAG(IS_OHOS)
+  virtual void SendInternalBeginFrame(const viz::FrameSinkId& id) {};
+#endif
 };
 
 class COMPOSITOR_EXPORT CompositorDelegate {
@@ -335,7 +339,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
       const viz::BeginFrameArgs& args,
       bool force,
       base::OnceCallback<void(const viz::BeginFrameAck&)> callback);
-
+#if BUILDFLAG(IS_OHOS)
+  void SendInternalBeginFrame();
+#endif
   // Creates a ThroughputTracker for tracking this Compositor.
   ThroughputTracker RequestNewThroughputTracker();
 

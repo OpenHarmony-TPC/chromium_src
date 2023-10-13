@@ -116,6 +116,9 @@ class CC_EXPORT InputHandlerClient {
       float max_page_scale_factor) = 0;
   virtual void DeliverInputForBeginFrame(const viz::BeginFrameArgs& args) = 0;
   virtual void DeliverInputForHighLatencyMode() = 0;
+#if BUILDFLAG(IS_OHOS)
+  virtual void WillHandleScrollUpdateForInternalBeginFrame(const viz::BeginFrameArgs& args) {};
+#endif
 
  protected:
   InputHandlerClient() = default;

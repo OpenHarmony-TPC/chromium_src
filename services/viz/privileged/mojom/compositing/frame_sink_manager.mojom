@@ -164,6 +164,9 @@ interface FrameSinkManager {
   // This allows dynamic manipulation of the viz debug options stored in
   // |debug_settings| (show_overdraw_feedback, etc.).
   UpdateDebugRendererSettings(DebugRendererSettings debug_settings);
+
+  [EnableIf=is_ohos]
+  SendInternalBeginFrame(FrameSinkId frame_sink_id);
 };
 
 // The FrameSinkManagerClient interface is implemented by the Display

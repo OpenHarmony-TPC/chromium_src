@@ -126,6 +126,8 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
                           int32_t process_id,
                           bool is_created) override {};
   void SetCurrentFrameSinkId(const FrameSinkId& frame_sink_id) override;
+
+  void SendInternalBeginFrame();
 #endif
 
   base::ScopedClosureRunner GetCacheBackBufferCb();
