@@ -451,13 +451,10 @@ void NWebRenderHandler::UpdateDragCursor(CefRefPtr<CefBrowser> browser,
 
 CefRefPtr<CefDragData> NWebRenderHandler::GetDragData() {
   if (!nweb_drag_data_) {
-    LOG(ERROR) << "DragDrop GetDragData nullptrnullptrnullptrnullptrnullptrnullptr";
     content::DropData drop_data;
     CefRefPtr<CefDragDataImpl> drag_data(
         new CefDragDataImpl(drop_data));
     nweb_drag_data_ = std::make_shared<NWebDragDataImpl>(drag_data.get());
-  } else {
-    LOG(ERROR) << "DragDrop GetDragData not nullptrnullptrnullptrnullptrnullptr";
   }
 
   return std::static_pointer_cast<NWebDragDataImpl>(nweb_drag_data_)->GetDragData();
