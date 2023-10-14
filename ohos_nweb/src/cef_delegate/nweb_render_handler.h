@@ -127,6 +127,8 @@ class NWebRenderHandler : public CefRenderHandler {
                                  const float y,
                                  bool is_fling) override;
   void OnOverScrollFlingEnd(CefRefPtr<CefBrowser> browser) override;
+  void OnScrollState(CefRefPtr<CefBrowser> browser,
+                     bool scroll_state) override;
   /* CefRenderHandler method end */
 
   std::shared_ptr<NWebTouchHandleState> GetTouchHandleState(
