@@ -623,7 +623,7 @@ public:
      * screen capture permission.
      */
     virtual void OnScreenCaptureRequest(std::shared_ptr<NWebScreenCaptureAccessRequest> request) {}
-    
+
     virtual void OnOverScrollFlingVelocity(float xVelocity, float yVelocity, bool isFling) {}
 
     virtual void OnOverScrollFlingEnd() {}
@@ -634,6 +634,8 @@ public:
      * @param ActivityType it can be form, media, or audio
      */
     virtual void OnActivityStateChanged(int state, ActivityType type) {}
+
+    virtual void OnScrollState(bool scrollState) {}
 };
 }  // namespace OHOS::NWeb
 

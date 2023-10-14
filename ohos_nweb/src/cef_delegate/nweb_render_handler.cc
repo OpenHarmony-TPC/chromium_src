@@ -504,4 +504,7 @@ void NWebRenderHandler::OnOverScrollFlingVelocity(CefRefPtr<CefBrowser> browser,
 
 void NWebRenderHandler::OnOverScrollFlingEnd(CefRefPtr<CefBrowser> browser) {
 }
+
+void NWebRenderHandler::OnScrollState(CefRefPtr<CefBrowser> browser,
+                                      bool scroll_state) {}
 }  // namespace OHOS::NWeb
