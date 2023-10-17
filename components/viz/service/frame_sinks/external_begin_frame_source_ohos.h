@@ -29,6 +29,7 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
   void SetDynamicBeginFrameDeadlineOffsetSource(
       DynamicBeginFrameDeadlineOffsetSource*
           dynamic_begin_frame_deadline_offset_source) override;
+  void SendInternalBeginFrame() override;
 
   static void OnVSync(int64_t timestamp, void* data);
   class VSyncUserData;
@@ -56,6 +57,7 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
   int64_t vsync_period_ = 16666666;
   int64_t pre_vsync_period_ = 0;
   int64_t last_vsync_period_ = 0;
+  base::TimeTicks last_dead_line_ = base::TimeTicks();
   base::WeakPtrFactory<ExternalBeginFrameSourceOHOS> weak_factory_{this};
 };
 }  // namespace viz

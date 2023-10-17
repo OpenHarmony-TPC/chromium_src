@@ -241,6 +241,10 @@ class VIZ_COMMON_EXPORT BeginFrameSource {
       DynamicBeginFrameDeadlineOffsetSource*
           dynamic_begin_frame_deadline_offset_source);
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void SendInternalBeginFrame() {};
+#endif
+
  protected:
   // Returns whether begin-frames to clients should be withheld (because the gpu
   // is still busy, for example). If this returns true, then OnGpuNoLongerBusy()

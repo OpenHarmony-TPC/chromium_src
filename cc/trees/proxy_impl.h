@@ -157,6 +157,9 @@ class CC_EXPORT ProxyImpl : public LayerTreeHostImplClient,
       base::TimeTicks time) override;
   void FrameIntervalUpdated(base::TimeDelta interval) override {}
   bool HasInvalidationAnimation() const override;
+#if BUILDFLAG(IS_OHOS)
+  void HandleScrollUpdateForInternalBeginFrame(const viz::BeginFrameArgs& args) override;
+#endif
 
   DrawResult DrawInternal(bool forced_draw);
 

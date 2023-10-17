@@ -1192,6 +1192,15 @@ ActivelyScrollingType ThreadedInputHandler::GetActivelyScrollingType() const {
   return ActivelyScrollingType::kPrecise;
 }
 
+#if BUILDFLAG(IS_OHOS)
+void ThreadedInputHandler::HandleScrollUpdateForInternalBeginFrame(const viz::BeginFrameArgs& args) {
+  TRACE_EVENT0("cc", "ThreadedInputHandler::HandleScrollUpdateForInternalBeginFrame");
+  input_handler_client_->WillHandleScrollUpdateForInternalBeginFrame(args);
+  scrollbar_controller_->WillBeginImplFrame();
+  input_handler_client_->DeliverInputForBeginFrame(args);
+};
+#endif
+
 ScrollNode* ThreadedInputHandler::CurrentlyScrollingNode() {
   return GetScrollTree().CurrentlyScrollingNode();
 }

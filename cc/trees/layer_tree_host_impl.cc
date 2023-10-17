@@ -3058,6 +3058,14 @@ bool LayerTreeHostImpl::WillBeginImplFrame(const viz::BeginFrameArgs& args) {
   return true;
 }
 
+#if BUILDFLAG(IS_OHOS)
+void LayerTreeHostImpl::HandleScrollUpdateForInternalBeginFrame(const viz::BeginFrameArgs& args) {
+  if (input_delegate_) {
+    input_delegate_->HandleScrollUpdateForInternalBeginFrame(args);
+  }
+}
+#endif
+
 void LayerTreeHostImpl::DidFinishImplFrame(const viz::BeginFrameArgs& args) {
   frame_trackers_.NotifyFrameEnd(current_begin_frame_tracker_.Current(), args);
   impl_thread_phase_ = ImplThreadPhase::IDLE;

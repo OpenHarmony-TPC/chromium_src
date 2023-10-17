@@ -86,6 +86,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
     virtual void OnTooltipTextUpdated(const std::u16string& tooltip_text) = 0;
   };
 
+#if BUILDFLAG(IS_OHOS)
+  virtual void SendInternalBeginFrame() {};
+#endif
   // This function takes a (possibly invalid) pointer to
   // RenderWidgetHostViewBase, and returns -1 if was never valid, 0 if there was
   // once a valid object with that pointer that is now deallocated, and +1 if

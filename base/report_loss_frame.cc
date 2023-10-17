@@ -39,7 +39,7 @@ void ReportLossFrame::Report() {
     return;
   }
   int64_t now = GetCurrentTimestampMS();
-  int duration = start_time_for_scroll_ - now;
+  int duration = now - start_time_for_scroll_;
   ReportJankStats(start_time_for_scroll_, duration, jank_stats_, JANK_STATS_VER);
   start_time_for_scroll_ = 0;
   std::fill(jank_stats_.begin(), jank_stats_.end(), 0);

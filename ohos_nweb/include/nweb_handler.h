@@ -634,6 +634,8 @@ public:
      * @param ActivityType it can be form, media, or audio
      */
     virtual void OnActivityStateChanged(int state, ActivityType type) {}
+
+    virtual void OnScrollState(bool scrollState) {}
 };
 }  // namespace OHOS::NWeb
 

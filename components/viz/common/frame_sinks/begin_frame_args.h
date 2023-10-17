@@ -189,6 +189,10 @@ struct VIZ_COMMON_EXPORT BeginFrameArgs {
   // sent.
   uint64_t frames_throttled_since_last = 0;
 
+#if BUILDFLAG(IS_OHOS)
+  bool internal_frame = false;
+#endif
+
  private:
   BeginFrameArgs(uint64_t source_id,
                  uint64_t sequence_number,

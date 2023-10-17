@@ -129,7 +129,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
   GestureListenerImpl& operator=(const GestureListenerImpl&) = delete;
 
   void OnTouchEvent(const MotionEvent& event) {
-    LOG(INFO) << "DragDrop onTouchEvent: " << event.GetAction();
+    LOG(DEBUG) << "onTouchEvent: " << event.GetAction();
     const bool in_scale_gesture = IsScaleGestureDetectionInProgress();
     snap_scroll_controller_.SetSnapScrollMode(event, in_scale_gesture);
     if (in_scale_gesture)
@@ -186,7 +186,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
       case ET_GESTURE_DRAG_LONG_PRESS:
         DCHECK(!IsScaleGestureDetectionInProgress());
         current_longpress_time_ = gesture.time;
-        LOG(INFO) << "DragDrop UpdateStateForEventPost";
+        LOG(DEBUG) << "DragDrop UpdateStateForEventPost";
         break;
 #endif
       case ET_GESTURE_LONG_TAP:
@@ -269,7 +269,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
     }
 
     if (should_update) {
-      LOG(INFO) << "DragDrop UpdateStateForEventPost " << gesture.type();
+      LOG(DEBUG) << "UpdateStateForEventPost " << gesture.type();
       UpdateStateForEventPost(gesture);
       GestureTouchUMAHistogram::RecordGestureEvent(gesture);
     }
@@ -532,7 +532,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
   }
 
   void OnTapCancel(const MotionEvent& e) override {
-    LOG(INFO) << "DragDrop OnTapCancel";
+    LOG(DEBUG) << "DragDrop OnTapCancel";
     GestureEventDetails tap_cancel_details(ET_GESTURE_TAP_CANCEL);
     tap_cancel_details.set_device_type(GestureDeviceType::DEVICE_TOUCHSCREEN);
     tap_cancel_details.set_primary_unique_touch_event_id(
@@ -625,7 +625,7 @@ class GestureProvider::GestureListenerImpl : public ScaleGestureListener,
 
 #ifdef BUILDFLAG(IS_OHOS)
   void OnDragLongPress(const MotionEvent& e) override {
-    LOG(INFO) << "DragDrop GestureDetector::OnDragLongPress ";
+    LOG(DEBUG) << "DragDrop GestureDetector::OnDragLongPress ";
     DCHECK(!IsDoubleTapInProgress());
     SetIgnoreSingleTap(true);
     GestureEventDetails drag_long_press_details(ET_GESTURE_DRAG_LONG_PRESS);

@@ -59,6 +59,9 @@ bool StructTraits<viz::mojom::BeginFrameArgsDataView, viz::BeginFrameArgs>::
   out->trace_id = data.trace_id();
   out->on_critical_path = data.on_critical_path();
   out->animate_only = data.animate_only();
+#if BUILDFLAG(IS_OHOS)
+  out->internal_frame = data.internal_frame();
+#endif
   return true;
 }
 

@@ -62,6 +62,11 @@ struct StructTraits<viz::mojom::BeginFrameArgsDataView, viz::BeginFrameArgs> {
   static bool animate_only(const viz::BeginFrameArgs& args) {
     return args.animate_only;
   }
+#if BUILDFLAG(IS_OHOS)
+  static bool internal_frame(const viz::BeginFrameArgs& args) {
+    return args.internal_frame;
+  }
+#endif
 
   static bool Read(viz::mojom::BeginFrameArgsDataView data,
                    viz::BeginFrameArgs* out);

@@ -1688,6 +1688,15 @@ void RenderWidgetHostImpl::ForwardGestureEventWithLatencyInfo(
   DispatchInputEventWithLatencyInfo(gesture_event,
                                     &gesture_with_latency.latency);
   input_router_->SendGestureEvent(gesture_with_latency);
+#if BUILDFLAG(IS_OHOS)
+  if (send_internal_begin_frame && gesture_event.GetType() == blink::WebInputEvent::Type::kGestureScrollUpdate) {
+    TRACE_EVENT0("input", "RenderWidgetHostImpl::SendInternalBeginFrame");
+    send_internal_begin_frame = false;
+    view_->SendInternalBeginFrame();
+  } else if (gesture_event.GetType() == blink::WebInputEvent::Type::kGestureScrollEnd) {
+    send_internal_begin_frame = true;
+  }
+#endif
 }
 
 void RenderWidgetHostImpl::ForwardTouchEventWithLatencyInfo(
