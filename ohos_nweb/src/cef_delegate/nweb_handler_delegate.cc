@@ -929,11 +929,6 @@ void NWebHandlerDelegate::OnMediaStateChanged(CefRefPtr<CefBrowser> browser,
        << "NWebHandlerDelegate::OnMediaStateChanged, MediaType: " << static_cast<int>(type) 
        << " MediaPlayingState: " << static_cast<int>(state)
        << "nweb_id: " << nweb_id_;
-  ActivityType mediaType = static_cast<ActivityType>(type);
-
-  if (nweb_handler_ != nullptr) {
-    nweb_handler_->OnActivityStateChanged(static_cast<int>(state), mediaType);
-  }
 }
 /* CefLoadHandler methods end */
 
@@ -1520,10 +1515,6 @@ bool NWebHandlerDelegate::OnSetFocus(CefRefPtr<CefBrowser> browser,
 /* CefFormHandler method begin */
 void NWebHandlerDelegate::OnFormEditingStateChanged(CefRefPtr<CefBrowser> browser, bool is_editing) {
   LOG(INFO) << "NWebHandlerDelegate::OnFormEditingStateChanged, is_editing: " << is_editing << "nweb_id: " << nweb_id_;
-  if (nweb_handler_ != nullptr) {
-    FormState state = is_editing ? FormState::kHadInteraction : FormState::kNoInteraction;
-    nweb_handler_->OnActivityStateChanged(static_cast<int>(state), ActivityType::FORM);
-  }
 }
 /* CefFormHandler method end */
 
