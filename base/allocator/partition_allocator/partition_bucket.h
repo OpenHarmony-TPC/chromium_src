@@ -35,6 +35,9 @@ struct PartitionBucket {
   uint32_t num_system_pages_per_slot_span
       : kPartitionNumSystemPagesPerSlotSpanBits;
   uint32_t num_full_slot_spans : 24;
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  uintptr_t random_cookie;
+#endif
 
   // `slot_size_reciprocal` is used to improve the performance of
   // `GetSlotOffset`. It is computed as `(1 / size) * (2 ** M)` where M is

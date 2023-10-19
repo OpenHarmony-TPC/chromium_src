@@ -485,6 +485,13 @@ uint8_t PartitionBucket<thread_safe>::ComputeSystemPagesPerSlotSpan(
   return static_cast<uint8_t>(best_pages);
 }
 
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+uint64_t GenerateRandomCookie()
+{
+  return RandomValue();
+}
+#endif
+
 template <bool thread_safe>
 void PartitionBucket<thread_safe>::Init(uint32_t new_slot_size) {
   slot_size = new_slot_size;
@@ -495,6 +502,9 @@ void PartitionBucket<thread_safe>::Init(uint32_t new_slot_size) {
   decommitted_slot_spans_head = nullptr;
   num_full_slot_spans = 0;
   num_system_pages_per_slot_span = ComputeSystemPagesPerSlotSpan(slot_size);
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  random_cookie = GenerateRandomCookie();
+#endif
 }
 
 template <bool thread_safe>
@@ -836,7 +846,11 @@ PartitionBucket<thread_safe>::ProvisionMoreSlotsAndAllocOne(
       slot_span->SetFreelistHead(entry);
     } else {
       PA_DCHECK(free_list_entries_added);
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+      prev_entry->SetNext(entry, random_cookie);
+#else
       prev_entry->SetNext(entry);
+#endif
     }
 #if !defined(OHOS_ENABLE_RANDOM)
     next_slot = next_slot_end;

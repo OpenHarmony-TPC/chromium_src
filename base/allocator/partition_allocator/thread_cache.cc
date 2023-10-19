@@ -466,6 +466,9 @@ ThreadCache::ThreadCache(PartitionRoot<>* root)
                                std::memory_order_relaxed);
 
     tcache_bucket->slot_size = root_bucket.slot_size;
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    tcache_bucket->random_cookie = root_bucket.random_cookie;
+#endif
     // Invalid bucket.
     if (!root_bucket.is_valid()) {
       // Explicitly set this, as size computations iterate over all buckets.
@@ -603,11 +606,18 @@ void ThreadCache::ClearBucket(ThreadCache::Bucket& bucket, size_t limit) {
   //    triggers a major page fault, and we are running on a low-priority
   //    thread, we don't want the thread to be blocked while holding the lock,
   //    causing a priority inversion.
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  bucket.freelist_head->CheckFreeListForThreadCache(bucket.slot_size, bucket.random_cookie);
+#else
   bucket.freelist_head->CheckFreeListForThreadCache(bucket.slot_size);
-
+#endif
   uint8_t count_before = bucket.count;
   if (limit == 0) {
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    FreeAfter(bucket.freelist_head, bucket.slot_size, bucket.random_cookie);
+#else
     FreeAfter(bucket.freelist_head, bucket.slot_size);
+#endif
     bucket.freelist_head = nullptr;
   } else {
     // Free the *end* of the list, not the head, since the head contains the
@@ -615,11 +625,21 @@ void ThreadCache::ClearBucket(ThreadCache::Bucket& bucket, size_t limit) {
     auto* head = bucket.freelist_head;
     size_t items = 1;  // Cannot free the freelist head.
     while (items < limit) {
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+      head = head->GetNextForThreadCache(bucket.slot_size, bucket.random_cookie);
+#else
       head = head->GetNextForThreadCache(bucket.slot_size);
+#endif
       items++;
     }
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    FreeAfter(head->GetNextForThreadCache(bucket.slot_size, bucket.random_cookie),
+            bucket.slot_size, bucket.random_cookie);
+    head->SetNext(nullptr, 0);
+#else
     FreeAfter(head->GetNextForThreadCache(bucket.slot_size), bucket.slot_size);
     head->SetNext(nullptr);
+#endif
   }
   bucket.count = limit;
   uint8_t count_after = bucket.count;
@@ -630,14 +650,22 @@ void ThreadCache::ClearBucket(ThreadCache::Bucket& bucket, size_t limit) {
   PA_DCHECK(cached_memory_ == CachedMemory());
 }
 
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+void ThreadCache::FreeAfter(PartitionFreelistEntry* head, size_t slot_size, uintptr_t random_cookie) {
+#else
 void ThreadCache::FreeAfter(PartitionFreelistEntry* head, size_t slot_size) {
+#endif
   // Acquire the lock once. Deallocation from the same bucket are likely to be
   // hitting the same cache lines in the central allocator, and lock
   // acquisitions can be expensive.
   partition_alloc::ScopedGuard guard(root_->lock_);
   while (head) {
     uintptr_t slot_start = reinterpret_cast<uintptr_t>(head);
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+    head = head->GetNextForThreadCache(slot_size, random_cookie);
+#else
     head = head->GetNextForThreadCache(slot_size);
+#endif
     root_->RawFreeLocked(slot_start);
   }
 }

@@ -2508,6 +2508,49 @@ TEST_F(PartitionAllocTest, PreferActiveOverEmpty) {
   allocator.root()->Free(ptr7);
 }
 
+#define TEST_STEP_SIZE 20
+#define TEST_TIME 5
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+TEST_F(PartitionAllocTest, FreelistHardenedTest) {
+  for (int i = 0; i < TEST_TIME; i++) {
+    size_t size = TEST_STEP_SIZE * i;
+    void* ptr = allocator.root()->Alloc(size, type_name);
+
+    SlotSpanMetadata<base::internal::ThreadSafe>* slot_span =
+        SlotSpanMetadata<base::internal::ThreadSafe>::FromSlotStart(
+            allocator.root()->AdjustPointerForExtrasSubtract(ptr));
+
+    PartitionFreelistEntry *entry = slot_span->get_freelist_head();
+    PartitionFreelistEntry *next = entry->GetNext(size, slot_span->bucket->random_cookie);
+
+    EXPECT_EQ((uintptr_t)entry & 0xfffff000, (uintptr_t)next & 0xfffff000)
+      << "size: " << size << "e: " << (uintptr_t)entry << " n: " << next;
+
+    allocator.root()->Free(ptr);
+  }
+}
+#endif
+
+#if defined(OHOS_ENABLE_RANDOM)
+TEST_F(PartitionAllocTest, RandomTest) {
+  for (int i = 0; i < TEST_TIME; i++) {
+    size_t size = TEST_STEP_SIZE * i;
+    void* ptr1 = allocator.root()->Alloc(size, type_name);
+    void* ptr2 = allocator.root()->Alloc(size, type_name);
+    void* ptr3 = allocator.root()->Alloc(size, type_name);
+    void* ptr4 = allocator.root()->Alloc(size, type_name);
+
+    EXPECT_NE((uintptr_t)ptr2 - (uintptr_t)ptr1, (uintptr_t)ptr4 - (uintptr_t)ptr3)
+      << "size: " << size << "ptr1:" << ptr1 << "ptr2:" << ptr2 << "ptr3:" << ptr3 << "ptr4:" << ptr4;
+
+    allocator.root()->Free(ptr1);
+    allocator.root()->Free(ptr2);
+    allocator.root()->Free(ptr3);
+    allocator.root()->Free(ptr4);
+  }
+}
+#endif
+
 // Tests the API to purge discardable memory.
 TEST_F(PartitionAllocTest, PurgeDiscardableSecondPage) {
   // Free the second of two 4096 byte allocations and then purge.
