@@ -300,6 +300,7 @@ void PdfPrintManager::ReleaseJob(PrintResult result) {
 
 #if BUILDFLAG(IS_OHOS)
 void PdfPrintManager::PrintRequested(PrintRequestedCallback callback) {}
+void PdfPrintManager::CheckCancel(CheckCancelCallback callback) {}
 #endif
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(PdfPrintManager);

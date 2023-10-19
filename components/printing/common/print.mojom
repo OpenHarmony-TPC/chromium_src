@@ -387,4 +387,7 @@ interface PrintManagerHost {
 
   [EnableIf=is_ohos]
   PrintRequested() => ();
+
+  [EnableIf=is_ohos, Sync]
+  CheckCancel() => (bool cancel);
 };
