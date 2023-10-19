@@ -790,6 +790,37 @@ PartitionBucket<thread_safe>::ProvisionMoreSlotsAndAllocOne(
 
   // Add all slots that fit within so far committed pages to the free list.
   PartitionFreelistEntry* prev_entry = nullptr;
+
+#if defined(OHOS_ENABLE_RANDOM)
+  uintptr_t random_slot;
+  int num = (commit_end - next_slot) / size;
+  int i;
+
+  size_t random[num];
+  size_t tmp;
+  uint32_t rand;
+  uint32_t randseed = RandomValue();
+  size_t free_list_entries_added = 0;
+
+  for (i = 0; i < num; i++) {
+    random[i] = i;
+  }
+
+  for (i = num - 1; i > 0; i--) {
+    rand = randseed % i;
+    tmp = random[i];
+    random[i] = random[rand];
+    random[rand] = tmp;
+  }
+
+  for (i = 0; i < num; i++) {
+    random_slot = next_slot + size * random[i];
+    if (LIKELY(size <= kMaxMemoryTaggingSize)) {
+      random_slot = memory::TagMemoryRangeRandomly(random_slot, size);
+    }
+    auto* entry =
+        new (reinterpret_cast<void*>(random_slot)) PartitionFreelistEntry();
+#else
   uintptr_t next_slot_end = next_slot + size;
   size_t free_list_entries_added = 0;
   while (next_slot_end <= commit_end) {
@@ -798,6 +829,7 @@ PartitionBucket<thread_safe>::ProvisionMoreSlotsAndAllocOne(
     }
     auto* entry =
         new (reinterpret_cast<void*>(next_slot)) PartitionFreelistEntry();
+#endif
     if (!slot_span->get_freelist_head()) {
       PA_DCHECK(!prev_entry);
       PA_DCHECK(!free_list_entries_added);
@@ -806,8 +838,10 @@ PartitionBucket<thread_safe>::ProvisionMoreSlotsAndAllocOne(
       PA_DCHECK(free_list_entries_added);
       prev_entry->SetNext(entry);
     }
+#if !defined(OHOS_ENABLE_RANDOM)
     next_slot = next_slot_end;
     next_slot_end = next_slot + size;
+#endif
     prev_entry = entry;
 #if DCHECK_IS_ON()
     free_list_entries_added++;
