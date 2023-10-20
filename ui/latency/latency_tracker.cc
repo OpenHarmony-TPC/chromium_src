@@ -109,15 +109,17 @@ void LatencyTracker::OnGpuSwapBuffersCompleted(
     if (latency.FindLatency(
             INPUT_EVENT_LATENCY_FIRST_SCROLL_UPDATE_ORIGINAL_COMPONENT,
             &first_scroll_start_timestamp)) {
-      TRACE_EVENT1("input","OnGpuSwapBuffersCompleted::FirstScrollUpdate",
-                    "time",
-                    (gpu_swap_begin_timestamp - first_scroll_start_timestamp).InMillisecondsF());
+      TRACE_EVENT1("input", "OnGpuSwapBuffersCompleted::FirstScrollUpdate",
+                   "time",
+                   (gpu_swap_begin_timestamp - first_scroll_start_timestamp)
+                       .InMillisecondsF());
     } else if (latency.FindLatency(
-            INPUT_EVENT_LATENCY_SCROLL_UPDATE_ORIGINAL_COMPONENT,
-            &original_scroll_start_timestamp)) {
-      TRACE_EVENT1("input","OnGpuSwapBuffersCompleted::OriginScrollUpdate",
-                    "time",
-                    (gpu_swap_begin_timestamp - original_scroll_start_timestamp).InMillisecondsF());
+                   INPUT_EVENT_LATENCY_SCROLL_UPDATE_ORIGINAL_COMPONENT,
+                   &original_scroll_start_timestamp)) {
+      TRACE_EVENT1("input", "OnGpuSwapBuffersCompleted::OriginScrollUpdate",
+                   "time",
+                   (gpu_swap_begin_timestamp - original_scroll_start_timestamp)
+                       .InMillisecondsF());
     }
 
     ui::SourceEventType source_event_type = latency.source_event_type();
