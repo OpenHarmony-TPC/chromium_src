@@ -143,8 +143,9 @@ void OHOSAudioOutputStream::Start(AudioSourceCallback* callback) {
     rendererCallback_.reset();
     return;
   }
-  if (weakMediaSession_)
-    Prepare(weakMediaSession_.get());
+  main_task_runner_->PostTask(
+      FROM_HERE, base::BindOnce(&OHOSAudioOutputStream::Prepare,
+                                base::Unretained(this), weakMediaSession_));
   if (StartRender()) {
     callback_ = callback;
     memset(audio_data_[active_buffer_index_], 0, buffer_size_bytes_);
@@ -267,35 +268,46 @@ void OHOSAudioOutputStream::Erase(
     return;
   }
   content::MediaSessionImpl* mediaSession = weakMediaSession.get();
-  if (!mediaSession->activeAudioStream_.empty()) {
+  if (mediaSession && !mediaSession->activeAudioStream_.empty()) {
     mediaSession->activeAudioStream_.erase(this);
-    for (auto stream : mediaSession->activeAudioStream_) {
-      if (!stream) {
+    for (auto stream = mediaSession->activeAudioStream_.begin();
+         stream != mediaSession->activeAudioStream_.end();) {
+      if (!(*stream)) {
         LOG(ERROR) << "OHOSAudioOutputStream::Erase the active stream is null";
-        mediaSession->activeAudioStream_.erase(stream);
+        stream = mediaSession->activeAudioStream_.erase(stream);
         continue;
       }
       if (mediaSession->isStreamSuspended_) {
         LOG(INFO) << "OHOSAudioOutputStream::Erase has suspended stream";
-        stream->Stop();
+        (*stream)->Stop();
       }
+      ++stream;
     }
   }
 }
 
-void OHOSAudioOutputStream::Prepare(content::MediaSessionImpl* mediaSession) {
-  if (!mediaSession->activeAudioStream_.empty()) {
-    for (auto stream : mediaSession->activeAudioStream_) {
+void OHOSAudioOutputStream::Prepare(
+    base::WeakPtr<content::MediaSessionImpl> weakMediaSession) {
+  LOG(INFO) << "OHOSAudioOutputStream::Prepare";
+  if (!weakMediaSession) {
+    LOG(ERROR) << "OHOSAudioOutputStream::Prepare mediaSession is null";
+    return;
+  }
+  content::MediaSessionImpl* mediaSession = weakMediaSession.get();
+  if (mediaSession && !mediaSession->activeAudioStream_.empty()) {
+    for (auto stream = mediaSession->activeAudioStream_.begin();
+         stream != mediaSession->activeAudioStream_.end();) {
       LOG(INFO)
           << "OHOSAudioOutputStream::Prepare refresh other active streams";
-      if (!stream) {
+      if (!(*stream)) {
         LOG(ERROR)
             << "OHOSAudioOutputStream::Prepare the active stream is null";
-        mediaSession->activeAudioStream_.erase(stream);
+        stream = mediaSession->activeAudioStream_.erase(stream);
         continue;
       }
-      stream->SetInterruptMode(false);
-      stream->Refresh();
+      (*stream)->SetInterruptMode(false);
+      (*stream)->Refresh();
+      ++stream;
     }
     LOG(ERROR) << "OHOSAudioOutputStream::Prepare setInterruptMode";
     SetInterruptMode(false);

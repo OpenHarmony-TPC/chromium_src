@@ -87,7 +87,7 @@ class OHOSAudioOutputStream : public AudioOutputStream {
 
   void Erase(base::WeakPtr<content::MediaSessionImpl> weakMediaSession);
 
-  void Prepare(content::MediaSessionImpl* mediaSession);
+  void Prepare(base::WeakPtr<content::MediaSessionImpl> weakMediaSession);
 
   OHOSAudioManager* manager_;
 
