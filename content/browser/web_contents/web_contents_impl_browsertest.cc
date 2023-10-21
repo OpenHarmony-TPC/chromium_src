@@ -2767,7 +2767,10 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest, FileChooserEndsFullscreen) {
 
   wc->EnterFullscreenMode(wc->GetMainFrame(), {});
   EXPECT_TRUE(wc->IsFullscreen());
-  wc->RunFileChooser(wc->GetMainFrame(),
+
+  auto [chooser, remote] =
+      FileChooserImpl::CreateForTesting(wc->GetMainFrame());
+  wc->RunFileChooser(chooser->GetWeakPtr(), wc->GetMainFrame(),
                      base::MakeRefCounted<MockFileSelectListener>(),
                      blink::mojom::FileChooserParams());
   EXPECT_FALSE(wc->IsFullscreen());
