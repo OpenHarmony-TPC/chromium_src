@@ -81,6 +81,10 @@ class COMPONENT_EXPORT(PRINTING_METAFILE) MetafileSkia : public Metafile {
   bool SaveTo(base::File* file) const override;
 #endif  // BUILDFLAG(IS_ANDROID)
 
+#if BUILDFLAG(IS_OHOS)
+  bool OhosFinishDocument(std::function<bool()> checkCancel) override;
+#endif
+
   // Unlike FinishPage() or FinishDocument(), this is for out-of-process
   // subframe printing. It will just serialize the content into SkPicture
   // format and store it as final data.

@@ -160,6 +160,10 @@ class COMPONENT_EXPORT(PRINTING_METAFILE) Metafile : public MetafilePlayer {
                         const RECT* rect) const = 0;
 #endif  // OS_WIN
 
+#if BUILDFLAG(IS_OHOS)
+  virtual bool OhosFinishDocument(std::function<bool()> checkCancel) = 0;
+#endif
+
   // MetfilePlayer implementation.
   bool GetDataAsVector(std::vector<char>* buffer) const override;
   base::MappedReadOnlyRegion GetDataAsSharedMemoryRegion() const override;

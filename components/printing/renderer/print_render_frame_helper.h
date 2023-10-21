@@ -465,6 +465,10 @@ class PrintRenderFrameHelper
   void OnPreviewDisconnect();
 #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
 
+#if BUILDFLAG(IS_OHOS)
+  bool CheckCancel();
+#endif  // IS_OHOS
+
   void SetPrintPagesParams(const mojom::PrintPagesParams& settings);
 
   // Quits all runloops waiting for Mojo replies. It's called when
