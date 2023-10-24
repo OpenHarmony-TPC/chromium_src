@@ -128,6 +128,7 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
   void SetCurrentFrameSinkId(const FrameSinkId& frame_sink_id) override;
 
   void SendInternalBeginFrame();
+  void SetEnableLowerFrameRate(bool enabled);
 #endif
 
   base::ScopedClosureRunner GetCacheBackBufferCb();

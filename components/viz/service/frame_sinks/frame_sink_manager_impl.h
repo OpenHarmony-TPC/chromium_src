@@ -257,6 +257,7 @@ class VIZ_SERVICE_EXPORT FrameSinkManagerImpl
 
 #if BUILDFLAG(IS_OHOS)
   void OnVsync(const FrameSinkId& frame_sink_id);
+  void SetEnableLowerFrameRate(bool enabled, const FrameSinkId& frame_sink_id) override;
 #endif
 
  private:

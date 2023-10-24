@@ -394,6 +394,10 @@ void HostFrameSinkManager::OnVsync(uint32_t client_id, uint32_t sink_id) {
 void HostFrameSinkManager::SendInternalBeginFrame(const FrameSinkId& id) {
   frame_sink_manager_->SendInternalBeginFrame(id);
 }
+
+void HostFrameSinkManager::SetEnableLowerFrameRate(bool enabled, const FrameSinkId& frame_sink_id) {
+  frame_sink_manager_->SetEnableLowerFrameRate(enabled, frame_sink_id);
+}
 #endif
 
 uint32_t HostFrameSinkManager::CacheBackBufferForRootSink(

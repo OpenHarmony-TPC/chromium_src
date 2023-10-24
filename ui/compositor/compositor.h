@@ -450,6 +450,7 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
 
 #if BUILDFLAG(IS_OHOS)
   void SetCurrentFrameSinkId(const viz::FrameSinkId& id);
+  void SetEnableLowerFrameRate(bool enabled);
 #endif
 
  private:

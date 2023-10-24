@@ -666,6 +666,14 @@ void NWebImpl::OnUnoccluded() const {
   nweb_delegate_->OnUnoccluded();
 }
 
+void NWebImpl::SetEnableLowerFrameRate(bool enabled) const {
+  if (nweb_delegate_ == nullptr) {
+    LOG(ERROR) << "nweb_delegate_ is nullptr.";
+    return;
+  }
+  nweb_delegate_->SetEnableLowerFrameRate(enabled);
+}
+
 void NWebImpl::StopCameraSession() const {
   OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().SetForegroundFlag(false);
 }

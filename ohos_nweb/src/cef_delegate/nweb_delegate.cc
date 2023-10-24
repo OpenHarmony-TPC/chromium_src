@@ -1014,6 +1014,15 @@ void NWebDelegate::OnUnoccluded() {
   occluded_ = false;
 }
 
+void NWebDelegate::SetEnableLowerFrameRate(bool enabled) {
+  LOG(DEBUG) << "NWebDelegate::SetEnableLowerFrameRate, nweb_id = " << nweb_id_;
+  if (!GetBrowser().get()) {
+    return;
+  }
+
+  GetBrowser()->GetHost()->SetEnableLowerFrameRate(enabled);
+}
+
 void NWebDelegate::OnContextInitializeComplete(const std::string& url,
                                                void* window) {
   // Create browser after context initialzed complete.

@@ -570,6 +570,10 @@ void RootCompositorFrameSinkImpl::SetCurrentFrameSinkId(
 void RootCompositorFrameSinkImpl::SendInternalBeginFrame() {
   external_begin_frame_source_->SendInternalBeginFrame();
 }
+
+void RootCompositorFrameSinkImpl::SetEnableLowerFrameRate(bool enabled) {
+  external_begin_frame_source_->SetEnableLowerFrameRate(enabled);
+}
 #endif
 
 void RootCompositorFrameSinkImpl::SetWideColorEnabled(bool enabled) {

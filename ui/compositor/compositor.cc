@@ -921,6 +921,10 @@ void Compositor::SetCurrentFrameSinkId(const viz::FrameSinkId& id) {
     LOG(ERROR) << "Compositor::SetCurrentDisplay display_private error";
   }
 }
+
+void Compositor::SetEnableLowerFrameRate(bool enabled) {
+  context_factory_->GetHostFrameSinkManager()->SetEnableLowerFrameRate(enabled, frame_sink_id());
+}
 #endif
 
 }  // namespace ui

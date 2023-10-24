@@ -777,6 +777,11 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * Set the nested scroll mode.
      */
     virtual void SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) = 0;
+
+    /**
+     * Set enable lower the frame rate.
+     */
+    virtual void SetEnableLowerFrameRate(bool enabled) const = 0;
 };
 }  // namespace OHOS::NWeb
 
