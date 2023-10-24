@@ -1517,9 +1517,9 @@ void NWebHandlerDelegate::OnFormEditingStateChanged(CefRefPtr<CefBrowser> browse
   bool form_editing_state_ = edited_forms_id_.size();
   std::vector<uint64_t>::iterator it = find(edited_forms_id_.begin(), edited_forms_id_.end(), form_id);
   
-  if (it == edited_forms_id_.end() && !did_submit) {
+  if (it == edited_forms_id_.end() && is_editing) {
     edited_forms_id_.push_back(form_id);
-  } else if (it != edited_forms_id_.end() && did_submit) {
+  } else if (it != edited_forms_id_.end() && !is_editing) {
     edited_forms_id_.erase(it);
   } else {
     return;
