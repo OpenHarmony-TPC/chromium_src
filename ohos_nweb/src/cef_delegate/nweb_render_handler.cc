@@ -257,9 +257,11 @@ void NWebRenderHandler::OnEditableChanged(CefRefPtr<CefBrowser> browser,
 void NWebRenderHandler::OnVirtualKeyboardRequested(
     CefRefPtr<CefBrowser> browser,
     TextInputMode input_mode,
+    TextInputType input_type,
     bool show_keyboard) {
   LOG(INFO) << "NWebRenderHandler::OnVirtualKeyboardRequested input_mode = "
-            << input_mode << ", show_keyboard = " << show_keyboard;
+            << input_mode << ", input_type = " << input_type
+            << ", show_keyboard = " << show_keyboard;
   if (!inputmethod_client_) {
     LOG(ERROR) << "inputmethod_client_ is nullptr.";
     return;
@@ -268,7 +270,7 @@ void NWebRenderHandler::OnVirtualKeyboardRequested(
   if (input_mode != CEF_TEXT_INPUT_MODE_NONE) {
     auto delegete = delegate_interface_.lock();
     if (delegete && delegete->OnFocus()) {
-      inputmethod_client_->Attach(browser, show_keyboard, input_mode);
+      inputmethod_client_->Attach(browser, show_keyboard, input_type);
     }
   } else {
     inputmethod_client_->HideTextInput();

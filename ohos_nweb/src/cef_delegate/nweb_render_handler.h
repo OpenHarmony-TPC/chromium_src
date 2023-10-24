@@ -89,6 +89,7 @@ class NWebRenderHandler : public CefRenderHandler {
 
   void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
                                   TextInputMode input_mode,
+                                  TextInputType input_type,
                                   bool show_keyboard) override;
 
   void GetTouchHandleSize(CefRefPtr<CefBrowser> browser,
