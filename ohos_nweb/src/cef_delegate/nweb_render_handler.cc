@@ -21,8 +21,10 @@
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/command_line.h"
 #include "base/logging.h"
 #include "cef/libcef/common/drag_data_impl.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/common/drop_data.h"
 #include "nweb_delegate_interface.h"
 #include "nweb_drag_data.h"
@@ -127,7 +129,11 @@ void NWebRenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser,
     rect.height = height_;
   } else {
     // Surface greater than Web Compoment in case show black line.
-    rect.width = std::ceil(width_ / screen_info_.display_ratio);
+    if ((*base::CommandLine::ForCurrentProcess()).HasSwitch(switches::kForBrowser)) {
+      rect.width = std::ceil(width_ / screen_info_.display_ratio) + 1;
+    } else {
+      rect.width = std::ceil(width_ / screen_info_.display_ratio);
+    }
     rect.height = std::ceil(height_ / screen_info_.display_ratio);
   }
 
