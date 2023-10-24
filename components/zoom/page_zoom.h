@@ -14,6 +14,12 @@ class WebContents;
 }
 
 namespace zoom {
+#ifdef OHOS_NWEB_EX
+enum ZoomType { ZOOM_IN, ZOOM_OUT };
+
+constexpr double kMinZoomFactorForBrowser = 0.25;
+constexpr double kMaxZoomFactorForBrowser = 5.0;
+#endif
 
 // This class provides a means of zooming pages according to a predetermined
 // set of zoom levels/factors. In future, the static methods in this class
@@ -36,6 +42,12 @@ class PageZoom {
 
   // Adjusts the zoom level of |web_contents|.
   static void Zoom(content::WebContents* web_contents, content::PageZoom zoom);
+
+#ifdef OHOS_NWEB_EX
+  static double GetNextZoomLevel(ZoomType zoom_type,
+                                 double current_zoom_level,
+                                 std::vector<double> zoom_levels);
+#endif
 
  private:
   // We don't expect (currently) to create instances of this class.

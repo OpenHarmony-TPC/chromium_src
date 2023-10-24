@@ -183,6 +183,8 @@ class NWebImpl : public NWeb {
   static const std::vector<std::string>& GetCommandLineArgsForNWebEx();
   static void InitBrowserServiceApi(std::vector<std::string>& browser_args);
   static bool GetBrowserServiceApiEnabled();
+  static void SetDefaultBrowserZoomLevel(double zoom_factor);
+  static void SetConnectTimeout(int32_t seconds);
 
   void PutWebAppClientExtensionCallback(
       std::shared_ptr<NWebAppClientExtensionCallback>

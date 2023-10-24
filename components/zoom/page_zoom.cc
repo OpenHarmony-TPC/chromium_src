@@ -53,7 +53,7 @@ std::vector<double> PresetZoomValues(PageZoomValueType value_type,
   return zoom_values;
 }
 
-}  // namespace anonymous
+}  // namespace
 
 namespace zoom {
 
@@ -126,4 +126,36 @@ void PageZoom::Zoom(content::WebContents* web_contents,
   }
 }
 
+#ifdef OHOS_NWEB_EX
+// static
+double PageZoom::GetNextZoomLevel(ZoomType zoomType,
+                                  doulbe current_zoom_level,
+                                  std::vector<double> zoom_levels) {
+  if (zoomType == ZOOM_OUT) {
+    auto next_lower = std::upper_bound(zoom_levels.rbegin(), zoom_levels.rend(),
+                                       current_zoom_level, std::greater<>());
+    while (next_lower != zoom_levels.rend() &&
+           blink::PageZoomValuesEqual(*next_lower, current_zoom_level)) {
+      ++next_lower;
+    }
+    if (next_lower == zoom_levels.rend()) {
+      return blink::PageZoomFactorToZoomLevel(kMinZoomFactorForBrowser);
+    } else {
+      return *next_lower;
+    }
+  } else {
+    auto next_higher = std::upper_bound(zoom_levels.begin(), zoom_levels.end(),
+                                        current_zoom_level);
+    while (next_higher != zoom_levels.end() &&
+           blink::PageZoomValuesEqual(*next_higher, current_zoom_level)) {
+      ++next_higher;
+    }
+    if (next_higher == zoom_levels.end()) {
+      return blink::PageZoomFactorToZoomLevel(kMaxZoomFactorForBrowser);
+    } else {
+      return *next_higher;
+    }
+  }
+}
+#endif
 }  // namespace zoom

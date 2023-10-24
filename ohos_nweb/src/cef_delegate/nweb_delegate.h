@@ -224,6 +224,8 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void SelectAndCopy() override;
   bool ShouldShowFreeCopy() override;
   void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) override;
+  void SetBrowserZoomLevel(double zoom_factor) override;
+  double GetBrowserZoomLevel() override;
 #endif
 
   void NotifyPopupWindowResult(bool result) override;

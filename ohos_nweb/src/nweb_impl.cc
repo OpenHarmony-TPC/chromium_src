@@ -53,6 +53,9 @@
 #include "res_sched_client_adapter.h"
 #include "services/network/network_service.h"
 #include "soc_perf_client_adapter.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
+#include "chrome/browser/ui/zoom/chrome_zoom_level_prefs.h"
+#include "cef/libcef/browser/alloy/alloy_browser_context.h"
 #endif
 
 #include "libcef/browser/predictors/loading_predictor.h"
@@ -96,6 +99,7 @@ base::LazyInstance<NWebMap>::DestructorAtExit g_nweb_map =
 #ifdef OHOS_NWEB_EX
 base::LazyInstance<std::vector<std::string>>::DestructorAtExit g_browser_args =
     LAZY_INSTANCE_INITIALIZER;
+static double default_zoom_factor_ = 1.0;
 #endif  // OHOS_NWEB_EX
 
 void InitialWebEngineArgs(std::list<std::string>& web_engine_args,
@@ -1298,6 +1302,45 @@ void NWebImpl::SetSavePassword(bool enable) const {
   nweb_delegate_->SetSavePassword(enable);
 }
 
+void NWebImpl::SetBrowserZoomLevel(double zoom_factor) const {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->SetBrowserZoomLevel(zoom_factor);
+}
+
+double NWebImpl::GetBrowserZoomLevel() {
+  if (nweb_delegate_ == nullptr) {
+    return default_zoom_factor_;
+  }
+  return nweb_delegate_->GetBrowserZoomLevel();
+}
+
+// static
+void NWebImpl::SetDefaultBrowserZoomLevel(double zoom_factor) {
+  if (g_nweb_count == 0) { 
+    WVLOG_I("nweb had not initiated try to set default browser zoom level.");
+    return;
+  }
+  for (const auto& cef_browser_context : CefBrowserContext::GetAll()) {
+    content::BrowserContext* browser_context =
+        cef_browser_context->AsBrowserContext();
+    if (!browser_context) {
+      LOG(ERROR) << "SetDefaultBrowserZoomLevel null browser_context";
+      return;
+    }
+    static_cast<AlloyBrowserContext*>(browser_context)
+	->GetZoomLevelPrefs()
+        ->SetDefaultZoomLevelPref(
+	    blink::PageZoomFactorToZoomLevel(zoom_factor));
+    default_zoom_factor_ = zoom_factor;
+  }
+}
+
+// static
+void NWebImpl::SetConnectTimeout(int32_t seconds) {
+  content::GetNetworkService()->SetConnectTimeout(seconds);
+}
 #endif  // OHOS_NWEB_EX
 
 void NWebImpl::PrefetchPage(
