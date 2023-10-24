@@ -1031,7 +1031,11 @@ void UnmarkInCardTable(uintptr_t object,
     }
 
     if (freelist_tail) {
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+      freelist_tail->SetNext(entry, current_slot_span->bucket->random_cookie);
+#else
       freelist_tail->SetNext(entry);
+#endif
     }
     freelist_tail = entry;
     ++freelist_entries;

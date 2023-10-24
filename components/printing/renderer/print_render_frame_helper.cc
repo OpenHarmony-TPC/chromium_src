@@ -107,6 +107,10 @@ constexpr double kMinDpi = 1.0;
 // Also set in third_party/WebKit/Source/core/page/PrintContext.h
 constexpr float kPrintingMinimumShrinkFactor = 1.33333333f;
 
+#if BUILDFLAG(IS_OHOS)
+constexpr int checkCancelCount = 10;
+#endif  // BUILDFLAG(IS_OHOS)
+
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
 bool g_is_preview_enabled = true;
 #else
@@ -1259,7 +1263,7 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
 
 #if BUILDFLAG(IS_OHOS)
   if (delegate_->IsScriptedPrintEnabled()) {
-    LOG(INFO) << "delegate_->IsScriptedPrintEnabled()";
+    LOG(INFO) << "OhosPrintManager delegate isScriptedPrintEnabled";
     web_frame->DispatchBeforePrintEvent(/*print_client=*/nullptr);
 
     static_web_frame_ = web_frame;
@@ -1271,6 +1275,7 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
         &ClosuresForMojoResponse::RunPrintRequestedPreviewQuitClosure,
         closures_for_mojo_responses_));
     loop.Run();
+    LOG(INFO) << "OhosPrintManager loop quit";
     web_frame->DispatchAfterPrintEvent();
     return;
   }
@@ -1988,6 +1993,13 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
     return;  // Failed to init print page settings.
   }
 
+#if BUILDFLAG(IS_OHOS)
+  if (CheckCancel()) {
+    LOG(ERROR) << "OhosPrintManager stop print";
+    return;
+  }
+#endif  // IS_OHOS
+
   // Some full screen plugins can say they don't want to print.
   if (!expected_page_count || expected_page_count > kMaxPageCount) {
     DidFinishPrinting(FAIL_PRINT);
@@ -2093,6 +2105,13 @@ void PrintRenderFrameHelper::PrintPages() {
 
   prep_frame_view_->StartPrinting();
 
+#if BUILDFLAG(IS_OHOS)
+  if (CheckCancel()) {
+    LOG(ERROR) << "OhosPrintManager stop print";
+    return;
+  }
+#endif  // IS_OHOS
+
   uint32_t page_count = prep_frame_view_->GetExpectedPageCount();
   if (!page_count || page_count > kMaxPageCount) {
     LOG(ERROR) << "Can't print 0 pages and the page count couldn't be greater "
@@ -2126,6 +2145,12 @@ void PrintRenderFrameHelper::PrintPages() {
 bool PrintRenderFrameHelper::PrintPagesNative(blink::WebLocalFrame* frame,
                                               uint32_t page_count,
                                               bool is_pdf) {
+#if BUILDFLAG(IS_OHOS)
+  if (CheckCancel()) {
+    LOG(ERROR) << "OhosPrintManager stop print";
+    return false;
+  }
+#endif  // IS_OHOS
   const mojom::PrintPagesParams& params = *print_pages_params_;
   const mojom::PrintParams& print_params = *params.params;
 
@@ -2170,6 +2195,12 @@ bool PrintRenderFrameHelper::PrintPagesNative(blink::WebLocalFrame* frame,
                     GetScaleFactor(print_params.scale_factor, is_pdf), frame,
                     &metafile, page_size_in_dpi, content_area_in_dpi);
   for (size_t i = 1; i < printed_pages.size(); ++i) {
+#if BUILDFLAG(IS_OHOS)
+    if (i % checkCancelCount == 0 && CheckCancel()) {
+      LOG(ERROR) << "OhosPrintManager stop print";
+      return false;
+    }
+#endif  // IS_OHOS
     PrintPageInternal(print_params, printed_pages[i], page_count,
                       GetScaleFactor(print_params.scale_factor, is_pdf), frame,
                       &metafile, nullptr, nullptr);
@@ -2178,7 +2209,12 @@ bool PrintRenderFrameHelper::PrintPagesNative(blink::WebLocalFrame* frame,
   // blink::printEnd() for PDF should be called before metafile is closed.
   FinishFramePrinting();
 
+#if BUILDFLAG(IS_OHOS)
+  metafile.OhosFinishDocument(
+      std::bind(&PrintRenderFrameHelper::CheckCancel, this));
+#else
   metafile.FinishDocument();
+#endif  // IS_OHOS
 
   if (!CopyMetafileDataToReadOnlySharedMem(metafile,
                                            page_params->content.get())) {
@@ -3096,4 +3132,11 @@ void PrintRenderFrameHelper::ScriptingThrottler::Reset() {
   count_ = 0;
 }
 
+#if BUILDFLAG(IS_OHOS)
+bool PrintRenderFrameHelper::CheckCancel() {
+  bool cancel = false;
+  GetPrintManagerHost()->CheckCancel(&cancel);
+  return cancel;
+}
+#endif  // IS_OHOS
 }  // namespace printing

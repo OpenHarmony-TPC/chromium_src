@@ -71,6 +71,10 @@ build_sysroot="use_ohos_sdk_sysroot=false"
 build_asan=0
 use_thin_lto=0
 
+if [ -d "${ROOT_DIR}/ohos_nweb_ex" ]; then
+  with_nweb_ex=1
+fi
+
 usage() {
   echo -ne "USAGE: $0 [OPTIONS] [PRODUCT]
 
@@ -149,6 +153,9 @@ while [ "$1" != "" ]; do
       ;;
     "-ex")
       with_nweb_ex=1
+      ;;
+    "-without-nweb-ex")
+      with_nweb_ex=0
       ;;
     "-h")
       usage

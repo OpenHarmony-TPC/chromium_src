@@ -50,6 +50,9 @@ namespace {
 // `InitFromData()` should make a copy of data for the safety of all operations
 // which would then operate upon that.
 constexpr bool kInitFromDataCopyData = true;
+#if BUILDFLAG(IS_OHOS)
+constexpr int checkCancelCount = 5;
+#endif // BUILDFLAG(IS_OHOS)
 
 bool WriteAssetToBuffer(const SkStreamAsset* asset, void* buffer, size_t size) {
   // Calling duplicate() keeps original asset state unchanged.
@@ -462,4 +465,53 @@ void MetafileSkia::CustomDataToSkPictureCallback(SkCanvas* canvas,
   canvas->drawPicture(it->second, &matrix, nullptr);
 }
 
+#if BUILDFLAG(IS_OHOS)
+  bool MetafileSkia::OhosFinishDocument(std::function<bool()> checkCancel) {
+    // If we've already set the data in InitFromData, leave it be.
+    if (data_->data_stream)
+      return false;
+
+    if (data_->recorder.getRecordingCanvas())
+      FinishPage();
+
+    SkDynamicMemoryWStream stream;
+    sk_sp<SkDocument> doc;
+    cc::PlaybackParams::CustomDataRasterCallback custom_callback;
+    switch (data_->type) {
+      case mojom::SkiaDocumentType::kPDF:
+        doc = MakePdfDocument(printing::GetAgent(), accessibility_tree_, &stream);
+        break;
+      case mojom::SkiaDocumentType::kMSKP:
+        SkSerialProcs procs = SerializationProcs(&data_->subframe_content_info,
+                                                data_->typeface_content_info);
+        doc = SkMakeMultiPictureDocument(&stream, &procs);
+        // It is safe to use base::Unretained(this) because the callback
+        // is only used by `canvas` in the following loop which has shorter
+        // lifetime than `this`.
+        custom_callback = base::BindRepeating(
+            &MetafileSkia::CustomDataToSkPictureCallback, base::Unretained(this));
+        break;
+    }
+
+    int idex = 0;
+    for (const Page& page : data_->pages) {
+      LOG(ERROR) << "OhosPrintManager page " << idex;
+      idex++;
+      if (idex % checkCancelCount == 0 && checkCancel()) {
+        doc->close();
+        data_->data_stream = stream.detachAsStream();
+        return false;
+      }
+      cc::SkiaPaintCanvas canvas(
+          doc->beginPage(page.size.width(), page.size.height()));
+      canvas.drawPicture(page.content, custom_callback);
+      doc->endPage();
+    }
+    doc->close();
+
+    data_->data_stream = stream.detachAsStream();
+    return true;
+  }
+
+#endif // BUILDFLAG(IS_OHOS)
 }  // namespace printing

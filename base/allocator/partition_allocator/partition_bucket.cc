@@ -485,6 +485,13 @@ uint8_t PartitionBucket<thread_safe>::ComputeSystemPagesPerSlotSpan(
   return static_cast<uint8_t>(best_pages);
 }
 
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+uint64_t GenerateRandomCookie()
+{
+  return RandomValue();
+}
+#endif
+
 template <bool thread_safe>
 void PartitionBucket<thread_safe>::Init(uint32_t new_slot_size) {
   slot_size = new_slot_size;
@@ -495,6 +502,9 @@ void PartitionBucket<thread_safe>::Init(uint32_t new_slot_size) {
   decommitted_slot_spans_head = nullptr;
   num_full_slot_spans = 0;
   num_system_pages_per_slot_span = ComputeSystemPagesPerSlotSpan(slot_size);
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  random_cookie = GenerateRandomCookie();
+#endif
 }
 
 template <bool thread_safe>
@@ -790,6 +800,37 @@ PartitionBucket<thread_safe>::ProvisionMoreSlotsAndAllocOne(
 
   // Add all slots that fit within so far committed pages to the free list.
   PartitionFreelistEntry* prev_entry = nullptr;
+
+#if defined(OHOS_ENABLE_RANDOM)
+  uintptr_t random_slot;
+  int num = (commit_end - next_slot) / size;
+  int i;
+
+  size_t random[num];
+  size_t tmp;
+  uint32_t rand;
+  uint32_t randseed = RandomValue();
+  size_t free_list_entries_added = 0;
+
+  for (i = 0; i < num; i++) {
+    random[i] = i;
+  }
+
+  for (i = num - 1; i > 0; i--) {
+    rand = randseed % i;
+    tmp = random[i];
+    random[i] = random[rand];
+    random[rand] = tmp;
+  }
+
+  for (i = 0; i < num; i++) {
+    random_slot = next_slot + size * random[i];
+    if (LIKELY(size <= kMaxMemoryTaggingSize)) {
+      random_slot = memory::TagMemoryRangeRandomly(random_slot, size);
+    }
+    auto* entry =
+        new (reinterpret_cast<void*>(random_slot)) PartitionFreelistEntry();
+#else
   uintptr_t next_slot_end = next_slot + size;
   size_t free_list_entries_added = 0;
   while (next_slot_end <= commit_end) {
@@ -798,16 +839,23 @@ PartitionBucket<thread_safe>::ProvisionMoreSlotsAndAllocOne(
     }
     auto* entry =
         new (reinterpret_cast<void*>(next_slot)) PartitionFreelistEntry();
+#endif
     if (!slot_span->get_freelist_head()) {
       PA_DCHECK(!prev_entry);
       PA_DCHECK(!free_list_entries_added);
       slot_span->SetFreelistHead(entry);
     } else {
       PA_DCHECK(free_list_entries_added);
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+      prev_entry->SetNext(entry, random_cookie);
+#else
       prev_entry->SetNext(entry);
+#endif
     }
+#if !defined(OHOS_ENABLE_RANDOM)
     next_slot = next_slot_end;
     next_slot_end = next_slot + size;
+#endif
     prev_entry = entry;
 #if DCHECK_IS_ON()
     free_list_entries_added++;

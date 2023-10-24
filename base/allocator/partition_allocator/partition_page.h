@@ -620,7 +620,11 @@ SlotSpanMetadata<thread_safe>::PopForAlloc(size_t size) {
   PartitionFreelistEntry* result = freelist_head;
   // Not setting freelist_is_sorted_ to false since this doesn't destroy
   // ordering.
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  freelist_head = freelist_head->GetNext(size, bucket->random_cookie);
+#else
   freelist_head = freelist_head->GetNext(size);
+#endif
   num_allocated_slots++;
   return result;
 }
@@ -638,9 +642,15 @@ ALWAYS_INLINE void SlotSpanMetadata<thread_safe>::Free(uintptr_t slot_start)
   // Catches an immediate double free.
   PA_CHECK(entry != freelist_head);
   // Look for double free one level deeper in debug.
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  PA_DCHECK(!freelist_head ||
+            entry != freelist_head->GetNext(bucket->slot_size, bucket->random_cookie));
+  entry->SetNext(freelist_head, this->bucket->random_cookie);
+#else
   PA_DCHECK(!freelist_head ||
             entry != freelist_head->GetNext(bucket->slot_size));
   entry->SetNext(freelist_head);
+#endif
   SetFreelistHead(entry);
   // A best effort double-free check. Works only on empty slot spans.
   PA_CHECK(num_allocated_slots);
@@ -666,7 +676,11 @@ ALWAYS_INLINE void SlotSpanMetadata<thread_safe>::AppendFreeList(
 #if DCHECK_IS_ON()
   auto* root = PartitionRoot<thread_safe>::FromSlotSpan(this);
   root->lock_.AssertAcquired();
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  PA_DCHECK(!tail->GetNext(bucket->slot_size, bucket->random_cookie));
+#else
   PA_DCHECK(!tail->GetNext(bucket->slot_size));
+#endif
   PA_DCHECK(number_of_freed);
   PA_DCHECK(num_allocated_slots);
   if (CanStoreRawSize()) {
@@ -675,7 +689,11 @@ ALWAYS_INLINE void SlotSpanMetadata<thread_safe>::AppendFreeList(
   {
     size_t number_of_entries = 0;
     for (auto* entry = head; entry;
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+         entry = entry->GetNext(bucket->slot_size, bucket->random_cookie), ++number_of_entries) {
+#else
          entry = entry->GetNext(bucket->slot_size), ++number_of_entries) {
+#endif
       uintptr_t unmasked_entry =
           memory::UnmaskPtr(reinterpret_cast<uintptr_t>(entry));
       // Check that all entries belong to this slot span.
@@ -686,8 +704,11 @@ ALWAYS_INLINE void SlotSpanMetadata<thread_safe>::AppendFreeList(
     PA_DCHECK(number_of_entries == number_of_freed);
   }
 #endif
-
+#if defined(OHOS_ENABLE_FREELIST_HARDENED)
+  tail->SetNext(freelist_head, bucket->random_cookie);
+#else
   tail->SetNext(freelist_head);
+#endif
   SetFreelistHead(head);
   PA_DCHECK(num_allocated_slots >= number_of_freed);
   num_allocated_slots -= number_of_freed;
