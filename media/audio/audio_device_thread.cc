@@ -10,6 +10,11 @@
 #include "base/system/sys_info.h"
 #include "build/build_config.h"
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/process/process_handle.h"
+#include "res_sched_client_adapter.h"
+#endif
+
 namespace media {
 
 // AudioDeviceThread::Callback implementation
@@ -75,6 +80,12 @@ base::TimeDelta AudioDeviceThread::GetRealtimePeriod() {
 void AudioDeviceThread::ThreadMain() {
   base::PlatformThread::SetName(thread_name_);
   callback_->InitializeOnAudioThread();
+
+#if BUILDFLAG(IS_OHOS)
+  OHOS::NWeb::ResSchedClientAdapter::ReportAudioData(
+      OHOS::NWeb::ResSchedStatusAdapter::AUDIO_STATUS_START,
+      base::GetCurrentProcId(), base::PlatformThread::CurrentId());
+#endif
 
   uint32_t buffer_index = 0;
   while (true) {
