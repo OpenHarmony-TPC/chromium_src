@@ -7840,22 +7840,7 @@ void WebContentsImpl::SetFocusedFrame(FrameTreeNode* node,
 
 #if BUILDFLAG(IS_OHOS)
 void WebContentsImpl::OnFormEditingStateChanged(uint64_t form_id, bool did_submit) {
-  LOG(INFO) << "WebContentsImpl::OnFormEditingStateChanged form_id: " << form_id << " did_submit: " << did_submit;
-  bool form_editing_state_ = edited_forms_id_.size();
-  std::vector<uint64_t>::iterator it = find(edited_forms_id_.begin(), edited_forms_id_.end(), form_id);
-  
-  if (it == edited_forms_id_.end() && !did_submit) {
-    edited_forms_id_.push_back(form_id);
-  } else if (it != edited_forms_id_.end() && did_submit) {
-    edited_forms_id_.erase(it);
-  } else {
-    return;
-  }
-
-  bool current_is_editing_ = edited_forms_id_.size() != 0;
-  if (current_is_editing_ != form_editing_state_) {
-    observers_.NotifyObservers(&WebContentsObserver::OnFormEditingStateChanged, current_is_editing_);
-  }
+  observers_.NotifyObservers(&WebContentsObserver::OnFormEditingStateChanged, !did_submit, form_id);
 }
 #endif
 

@@ -2376,9 +2376,6 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
 
   VisibleTimeRequestTrigger visible_time_request_trigger_;
 
-#if BUILDFLAG(IS_OHOS)
-  std::vector<uint64_t> edited_forms_id_;
-#endif
   
 #if defined(OHOS_NWEB_EX)
   bool force_enable_zoom_;
