@@ -1380,6 +1380,14 @@ class RenderProcessHostImpl::IOThreadHostImpl : public mojom::ChildProcessHost {
                                   weak_host_, std::move(receiver)));
   }
 
+#if BUILDFLAG(IS_OHOS)
+  void ReportKeyThread(int32_t status, int32_t process_id, int32_t thread_id, int32_t role) override {
+    using namespace OHOS::NWeb;
+    ResSchedClientAdapter::ReportKeyThread(
+      static_cast<ResSchedStatusAdapter>(status), process_id, thread_id, static_cast<ResSchedRoleAdapter>(role));
+  }
+#endif
+
   static void BindHostReceiverOnUIThread(
       base::WeakPtr<RenderProcessHostImpl> weak_host,
       mojo::GenericPendingReceiver receiver) {

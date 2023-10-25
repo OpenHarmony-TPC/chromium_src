@@ -5,6 +5,7 @@
 #include "content/renderer/categorized_worker_pool.h"
 
 #include <string>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -256,6 +257,16 @@ void CategorizedWorkerPool::Shutdown() {
     threads_.pop_back();
   }
 }
+
+#if BUILDFLAG(IS_OHOS)
+std::set<int32_t> GetTidOfAllWorker() {
+  std::set<int32_t> tidSet {};
+  for (const auto& thread : threads_) {
+    tidSet.insert(thread->tid());
+  }
+  return tidSet;
+}
+#endif
 
 // Overridden from base::TaskRunner:
 bool CategorizedWorkerPool::PostDelayedTask(const base::Location& from_here,

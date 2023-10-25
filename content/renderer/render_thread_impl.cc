@@ -178,6 +178,10 @@
 #include "content/renderer/media/win/dcomp_texture_factory.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "res_sched_client_adapter.h"
+#endif
+
 #ifdef ENABLE_VTUNE_JIT_INTERFACE
 #include "v8/src/third_party/vtune/v8-vtune.h"
 #endif
@@ -1626,6 +1630,17 @@ void RenderThreadImpl::CompositingModeFallbackToSoftware() {
 
 scoped_refptr<gpu::GpuChannelHost> RenderThreadImpl::EstablishGpuChannelSync() {
   TRACE_EVENT0("gpu", "RenderThreadImpl::EstablishGpuChannelSync");
+
+#if BUILDFLAG(IS_OHOS)
+  using namespace OHOS::NWeb;
+
+  auto tidSet = categorized_worker_pool_->GetTidOfAllWorker();
+  auto host = child_process_host();
+  for (auto tid : tidSet) {
+    host->ReportKeyThread(static_cast<int32_t>(ResSchedStatusAdapter::THREAD_CREATED), base::GetCurrentProcId(),
+      tid, static_cast<int32_t>(ResSchedRoleAdapter::IMPORTANT_DISPLAY));
+  }
+#endif
 
   scoped_refptr<gpu::GpuChannelHost> gpu_channel =
       gpu_->EstablishGpuChannelSync();

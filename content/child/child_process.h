@@ -91,6 +91,10 @@ class CONTENT_EXPORT ChildProcess {
   static ChildProcess* current();
 
  private:
+#if BUILDFLAG(IS_OHOS)
+  void ReportIoThreadStatus(bool is_created);
+#endif
+
   int ref_count_;
 
   // An event that will be signalled when we shutdown.
