@@ -259,7 +259,7 @@ void CategorizedWorkerPool::Shutdown() {
 }
 
 #if BUILDFLAG(IS_OHOS)
-std::set<int32_t> GetTidOfAllWorker() {
+std::set<int32_t> CategorizedWorkerPool::GetTidOfAllWorker() {
   std::set<int32_t> tidSet {};
   for (const auto& thread : threads_) {
     tidSet.insert(thread->tid());
