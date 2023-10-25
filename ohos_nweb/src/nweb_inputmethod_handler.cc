@@ -145,13 +145,30 @@ IMFAdapterCursorInfo NWebInputMethodHandler::GetCursorInfo() {
   return cursorInfo;
 }
 
+IMFAdapterTextInputType TextInputTypeToIMFAdapter(cef_text_input_type_t type) {
+  switch (type) {
+    case CEF_TEXT_INPUT_TYPE_TEXT:
+      return IMFAdapterTextInputType::TEXT;
+    case CEF_TEXT_INPUT_TYPE_PASSWORD:
+      return IMFAdapterTextInputType::VISIBLE_PASSWORD;
+    case CEF_TEXT_INPUT_TYPE_EMAIL:
+      return IMFAdapterTextInputType::EMAIL_ADDRESS;
+    case CEF_TEXT_INPUT_TYPE_NUMBER:
+      return IMFAdapterTextInputType::NUMBER;
+    case CEF_TEXT_INPUT_TYPE_TELEPHONE:
+      return IMFAdapterTextInputType::PHONE;
+    case CEF_TEXT_INPUT_TYPE_URL:
+      return IMFAdapterTextInputType::URL;
+    default:
+      return IMFAdapterTextInputType::TEXT;
+  }
+}
+
 void NWebInputMethodHandler::Attach(CefRefPtr<CefBrowser> browser,
                                     bool show_keyboard,
-                                    cef_text_input_mode_t input_mode) {
+                                    cef_text_input_type_t input_type) {
   show_keyboard_ = show_keyboard;
-  input_mode_ = input_mode == CEF_TEXT_INPUT_MODE_NUMERIC
-                    ? IMFAdapterTextInputType::NUMBER
-                    : IMFAdapterTextInputType::TEXT;
+  input_mode_ = TextInputTypeToIMFAdapter(input_type);
   composing_text_.clear();
   browser_ = browser;
   if (inputmethod_adapter_ == nullptr) {
