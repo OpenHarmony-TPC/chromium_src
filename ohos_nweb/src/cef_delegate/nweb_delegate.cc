@@ -1064,10 +1064,10 @@ void NWebDelegate::InitializeCef(std::string url,
   settings.windowless_rendering_enabled = true;
   settings.log_severity = LOGSEVERITY_INFO;
   settings.multi_threaded_message_loop = false;
-  auto& system_properties_adapter = 
+  auto& system_properties_adapter =
         OHOS::NWeb::OhosAdapterHelper::GetInstance()
               .GetSystemPropertiesInstance();
-  OHOS::NWeb::ProductDeviceType deviceType = 
+  OHOS::NWeb::ProductDeviceType deviceType =
       system_properties_adapter.GetProductDeviceType();
   bool is_pc_device =
       deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_TABLET ||
@@ -1783,6 +1783,15 @@ void NWebDelegate::SetToken(void* token) {
   }
 
   GetBrowser()->GetHost()->SetToken(token);
+}
+
+void NWebDelegate::SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) {
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "SetNestedScrollMode can not get browser";
+    return;
+  }
+
+  GetBrowser()->GetHost()->SetNestedScrollMode(static_cast<int>(nestedScrollMode));
 }
 
 void NWebDelegate::PrefetchPage(

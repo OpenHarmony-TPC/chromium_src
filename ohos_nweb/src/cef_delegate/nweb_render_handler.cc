@@ -508,11 +508,21 @@ void NWebRenderHandler::OnOverScrollFlingVelocity(CefRefPtr<CefBrowser> browser,
                                                   const float x,
                                                   const float y,
                                                   bool is_fling) {
+  if (auto handler = handler_.lock()) {
+    handler->OnOverScrollFlingVelocity(x, y, is_fling);
+  }
 }
 
 void NWebRenderHandler::OnOverScrollFlingEnd(CefRefPtr<CefBrowser> browser) {
+  if (auto handler = handler_.lock()) {
+    handler->OnOverScrollFlingEnd();
+  }
 }
 
 void NWebRenderHandler::OnScrollState(CefRefPtr<CefBrowser> browser,
-                                      bool scroll_state) {}
+                                      bool scroll_state) {
+  if (auto handler = handler_.lock()) {
+    handler->OnScrollState(scroll_state);
+  }
+}
 }  // namespace OHOS::NWeb

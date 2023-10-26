@@ -237,6 +237,7 @@ class NWebDelegateInterface
   virtual void NotifyPopupWindowResult(bool result) = 0;
   virtual void SetWindowId(uint32_t window_id);
   virtual void SetToken(void* token) = 0;
+  virtual void SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) = 0;
 };
 }  // namespace OHOS::NWeb
 
