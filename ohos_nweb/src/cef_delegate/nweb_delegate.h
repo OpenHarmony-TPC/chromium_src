@@ -231,6 +231,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void SetWindowId(uint32_t window_id) override;
   void SetToken(void* token) override;
   void SetVirtualPixelRatio(float ratio) override;
+  void SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) override;
 
  public:
   int argc_;
