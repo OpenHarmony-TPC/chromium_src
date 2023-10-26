@@ -265,11 +265,15 @@ shared_library("libnweb_render") {
   include_dirs = [ "include" ]
   include_dirs += ohos_src_includes
 
-  sources = [ "src/nweb_render_main.cc" ]
+  sources = [ 
+    "src/nweb_render_main.cc",
+    "src/set_renderer_seccomp_policy.cc",
+  ]
 
   deps = [
     ":nweb_hilog",
     "//cef:libcef_dll_wrapper",
     "//cef:libweb_engine",
+    "//sandbox:sandbox",
   ]
 }
