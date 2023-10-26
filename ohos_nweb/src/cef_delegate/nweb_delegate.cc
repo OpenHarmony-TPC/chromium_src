@@ -1898,6 +1898,19 @@ void NWebDelegate::SetShouldFrameSubmissionBeforeDraw(bool should) {
   }
 }
 
+void NWebDelegate::SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) {
+  if (GetBrowser().get()) {
+    GetBrowser()->GetHost()->SetVirtualKeyBoardArg(width, height, keyboard);
+  }
+}
+
+bool NWebDelegate::ShouldVirtualKeyboardOverlay() {
+  if (GetBrowser().get()) {
+    return GetBrowser()->GetHost()->ShouldVirtualKeyboardOverlay();
+  }
+  return false;
+}
+
 void NWebDelegate::SetAudioResumeInterval(int32_t resumeInterval) {
   if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
     LOG(ERROR) << "SetAudioResumeInterval can not get browser";

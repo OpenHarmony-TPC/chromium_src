@@ -782,6 +782,16 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * Set enable lower the frame rate.
      */
     virtual void SetEnableLowerFrameRate(bool enabled) const = 0;
+
+    /**
+     * Set the property values for width, height, and keyboard height.
+     */
+    virtual void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) = 0;
+
+    /**
+     * Set the virtual keyboard to override the web status.
+     */
+    virtual bool ShouldVirtualKeyboardOverlay() = 0;
 };
 }  // namespace OHOS::NWeb
 

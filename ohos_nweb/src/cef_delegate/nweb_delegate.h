@@ -212,6 +212,10 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void PrefetchPage(
       std::string& url,
       std::map<std::string, std::string> additionalHttpHeaders) override;
+  void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) override;
+  bool ShouldVirtualKeyboardOverlay() override;
+
+
 #if defined (OHOS_NWEB_EX)
   void SetForceEnableZoom(bool forceEnableZoom) override;
   bool GetForceEnableZoom() override;

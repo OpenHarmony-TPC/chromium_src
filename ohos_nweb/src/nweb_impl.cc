@@ -721,6 +721,21 @@ void NWebImpl::SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) {
   nweb_delegate_->SetNestedScrollMode(nestedScrollMode);
 }
 
+void NWebImpl::SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("SetVirtualKeyBoardArg nweb delegate is null");
+    return;
+  }
+  nweb_delegate_->SetVirtualKeyBoardArg(width, height, keyboard);
+}
+
+bool NWebImpl::ShouldVirtualKeyboardOverlay() {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("ShouldVirtualKeyboardOverlay nweb delegate is null");
+    return false;
+  }
+  return nweb_delegate_->ShouldVirtualKeyboardOverlay();
+}
 const std::shared_ptr<NWebPreference> NWebImpl::GetPreference() const {
   if (nweb_delegate_ == nullptr) {
     return nullptr;

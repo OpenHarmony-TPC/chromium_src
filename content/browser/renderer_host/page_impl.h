@@ -47,7 +47,9 @@ class CONTENT_EXPORT PageImpl : public Page {
   void WriteIntoTrace(perfetto::TracedValue context) override;
   base::WeakPtr<Page> GetWeakPtr() override;
   bool IsPageScaleFactorOne() override;
-
+#if BUILDFLAG(IS_OHOS)
+  void NotifyVirtualKeyboardOverlayRect(const gfx::Rect& keyboard_rect);
+#endif
   void UpdateManifestUrl(const GURL& manifest_url);
 
   RenderFrameHostImpl& GetMainDocument() const;
