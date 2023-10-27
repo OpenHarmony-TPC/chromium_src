@@ -1455,3 +1455,13 @@ extern "C" OHOS_NWEB_EXPORT void PrepareForPageLoad(std::string url,
     WVLOG_I("nweb hadn't initiated try to prepare for page load later");
   }
 }
+
+extern "C" OHOS_NWEB_EXPORT void SetConnectionTimeout(const int& timeout) {
+  net_service::NetHelpers::connection_timeout = timeout;
+  if (content::GetNetworkService() != nullptr) {
+      content::GetNetworkService()->SetConnectTimeout(net_service::NetHelpers::connection_timeout);
+      WVLOG_I("set connection timeout value in NetHelpers is: %{public}d", net_service::NetHelpers::connection_timeout);
+  } else {
+      WVLOG_E("net_work_service is nullptr");
+  }
+}
