@@ -304,6 +304,18 @@ std::string NWebCookieManagerDelegate::ReturnCookie(const std::string& url,
   return visitor->ReturnCookieLine();
 }
 
+bool FixInvalidGurl(const CefString& url, GURL& gurl) {
+  if (!gurl.is_valid()) {
+    GURL fixedGurl = GURL("https://" + url.ToString());
+    if (fixedGurl.is_valid() && fixedGurl.host() == url.ToString()) {
+      gurl = fixedGurl;
+      return true;
+    }
+    return false;
+  }
+  return true;
+}
+
 void NWebCookieManagerDelegate::SetCookie(
     const std::string& url,
     const std::string& value,
@@ -313,16 +325,20 @@ void NWebCookieManagerDelegate::SetCookie(
     LOG(ERROR) << "GetGlobalCookieManager failed";
     return;
   }
+  GURL gurl = GURL(url);
+  if (!FixInvalidGurl(url, gurl)) {
+    return;
+  }
   CefCookie cef_cookie;
-  if (!CefCookieManager::CreateCefCookie(CefString(url), CefString(value),
+  if (!CefCookieManager::CreateCefCookie(CefString(gurl.spec()), CefString(value),
                                          cef_cookie)) {
     LOG(ERROR) << "CreateCefCookie failed";
     return;
   }
 
-  if (!cookie_manager->SetCookie(CefString(url), cef_cookie,
+  if (!cookie_manager->SetCookie(CefString(gurl.spec()), cef_cookie,
                                  new CookieSetCallback(nullptr, callback),
-                                 false)) {
+                                 false, CefString(value))) {
     LOG(ERROR) << "SetCookie error";
     return;
   }
@@ -336,14 +352,18 @@ int NWebCookieManagerDelegate::SetCookie(const std::string& url,
     return NWEB_ERR;
   }
   CefCookie cef_cookie;
-  if (!CefCookieManager::CreateCefCookie(CefString(url), CefString(value),
+  GURL gurl = GURL(url);
+  if (!FixInvalidGurl(url, gurl)) {
+    return NWEB_INVALID_URL;
+  }
+  if (!CefCookieManager::CreateCefCookie(CefString(gurl.spec()), CefString(value),
                                          cef_cookie)) {
     LOG(ERROR) << "CreateCefCookie failed";
     return NWEB_INVALID_COOKIE_VALUE;
   }
   CefRefPtr<CookieSetCallback> callback(
       new CookieSetCallback(nullptr, nullptr));
-  if (!cookie_manager->SetCookie(CefString(url), cef_cookie, callback, true)) {
+  if (!cookie_manager->SetCookie(CefString(gurl.spec()), cef_cookie, callback, true, CefString(value))) {
     LOG(ERROR) << "SetCookie error";
     return NWEB_INVALID_URL;
   }
