@@ -16,6 +16,7 @@ config("compiler") {
   cflags = [
     "-ffunction-sections",
     "-fno-short-enums",
+    "-funwind-tables",
   ]
   defines = [
     "OSOHOS",
