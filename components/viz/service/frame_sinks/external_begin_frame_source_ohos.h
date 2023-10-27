@@ -52,6 +52,7 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
 
   BeginFrameArgsGenerator begin_frame_args_generator_;
   bool vsync_notification_enabled_;
+  bool first_vsync_since_notify_enabled_;
 
   std::unique_ptr<VSyncUserData> user_data_;
   OHOS::NWeb::VSyncAdapter& vsync_adapter_;

@@ -45,7 +45,11 @@ GestureConfiguration::GestureConfiguration()
       max_swipe_deviation_angle_(20),
       max_time_between_double_click_in_ms_(700),
       max_touch_down_duration_for_click_in_ms_(800),
+#ifdef BUILDFLAG(IS_OHOS)
+      max_touch_move_in_pixels_for_click_(5),
+#else
       max_touch_move_in_pixels_for_click_(15),
+#endif
       min_distance_for_pinch_scroll_in_pixels_(20),
       min_fling_velocity_(30.0f),
       min_gesture_bounds_length_(0),

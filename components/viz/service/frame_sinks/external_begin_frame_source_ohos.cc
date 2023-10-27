@@ -18,6 +18,8 @@ constexpr int64_t VSYNC_PERIOD_90HZ = 11111111;
 constexpr int64_t VSYNC_PERIOD_60HZ = 16666666;
 constexpr int64_t VSYNC_PERIOD_6090HZ_MID = 13000000;
 bool g_skip_vsync = false;
+constexpr int64_t VSYNC_PERIOD_120HZ = 8333333;
+constexpr int64_t VSYNC_PERIOD_90120HZ_MID = 9800000;
 
 class ExternalBeginFrameSourceOHOS::VSyncUserData {
  public:
@@ -39,6 +41,7 @@ ExternalBeginFrameSourceOHOS::ExternalBeginFrameSourceOHOS(
     FrameSinkManagerImpl* frame_sink_manager)
     : ExternalBeginFrameSource(this, restart_id),
       vsync_notification_enabled_(false),
+      first_vsync_since_notify_enabled_(false),
       vsync_adapter_(OhosAdapterHelper::GetInstance().GetVSyncAdapter()),
       frame_sink_manager_(frame_sink_manager) {
   TRACE_EVENT0("viz",
@@ -96,17 +99,25 @@ void ExternalBeginFrameSourceOHOS::OnVSyncImpl(int64_t timestamp,
   last_vsync_period_ = timestamp;
   vsync_period_ = vsync_adapter_.GetVSyncPeriod();
   if (vsync_period_ == 0) {
-    int64_t period = last_vsync_period_ - pre_vsync_period_;
-    pre_vsync_period_ = last_vsync_period_;
-    if (period > 0 && period < VSYNC_PERIOD_6090HZ_MID) {
-      vsync_period_ = VSYNC_PERIOD_90HZ;
+    if (first_vsync_since_notify_enabled_) {
+      first_vsync_since_notify_enabled_ = false;
+      pre_vsync_period_ = last_vsync_period_;
     } else {
-      vsync_period_ = VSYNC_PERIOD_60HZ;
+      int64_t period = last_vsync_period_ - pre_vsync_period_;
+      pre_vsync_period_ = last_vsync_period_;
+      if (period > 0 && period < VSYNC_PERIOD_90120HZ_MID) {
+        vsync_period_ = VSYNC_PERIOD_120HZ;
+      } else if (period > 0 && period < VSYNC_PERIOD_6090HZ_MID) {
+        vsync_period_ = VSYNC_PERIOD_90HZ;
+      } else {
+        vsync_period_ = VSYNC_PERIOD_60HZ;
+      }
     }
   }
   if (lower_frame_rate_enabled_) {
     vsync_period_ = vsync_period_ * 2;
   }
+  
   
 #if BUILDFLAG(IS_OHOS)
 ReportLossFrame::GetInstance()->SetVsyncPeriod(vsync_period_);
@@ -155,6 +166,7 @@ void ExternalBeginFrameSourceOHOS::SetEnabled(bool enabled) {
   TRACE_EVENT1("viz", "ExternalBeginFrameSourceOHOS::SetEnabled", "enabled",
                enabled);
   vsync_notification_enabled_ = enabled;
+  first_vsync_since_notify_enabled_ = true;
   if (vsync_notification_enabled_ && user_data_ != nullptr) {
     vsync_adapter_.RequestVsync(user_data_.release(),
                                  ExternalBeginFrameSourceOHOS::OnVSync);
