@@ -258,4 +258,11 @@ void PageImpl::UpdateEncoding(const std::string& encoding_name) {
       base::GetCanonicalEncodingNameByAliasName(encoding_name);
 }
 
+#if BUILDFLAG(IS_OHOS)
+void PageImpl::NotifyVirtualKeyboardOverlayRect(
+  const gfx::Rect& keyboard_rect){
+    GetMainDocument().GetAssociatedLocalFrame()->NotifyVirtualKeyboardOverlayRect(
+      keyboard_rect);
+}
+#endif
 }  // namespace content

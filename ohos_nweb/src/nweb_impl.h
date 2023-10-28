@@ -164,6 +164,8 @@ class NWebImpl : public NWeb {
   void SetWindowId(uint32_t window_id) override;
   void SetToken(void* token) override;
   void SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) override;
+  void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) override;
+  bool ShouldVirtualKeyboardOverlay() override;
 
   // For NWebEx
   static NWebImpl* FromID(int32_t nweb_id);
