@@ -636,6 +636,8 @@ public:
     virtual void OnActivityStateChanged(int state, ActivityType type) {}
 
     virtual void OnScrollState(bool scrollState) {}
+
+    virtual void OnRootLayerChanged(int width, int height) {}
 };
 }  // namespace OHOS::NWeb
 

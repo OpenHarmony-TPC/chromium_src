@@ -204,6 +204,10 @@ void NWebRenderHandler::OnRootLayerChanged(CefRefPtr<CefBrowser> browser,
                                            int width) {
   content_height_ = height;
   content_width_ = width;
+  if (auto handler = handler_.lock()) {
+    handler->OnRootLayerChanged(width * screen_info_.display_ratio,
+                                height * screen_info_.display_ratio);
+  }
 }
 
 void NWebRenderHandler::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser,
