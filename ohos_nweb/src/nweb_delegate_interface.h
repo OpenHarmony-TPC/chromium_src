@@ -229,6 +229,9 @@ class NWebDelegateInterface
   virtual void SetSavePassword(bool enable) = 0;
   virtual bool GetSavePassword() = 0;
   virtual void SaveOrUpdatePassword(bool is_update) = 0;
+
+  virtual void SetBrowserZoomLevel(double zoom_factor) = 0;
+  virtual double GetBrowserZoomLevel() = 0;
 #endif
 
   virtual void SetShouldFrameSubmissionBeforeDraw(bool should) = 0;

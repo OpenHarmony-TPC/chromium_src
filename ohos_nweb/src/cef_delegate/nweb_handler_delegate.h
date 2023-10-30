@@ -326,6 +326,10 @@ class NWebHandlerDelegate : public CefClient,
                       CefCursorHandle cursor,
                       cef_cursor_type_t type,
                       const CefCursorInfo& custom_cursor_info) override;
+  // #ifdef OHOS_NWEB_EX
+  void OnContentsBrowserZoomChange(double zoom_factor) override;
+  // #endif
+  
   /* CefDisplayHandler method end */
 
   /* CefFocusHandler method begin */

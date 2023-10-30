@@ -112,6 +112,15 @@ void HostZoomMap::SetZoomLevel(WebContents* web_contents, double level) {
       static_cast<WebContentsImpl*>(web_contents), level);
 }
 
+#ifdef OHOS_NWEB_EX
+double HostZoomMap::GetDefaultBrowserZoomLevel(WebContents* web_contents) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  HostZoomMapImpl* host_zoom_map = static_cast<HostZoomMapImpl*>(
+      HostZoomMap::GetForWebContents(web_contents));
+  return host_zoom_map->GetDefaultZoomLevel();
+}
+#endif
+
 void HostZoomMap::SendErrorPageZoomLevelRefresh(WebContents* web_contents) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   HostZoomMapImpl* host_zoom_map =

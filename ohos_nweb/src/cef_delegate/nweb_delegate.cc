@@ -38,7 +38,14 @@
 #include "nweb_preference_delegate.h"
 #include "url/gurl.h"
 
+#ifdef OHOS_NWEB_EX
+#include <cmath>
+#endif
+
 namespace OHOS::NWeb {
+#ifdef OHOS_NWEB_EX
+static const double kZoomLevelToFactorRatio = 1.2;
+#endif
 
 void ConvertCefValueToNWebMessage(CefRefPtr<CefValue> src, std::shared_ptr<NWebMessage> dst) {
   int type = src->GetType();
@@ -1928,4 +1935,23 @@ void NWebDelegate::SetAudioExclusive(bool audioExclusive) {
 
   GetBrowser()->GetHost()->SetAudioExclusive(audioExclusive);
 }
+
+#ifdef OHOS_NWEB_EX
+void NWebDelegate::SetBrowserZoomLevel(double zoom_factor) {
+  LOG(DEBUG) << "NWebDelegate::SetBrowserZoomLevel: " << zoom_factor;
+  if (GetBrowser().get()) {
+    GetBrowser()->GetHost()->SetBrowserZoomLevel(zoom_factor);
+  }
+}
+
+double NWebDelegate::GetBrowserZoomLevel() {
+  LOG(DEBUG) << "NWebDelegate::GetBrowserZoomLevel.";
+  double zoom_factor = 1.0;
+  if (GetBrowser().get()) {
+    zoom_factor =
+        std::pow(kZoomLevelToFactorRatio, GetBrowser().get()->GetZoomLevel());
+  }
+  return zoom_factor;
+}
+#endif
 }  // namespace OHOS::NWeb

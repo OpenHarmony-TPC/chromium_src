@@ -1493,6 +1493,17 @@ bool NWebHandlerDelegate::OnCursorChange(CefRefPtr<CefBrowser> browser,
   CursorType cursorType(static_cast<CursorType>(type));
   return nweb_handler_->OnCursorChange(cursorType, info);
 }
+
+void NWebHandlerDelegate::OnContentsBrowserZoomChange(double zoom_factor) {
+#ifdef OHOS_NWEB_EX
+  if (web_app_client_extension_listener_ != nullptr &&
+      web_app_client_extension_listener_->ContentsBrowserZoomChange !=
+          nullptr) {
+    web_app_client_extension_listener_->ContentsBrowserZoomChange(
+        zoom_factor, web_app_client_extension_listener_->nweb_id);
+  }
+#endif
+}
 /* CefDisplayHandler method end */
 
 /* CefFocusHandler method begin */
