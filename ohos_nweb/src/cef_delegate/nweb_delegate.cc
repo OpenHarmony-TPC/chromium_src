@@ -1949,7 +1949,7 @@ double NWebDelegate::GetBrowserZoomLevel() {
   double zoom_factor = 1.0;
   if (GetBrowser().get()) {
     zoom_factor =
-        std::pow(kZoomLevelToFactorRatio, GetBrowser().get()->GetZoomLevel());
+        std::pow(kZoomLevelToFactorRatio, GetBrowser()->GetHost()->GetZoomLevel());
   }
   return zoom_factor;
 }

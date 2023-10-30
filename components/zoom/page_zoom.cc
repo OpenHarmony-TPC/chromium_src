@@ -129,7 +129,7 @@ void PageZoom::Zoom(content::WebContents* web_contents,
 #ifdef OHOS_NWEB_EX
 // static
 double PageZoom::GetNextZoomLevel(ZoomType zoomType,
-                                  doulbe current_zoom_level,
+                                  double current_zoom_level,
                                   std::vector<double> zoom_levels) {
   if (zoomType == ZOOM_OUT) {
     auto next_lower = std::upper_bound(zoom_levels.rbegin(), zoom_levels.rend(),

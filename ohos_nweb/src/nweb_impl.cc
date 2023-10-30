@@ -1299,7 +1299,7 @@ void NWebImpl::SetBrowserZoomLevel(double zoom_factor) const {
   nweb_delegate_->SetBrowserZoomLevel(zoom_factor);
 }
 
-double NWebImpl::GetBrowserZoomLevel() {
+double NWebImpl::GetBrowserZoomLevel() const {
   if (nweb_delegate_ == nullptr) {
     return default_zoom_factor_;
   }
