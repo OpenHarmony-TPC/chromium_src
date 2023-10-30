@@ -36,6 +36,7 @@
 #include "nweb_handler.h"
 #include "nweb_hilog.h"
 #include "ohos_adapter_helper.h"
+#include "cef_delegate/nweb_download_handler_delegate.h"
 
 #include "services/device/wake_lock/power_save_blocker/nweb_screen_lock_tracker.h"
 
@@ -1251,46 +1252,6 @@ bool NWebImpl::GetForceEnableZoom() const {
   return nweb_delegate_->GetForceEnableZoom();
 }
 
-void NWebImpl::PutWebDownloadDelegateCallback(
-    std::shared_ptr<NWebDownloadDelegateCallback>
-        web_download_delegate_listener) {
-  if (nweb_delegate_ == nullptr) {
-    WVLOG_E("set web download delegate callback failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
-    return;
-  }
-
-  nweb_delegate_->RegisterWebDownloadDelegateListener(
-      web_download_delegate_listener);
-}
-
-void NWebImpl::StartDownload(const char* url) {
-  if (nweb_delegate_ == nullptr) {
-    WVLOG_E("start download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
-    return;
-  }
-
-  nweb_delegate_->StartDownload(url);
-}
-
-void NWebImpl::ResumeDownload(std::shared_ptr<NWebDownloadItem> web_download) {
-  if (nweb_delegate_ == nullptr) {
-    WVLOG_E("resume download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
-    return;
-  }
-
-  nweb_delegate_->ResumeDownload(web_download);
-}
-
-// static
-void NWebImpl::ResumeDownloadStatic(
-    std::shared_ptr<NWebDownloadItem> web_download) {
-  CefResumeDownload(web_download->guid, web_download->url,
-                    web_download->full_path, web_download->received_bytes,
-                    web_download->total_bytes, web_download->etag,
-                    web_download->mime_type, web_download->last_modified,
-                    web_download->received_slices);
-}
-
 void NWebImpl::SetEnableBlankTargetPopupIntercept(
     bool enableBlankTargetPopup) const {
   if (nweb_delegate_ == nullptr) {
@@ -1458,6 +1419,58 @@ extern "C" OHOS_NWEB_EXPORT void SetHttpDns(const NWebDOHConfig& config) {
   net_service::NetHelpers::doh_config = config.doh_config;
 
   CefApplyHttpDns();
+}
+
+extern "C" OHOS_NWEB_EXPORT void WebDownloadManager_PutDownloadCallback(NWebDownloadDelegateCallback* callback) {
+  if (!callback) {
+    WVLOG_E("invalid callback");
+    return;
+  }
+  WVLOG_I("[WebDownloadManager] put download callback.");
+  CefRefPtr<NWebDownloadHandlerDelegate> delegate =
+      new NWebDownloadHandlerDelegate(nullptr);
+  delegate->RegisterWebDownloadDelegateListener(std::make_shared<NWebDownloadDelegateCallback>(*callback));
+  CefSetDownloadHandler(delegate);
+}
+
+void NWebImpl::PutWebDownloadDelegateCallback(
+    std::shared_ptr<NWebDownloadDelegateCallback>
+        web_download_delegate_listener) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("set web download delegate callback failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
+  nweb_delegate_->RegisterWebDownloadDelegateListener(
+      web_download_delegate_listener);
+}
+
+void NWebImpl::StartDownload(const char* url) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("start download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
+  nweb_delegate_->StartDownload(url);
+}
+
+void NWebImpl::ResumeDownload(std::shared_ptr<NWebDownloadItem> web_download) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("resume download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
+  nweb_delegate_->ResumeDownload(web_download);
+}
+
+// static
+void NWebImpl::ResumeDownloadStatic(
+    std::shared_ptr<NWebDownloadItem> web_download) {
+  CefResumeDownload(web_download->guid, web_download->url,
+                    web_download->full_path, web_download->received_bytes,
+                    web_download->total_bytes, web_download->etag,
+                    web_download->mime_type, web_download->last_modified,
+                    web_download->received_slices);
 }
 
 extern "C" OHOS_NWEB_EXPORT void PrepareForPageLoad(std::string url,
