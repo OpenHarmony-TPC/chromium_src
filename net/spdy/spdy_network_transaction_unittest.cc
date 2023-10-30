@@ -441,8 +441,11 @@ class SpdyNetworkTransactionTest : public TestWithTaskEnvironment {
                          HttpResponseInfo* response,
                          HttpResponseInfo* push_response,
                          const std::string& expected) {
+    auto session_deps = std::make_unique<SpdySessionDependencies>();
+    session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
     NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
-                                       nullptr);
+                                       std::move(session_deps));
+
     helper.RunPreTestSetup();
     helper.AddData(data);
 
@@ -503,8 +506,11 @@ class SpdyNetworkTransactionTest : public TestWithTaskEnvironment {
   }
 
   void RunBrokenPushTest(SequencedSocketData* data, int expected_rv) {
+    auto session_deps = std::make_unique<SpdySessionDependencies>();
+    session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
     NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
-                                       nullptr);
+                                       std::move(session_deps));
+
     helper.RunPreTestSetup();
     helper.AddData(data);
 
@@ -2251,7 +2257,10 @@ TEST_F(SpdyNetworkTransactionTest, ResetPushWithTransferEncoding) {
   };
 
   SequencedSocketData data(reads, writes);
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunToCompletion(&data);
   TransactionHelperResult out = helper.output();
   EXPECT_THAT(out.rv, IsOk());
@@ -2748,7 +2757,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushHeadMethod) {
 
   SequencedSocketData data(reads, writes);
 
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
   helper.AddData(&data);
 
@@ -2819,7 +2831,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushHeadDoesNotMatchGetRequest) {
 
   SequencedSocketData data(reads, writes);
 
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
   helper.AddData(&data);
 
@@ -2966,7 +2981,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushUpdatesPriority) {
   SequencedSocketData data_placeholder2;
   SequencedSocketData data_placeholder3;
 
-  NormalSpdyTransactionHelper helper(request_, LOWEST, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, LOWEST, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
   helper.AddData(&data);
   helper.AddData(&data_placeholder1);  // other requests reuse the same socket
@@ -3032,7 +3050,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushServerAborted) {
   };
 
   SequencedSocketData data(reads, writes);
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
 
   helper.RunPreTestSetup();
   helper.AddData(&data);
@@ -3381,7 +3402,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushOnPushedStream) {
   };
 
   SequencedSocketData data(reads, writes);
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunToCompletion(&data);
 
   histogram_tester.ExpectBucketCount(
@@ -3415,7 +3439,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushOnClosedStream) {
   };
 
   SequencedSocketData data(reads, writes);
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
   helper.AddData(&data);
 
@@ -3477,7 +3504,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushOnClosedPushedStream) {
       MockRead(ASYNC, ERR_IO_PENDING, 6), CreateMockRead(stream3_syn, 7)};
 
   SequencedSocketData data(reads, writes);
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
   helper.AddData(&data);
 
@@ -3547,7 +3577,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerCancelsPush) {
 
   SequencedSocketData data(reads1, writes1);
 
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
   helper.AddData(&data);
 
@@ -3622,6 +3655,8 @@ TEST_F(SpdyNetworkTransactionTest, ServerCancelsCrossOriginPush) {
 
   auto session_deps = std::make_unique<SpdySessionDependencies>();
   session_deps->host_resolver = std::move(resolver);
+
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
   NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
                                      std::move(session_deps));
 
@@ -4511,7 +4546,10 @@ TEST_F(SpdyNetworkTransactionTest, RejectServerPushWithNoMethod) {
                       MockRead(SYNCHRONOUS, ERR_IO_PENDING, 5)};
 
   SequencedSocketData data(reads, writes);
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunToCompletion(&data);
 
   histogram_tester.ExpectBucketCount(
@@ -4545,7 +4583,10 @@ TEST_F(SpdyNetworkTransactionTest, RejectServerPushWithInvalidMethod) {
                       MockRead(SYNCHRONOUS, ERR_IO_PENDING, 5)};
 
   SequencedSocketData data(reads, writes);
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunToCompletion(&data);
 
   histogram_tester.ExpectBucketCount(
@@ -6370,8 +6411,10 @@ class SpdyNetworkTransactionPushHeaderTest
 
     SequencedSocketData data(reads, writes);
 
+    auto session_deps = std::make_unique<SpdySessionDependencies>();
+    session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
     NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
-                                       nullptr);
+                                       std::move(session_deps));
     helper.RunPreTestSetup();
     helper.AddData(&data);
 
@@ -6628,7 +6671,7 @@ class SpdyNetworkTransactionPushUrlTest
           "mail.example.org", base::Time::Now() + base::Days(1) /* expiry */,
           true, GURL(), request_.network_isolation_key);
     }
-
+    session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
     NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
                                        std::move(session_deps));
 
@@ -6724,7 +6767,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushValidCrossOrigin) {
 
   request_.url = GURL(url_to_fetch);
 
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
   helper.AddData(&data);
 
@@ -6829,7 +6875,10 @@ TEST_F(SpdyNetworkTransactionTest,
 
   request_.url = GURL(url_to_fetch);
 
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
   helper.AddData(&data);
 
@@ -6930,7 +6979,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushWithClientCert) {
   ssl_provider->ssl_info.cert =
       ImportCertFromFile(GetTestCertsDirectory(), "spdy_pooling.pem");
 
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
   helper.AddDataWithSSLSocketDataProvider(&data, std::move(ssl_provider));
 
@@ -7020,7 +7072,10 @@ TEST_F(SpdyNetworkTransactionTest, ServerPushValidCrossOriginWithOpenSession) {
   // Request |url_to_fetch0| to open connection to mail.example.org.
   request_.url = GURL(url_to_fetch0);
 
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunPreTestSetup();
 
   // "spdy_pooling.pem" is valid for www.example.org, but not for
@@ -7421,6 +7476,7 @@ TEST_F(SpdyNetworkTransactionTest, WindowUpdateSent) {
       stream_max_recv_window_size;
   initial_settings[spdy::SETTINGS_MAX_HEADER_LIST_SIZE] =
       kSpdyMaxHeaderListSize;
+  initial_settings[spdy::SETTINGS_ENABLE_PUSH] = 0;
   spdy::SpdySerializedFrame initial_settings_frame(
       spdy_util_.ConstructSpdySettings(initial_settings));
 
@@ -8162,7 +8218,10 @@ TEST_F(SpdyNetworkTransactionTest, GoAwayOnOddPushStreamId) {
   };
 
   SequencedSocketData data(reads, writes);
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunToCompletion(&data);
   TransactionHelperResult out = helper.output();
   EXPECT_THAT(out.rv, IsError(ERR_HTTP2_PROTOCOL_ERROR));
@@ -8201,7 +8260,11 @@ TEST_F(SpdyNetworkTransactionTest,
   };
 
   SequencedSocketData data(reads, writes);
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
   helper.RunToCompletion(&data);
   TransactionHelperResult out = helper.output();
   EXPECT_THAT(out.rv, IsError(ERR_HTTP2_PROTOCOL_ERROR));
@@ -8609,7 +8672,10 @@ TEST_F(SpdyNetworkTransactionTest, PushCanceledByServerAfterClaimed) {
 
   SequencedSocketData data(reads, writes);
 
-  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_, nullptr);
+  auto session_deps = std::make_unique<SpdySessionDependencies>();
+  session_deps->http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+  NormalSpdyTransactionHelper helper(request_, DEFAULT_PRIORITY, log_,
+                                     std::move(session_deps));
 
   helper.RunPreTestSetup();
   helper.AddData(&data);
