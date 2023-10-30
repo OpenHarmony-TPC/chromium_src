@@ -182,7 +182,6 @@ class NWebImpl : public NWeb {
   void AddNWebToMap(uint32_t id, std::shared_ptr<NWebImpl>& nweb);
 
 #if defined (OHOS_NWEB_EX)
-  static void ResumeDownloadStatic(std::shared_ptr<NWebDownloadItem> download_item);
   static const std::vector<std::string>& GetCommandLineArgsForNWebEx();
   static void InitBrowserServiceApi(std::vector<std::string>& browser_args);
   static bool GetBrowserServiceApiEnabled();
@@ -206,12 +205,13 @@ class NWebImpl : public NWeb {
 
   void SelectAndCopy() const;
   bool ShouldShowFreeCopy() const;
+  void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) const;
+#endif  // OHOS_NWEB_EX
+  static void ResumeDownloadStatic(std::shared_ptr<NWebDownloadItem> download_item);
   void PutWebDownloadDelegateCallback(
       std::shared_ptr<NWebDownloadDelegateCallback>);
   void StartDownload(const char* url);
   void ResumeDownload(std::shared_ptr<NWebDownloadItem>);
-  void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) const;
-#endif  // OHOS_NWEB_EX
   void NotifyPopupWindowResult(bool result) override {
     nweb_delegate_->NotifyPopupWindowResult(result);
   }
