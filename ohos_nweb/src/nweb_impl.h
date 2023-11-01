@@ -208,6 +208,8 @@ class NWebImpl : public NWeb {
   void SelectAndCopy() const;
   bool ShouldShowFreeCopy() const;
   void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) const;
+  void SetBrowserZoomLevel(double zoom_factor) const;
+  double GetBrowserZoomLevel() const;
 #endif  // OHOS_NWEB_EX
   static void ResumeDownloadStatic(std::shared_ptr<NWebDownloadItem> download_item);
   void PutWebDownloadDelegateCallback(
