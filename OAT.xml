@@ -70,18 +70,17 @@ used to filter file path.
                <policyitem type="compatibility" name="MPL-1.1" path="net/http.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="MPL-1.1" path="url.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                
-               <policyitem type="compatibility" name="MIT" path="base/third_party/xdg_user_dirs.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="Khronos License" path="ppapi/lib/gl/include.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="SGI-B-2.0" path="ppapi/lib/gl/include.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="CC-PDDC" path="base/third_party/libevent.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="AFL-2.0" path="base/third_party/xdg_mime.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="AFL-2.1" path="build/linux/debian_sid_amd64-sysroot/usr/include.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="BSD-Protection" path="courgette/third_party/bsdiff.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="BSDStyleLicense" path="base/third_party/valgrind.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="Khronos License" path="media/test/data.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="XConsortiumLicense" path="ui/base/x.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="Unicode-TOU" path="base/third_party/icu.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="BSD-3-Clause" path="base/third_party/libevent/test/bench.c" desc="经法务确认,涉及文件在render下进行了隔离" />
+               <policyitem type="compatibility" name="MIT" path="base/third_party/xdg_user_dirs.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="Khronos License" path="ppapi/lib/gl/include.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="SGI-B-2.0" path="ppapi/lib/gl/include.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="CC-PDDC" path="base/third_party/libevent.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="AFL-2.0" path="base/third_party/xdg_mime.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="AFL-2.1" path="build/linux/debian_sid_amd64-sysroot/usr/include.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="BSD-Protection" path="courgette/third_party/bsdiff.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="BSDStyleLicense" path="base/third_party/valgrind.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="XConsortiumLicense" path="ui/base/x.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="Unicode-TOU" path="base/third_party/icu.*" desc="经法务确认为宽松型许可证" />
+               <policyitem type="compatibility" name="BSD-3-Clause" path="base/third_party/libevent/test/bench.c" desc="经法务确认为宽松型许可证" />
             </policy>
         </policylist>
         <filefilterlist>
@@ -126,6 +125,7 @@ used to filter file path.
                 <filteritem type="filepath" name="net/third_party/nss/ssl.*" desc="经确认，该文件不会使用" />
                 <filteritem type="filepath" name="buildtools/third_party.*" desc="经确认，该文件不会使用" />
                 <filteritem type="filepath" name="base/third_party/valgrind.*" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name="media/test/data.*" desc="经确认，该文件不会使用" />
             </filefilter>
              <filefilter name="binaryFileTypePolicyFilter" >
                 <filteritem type="filepath" name=".*xtb" desc="chromium原生二进制文件,不会使用" />
