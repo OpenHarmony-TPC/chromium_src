@@ -2360,6 +2360,14 @@ void RenderFrameImpl::SetZoomLevel(float magnify_delta, const gfx::Point& anchor
   }
   web_frame_widget->SetZoomLevel(magnify_delta, anchor);
 }
+
+void RenderFrameImpl::SetOverscrollMode(int mode) {
+  auto web_frame_widget = GetLocalRootWebFrameWidget();
+  if (!web_frame_widget) {
+    return;
+  }
+  web_frame_widget->SetOverscrollMode(mode);
+}
 #endif  // BUILDFLAG(IS_OHOS)
 
 RenderView* RenderFrameImpl::GetRenderView() {
