@@ -529,4 +529,15 @@ void NWebRenderHandler::OnScrollState(CefRefPtr<CefBrowser> browser,
     handler->OnScrollState(scroll_state);
   }
 }
+
+bool NWebRenderHandler::FilterScrollEvent(CefRefPtr<CefBrowser> browser,
+                                          const float x,
+                                          const float y,
+                                          const float fling_x,
+                                          const float fling_y) {
+  if (auto handler = handler_.lock()) {
+    return handler->FilterScrollEvent(x, y, fling_x, fling_y);
+  }
+  return false;
+}
 }  // namespace OHOS::NWeb

@@ -718,13 +718,7 @@ void NWebImpl::SetToken(void* token) {
   nweb_delegate_->SetToken(token);
 }
 
-void NWebImpl::SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) {
-  if (nweb_delegate_ == nullptr) {
-    WVLOG_E("SetNestedScrollMode nweb delegate is null");
-    return;
-  }
-  nweb_delegate_->SetNestedScrollMode(nestedScrollMode);
-}
+void NWebImpl::SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) {}
 
 void NWebImpl::SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) {
   if (nweb_delegate_ == nullptr) {

@@ -1792,15 +1792,6 @@ void NWebDelegate::SetToken(void* token) {
   GetBrowser()->GetHost()->SetToken(token);
 }
 
-void NWebDelegate::SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) {
-  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
-    LOG(ERROR) << "SetNestedScrollMode can not get browser";
-    return;
-  }
-
-  GetBrowser()->GetHost()->SetNestedScrollMode(static_cast<int>(nestedScrollMode));
-}
-
 void NWebDelegate::PrefetchPage(
     std::string& url,
     std::map<std::string, std::string> additionalHttpHeaders) {
