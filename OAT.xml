@@ -108,8 +108,6 @@ used to filter file path.
                 <filteritem type="filepath" name=".*xml" desc="chromium原生文件无license" />
                 <filteritem type="filepath" name="components/policy_strings.grdp" desc="chromium原生文件无license" />
                 <filteritem type="filepath" name="android_webview/java/strings/translations/android_webview_strings_sv.xtb" desc="chromium原生文件无license" />
-                <filteritem type="filepath" name=".*md" desc="Such documents are marked with license information" />
-                <filteritem type="filepath" name=".*LICENSE" desc="Such documents are marked with license information" />
                 <filteritem type="filepath" name="base/third_party/libevent/event.3" desc="有license,工具误报" />
                 <filteritem type="filepath" name="android_webview/java/strings/translations/android_webview_strings_da.xtb" desc="chromium原生文件无license" />
                 <filteritem type="filepath" name="content/browser/aggregation_service/DEPS" desc="chromium原生文件无license" />
@@ -127,6 +125,8 @@ used to filter file path.
                 <filteritem type="filepath" name="android_webview/.*" desc="chromium原生文件，不会使用"/>
                 <filteritem type="filepath" name="native_client_sdk/.*" desc="chromium原生文件，不会使用"/>
                 <filteritem type="filepath" name="buildtools/android/doclava/NOTICE" desc="chromium原生文件，不会使用"/>
+                <filteritem type="filepath" name=".*md" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name=".*LICENSE" desc="经确认，该文件不会使用" />
             </filefilter>
              <filefilter name="binaryFileTypePolicyFilter" >
                 <filteritem type="filepath" name=".*xtb" desc="chromium原生二进制文件,不会使用" />
