@@ -63,12 +63,10 @@ used to filter file path.
         <licensefile>LICENSE</licensefile>
         <policylist>
             <policy name="projectPolicy" desc="The LICENSE is not standardized">
-               <policyitem type="compatibility" name="LGPLStyleLicense" path="base/third_party.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="GPLStyleLicense" path="courgette/third_party/bsdiff.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+               <!-- 
                <policyitem type="compatibility" name="MPL-1.1" path="net/cookies.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="MPL-1.1" path="base/third_party.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="MPL-1.1" path="net/http.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="MPL-1.1" path="url.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+               <policyitem type="compatibility" name="MPL-1.1" path="net/http.*" desc="经法务确认,涉及文件在render下进行了隔离" /> -->
                
                <policyitem type="compatibility" name="MIT" path="base/third_party/xdg_user_dirs.*" desc="经法务确认为宽松型许可证" />
                <policyitem type="compatibility" name="Khronos License" path="ppapi/lib/gl/include.*" desc="经法务确认为宽松型许可证" />
@@ -126,6 +124,18 @@ used to filter file path.
                 <filteritem type="filepath" name="buildtools/third_party.*" desc="经确认，该文件不会使用" />
                 <filteritem type="filepath" name="base/third_party/valgrind.*" desc="经确认，该文件不会使用" />
                 <filteritem type="filepath" name="media/test/data.*" desc="经确认，该文件不会使用" />
+                
+                <filteritem type="filepath" name="base/third_party.*" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name="url/third_party/mozilla/url_parse.cc" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name="url/third_party/mozilla/LICENSE.txt" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name="courgette/third_party/bsdiff/LICENCE" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name="net/cookies/parsed_cookie.cc" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name="net/cookies/canonical_cookie.cc" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name="net/cookies/cookie_monster.cc" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name="net/http/http_chunked_decoder.cc" desc="经确认，该文件不会使用" />
+                <filteritem type="filepath" name="net/http/http_chunked_decoder.h" desc="经确认，该文件不会使用" />
+
+                <policyitem type="compatibility" name="GPLStyleLicense" path="courgette/third_party/bsdiff.*" desc="经法务确认,涉及文件在render下进行了隔离" />
             </filefilter>
              <filefilter name="binaryFileTypePolicyFilter" >
                 <filteritem type="filepath" name=".*xtb" desc="chromium原生二进制文件,不会使用" />
