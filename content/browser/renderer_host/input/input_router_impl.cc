@@ -142,8 +142,9 @@ void InputRouterImpl::SendGestureEvent(
   GestureEventWithLatencyInfo gesture_event(original_gesture_event);
 #if BUILDFLAG(IS_OHOS)
   timeStamp_ = ::base::subtle::TimeTicksNowIgnoringOverride().since_origin().InNanoseconds();
-  if (gesture_event.event.GetType() == WebInputEvent::Type::kGestureScrollUpdate &&
-      timeStamp_ - prePerfTimeStamp_ > GESTURE_MOVE_PERIOD) {
+  if ((gesture_event.event.GetType() == WebInputEvent::Type::kGestureScrollUpdate &&
+      timeStamp_ - prePerfTimeStamp_ > GESTURE_MOVE_PERIOD) || 
+      gesture_event.event.GetType() == WebInputEvent::Type::kGestureScrollBegin) {
     prePerfTimeStamp_ = timeStamp_;
     LOG(INFO) << "InputRouterImpl::SendGestureEvent type=kGestureScrollUpdate success";
     client_->GetWidgetInputHandler()->TryStartFling();
