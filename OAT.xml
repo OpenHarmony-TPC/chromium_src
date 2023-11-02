@@ -65,9 +65,11 @@ used to filter file path.
             <policy name="projectPolicy" desc="The LICENSE is not standardized">
                <policyitem type="compatibility" name="LGPLStyleLicense" path="base/third_party.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="LGPLStyleLicense" path="buildtools/third_party.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="BSDStyleLicense" path="base/third_party/valgrind.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+               <policyitem type="compatibility" name="LGPLStyleLicense" path="base/third_party/xdg_mime.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="GPLStyleLicense" path="base/third_party/valgrind.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="MPL-1.1" path="services.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+               <policyitem type="compatibility" name="GPLStyleLicense" path="courgette/third_party/bsdiff.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+               <policyitem type="compatibility" name="GPLStyleLicense" path="base/third_party/xdg_user_dirs.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+               <policyitem type="compatibility" name="MPL-1.1" path="services/proxy_resolver/pac_js_library.h" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="MPL-1.1" path="net/third_party/mozilla_security_manager.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="MPL-1.1" path="url.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="MPL-1.1" path="net/base/registry_controlled_domains.*" desc="经法务确认,涉及文件在render下进行了隔离" />
@@ -77,16 +79,15 @@ used to filter file path.
                <policyitem type="compatibility" name="MPL-1.1" path="net/http.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="MPL-2.0" path="net/third_party/nss/ssl.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="MPL-2.0" path="net/third_party/mozilla_win/cert.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="AFL-2.0" path="base/third_party/xdg_mime.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="LGPLStyleLicense" path="base/third_party/xdg_mime.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="GPLStyleLicense" path="base/third_party/xdg_user_dirs.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+               
                <policyitem type="compatibility" name="MIT" path="base/third_party/xdg_user_dirs.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="Khronos License" path="ppapi/lib/gl/include.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="SGI-B-2.0" path="ppapi/lib/gl/include.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="CC-PDDC" path="base/third_party/libevent.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+               <policyitem type="compatibility" name="AFL-2.0" path="base/third_party/xdg_mime.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="AFL-2.1" path="build/linux/debian_sid_amd64-sysroot/usr/include.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="BSD-Protection" path="courgette/third_party/bsdiff.*" desc="经法务确认,涉及文件在render下进行了隔离" />
-               <policyitem type="compatibility" name="GPLStyleLicense" path="courgette/third_party/bsdiff.*" desc="经法务确认,涉及文件在render下进行了隔离" />
+               <policyitem type="compatibility" name="BSDStyleLicense" path="base/third_party/valgrind.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="Khronos License" path="media/test/data.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="XConsortiumLicense" path="ui/base/x.*" desc="经法务确认,涉及文件在render下进行了隔离" />
                <policyitem type="compatibility" name="Unicode-TOU" path="base/third_party/icu.*" desc="经法务确认,涉及文件在render下进行了隔离" />
