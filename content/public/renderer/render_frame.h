@@ -137,6 +137,7 @@ class CONTENT_EXPORT RenderFrame : public IPC::Listener,
   static int GetRoutingIdForWebFrame(blink::WebFrame* web_frame);
 #if BUILDFLAG(IS_OHOS)
   virtual void SetZoomLevel(float magnify_delta, const gfx::Point& anchor) {};
+  virtual void SetOverscrollMode(int mode) {};
 #endif  // BUILDFLAG(IS_OHOS)
   // Returns the RenderView associated with this frame.
   virtual RenderView* GetRenderView() = 0;
