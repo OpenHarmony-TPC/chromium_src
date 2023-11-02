@@ -34,7 +34,7 @@
 #include "ui/events/blink/web_input_event_traits.h"
 #include "ui/events/event.h"
 #include "ui/events/keycodes/keyboard_codes.h"
-
+#include "ohos_adapter_helper.h"
 namespace content {
 
 using blink::WebGestureEvent;
@@ -72,6 +72,7 @@ std::unique_ptr<blink::WebCoalescedInputEvent> ScaleEvent(
       std::vector<std::unique_ptr<WebInputEvent>>(), latency_info);
 }
 constexpr uint64_t GESTURE_MOVE_PERIOD = 250000000;
+const int SOC_PERF_SLIDE_NORMAL_CONFIG_ID = 10025;
 }  // namespace
 
 InputRouterImpl::InputRouterImpl(
@@ -148,10 +149,16 @@ void InputRouterImpl::SendGestureEvent(
     prePerfTimeStamp_ = timeStamp_;
     LOG(INFO) << "InputRouterImpl::SendGestureEvent type=kGestureScrollUpdate success";
     client_->GetWidgetInputHandler()->TryStartFling();
+     OHOS::NWeb::OhosAdapterHelper::GetInstance()
+      .CreateSocPerfClientAdapter()
+      ->ApplySocPerfConfigByIdEx(SOC_PERF_SLIDE_NORMAL_CONFIG_ID, true);
   } else if (gesture_event.event.GetType() ==
              WebInputEvent::Type::kGestureScrollEnd) {
     LOG(INFO) << "InputRouterImpl::SendGestureEvent type=kGestureScrollEnd";
     client_->GetWidgetInputHandler()->TryFinishFling();
+     OHOS::NWeb::OhosAdapterHelper::GetInstance()
+      .CreateSocPerfClientAdapter()
+      ->ApplySocPerfConfigByIdEx(SOC_PERF_SLIDE_NORMAL_CONFIG_ID, false);
     prePerfTimeStamp_ = 0;
   }
 #endif
