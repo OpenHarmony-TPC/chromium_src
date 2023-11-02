@@ -240,7 +240,6 @@ class NWebDelegateInterface
   virtual void NotifyPopupWindowResult(bool result) = 0;
   virtual void SetWindowId(uint32_t window_id);
   virtual void SetToken(void* token) = 0;
-  virtual void SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) = 0;
   virtual void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) = 0;
   virtual bool ShouldVirtualKeyboardOverlay() = 0;
 };
