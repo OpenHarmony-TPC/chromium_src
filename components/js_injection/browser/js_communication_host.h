@@ -18,6 +18,10 @@ namespace content {
 class RenderFrameHost;
 }  // namespace content
 
+#if BUILDFLAG(IS_OHOS)
+  using ScriptItems = std::map<std::string, std::vector<std::string>>;
+#endif //IS_OHOS
+
 namespace js_injection {
 
 class OriginMatcher;
@@ -60,7 +64,9 @@ class JsCommunicationHost : public content::WebContentsObserver {
       const std::vector<std::string>& allowed_origin_rules);
 
   bool RemoveDocumentStartJavaScript(int script_id);
-
+#if BUILDFLAG(IS_OHOS)
+  void AddDocumentStartJavaScripts(const ScriptItems& scriptItems);
+#endif //IS_OHOS
   // Adds a new WebMessageHostFactory. For any urls that match
   // |allowed_origin_rules|, |js_object_name| is registered as a JS object that
   // can be used by script on the page to send and receive messages. Returns

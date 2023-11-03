@@ -1418,6 +1418,10 @@ void NWebDelegate::UnregisterArkJSfunction(
   GetBrowser()->GetHost()->UnregisterArkJSfunction(object_name, method_vector);
 }
 
+void NWebDelegate::JavaScriptOnDocumentStart(const ScriptItems& scriptItems) {
+  GetBrowser()->GetHost()->JavaScriptOnDocumentStart(scriptItems);
+}
+
 void NWebDelegate::RegisterNWebJavaScriptCallBack(
     std::shared_ptr<NWebJavaScriptResultCallBack> callback) {
   if (handler_delegate_ == nullptr) {

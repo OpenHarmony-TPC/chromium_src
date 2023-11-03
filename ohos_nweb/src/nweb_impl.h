@@ -166,7 +166,7 @@ class NWebImpl : public NWeb {
   void SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) override;
   void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) override;
   bool ShouldVirtualKeyboardOverlay() override;
-
+  void JavaScriptOnDocumentStart(const ScriptItems& scriptItems) override;
   // For NWebEx
   static NWebImpl* FromID(int32_t nweb_id);
   std::string GetUrl() const override;

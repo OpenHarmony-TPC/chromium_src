@@ -875,6 +875,13 @@ void NWebImpl::UnregisterArkJSfunction(
   return nweb_delegate_->UnregisterArkJSfunction(object_name, method_list);
 }
 
+void NWebImpl::JavaScriptOnDocumentStart(const ScriptItems& scriptItems) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  return nweb_delegate_->JavaScriptOnDocumentStart(scriptItems);
+}
+
 void NWebImpl::SetNWebJavaScriptResultCallBack(
     std::shared_ptr<NWebJavaScriptResultCallBack> callback) {
   if (nweb_delegate_ == nullptr) {

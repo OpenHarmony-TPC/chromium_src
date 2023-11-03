@@ -99,6 +99,34 @@ JsCommunicationHost::AddDocumentStartJavaScript(
   return result;
 }
 
+#if BUILDFLAG(IS_OHOS)
+void JsCommunicationHost::AddDocumentStartJavaScripts(
+    const ScriptItems& scriptItems) {
+  std::vector<DocumentStartJavaScript> scripts;
+  int32_t next_script_id = 0;
+  for (auto scriptItem : scriptItems) {
+    OriginMatcher origin_matcher;
+    std::string error_message =
+        ConvertToNativeAllowedOriginRulesWithSanityCheck(scriptItem.second,
+                                                         origin_matcher);
+    AddScriptResult result;
+    if (!error_message.empty()) {
+      result.error_message = std::move(error_message);
+      return;
+    }
+    scripts.emplace_back(base::UTF8ToUTF16(scriptItem.first), origin_matcher,
+                         next_script_id++);
+  }
+  scripts_.clear();
+  for (auto& item : scripts) {
+    scripts_.emplace_back(item.script_, item.allowed_origin_rules_, item.script_id_);
+  }
+  web_contents()->GetMainFrame()->ForEachRenderFrameHost(base::BindRepeating(
+      &JsCommunicationHost::NotifyFrameForAllDocumentStartJavaScripts,
+      base::Unretained(this)));
+}
+#endif  // IS_OHOS
+
 bool JsCommunicationHost::RemoveDocumentStartJavaScript(int script_id) {
   for (auto it = scripts_.begin(); it != scripts_.end(); ++it) {
     if (it->script_id_ == script_id) {
