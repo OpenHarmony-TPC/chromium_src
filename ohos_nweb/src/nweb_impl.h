@@ -212,6 +212,10 @@ class NWebImpl : public NWeb {
   void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) const;
   void SetBrowserZoomLevel(double zoom_factor) const;
   double GetBrowserZoomLevel() const;
+  void UpdateBrowserControlsState(int constraints,
+                                  int current,
+                                  bool animate) const;
+  void UpdateBrowserControlsHeight(int height, bool animate);
 #endif  // OHOS_NWEB_EX
   static void ResumeDownloadStatic(std::shared_ptr<NWebDownloadItem> download_item);
   void PutWebDownloadDelegateCallback(

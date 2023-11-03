@@ -897,6 +897,10 @@ class CC_EXPORT LayerTreeHostImpl : public TileManagerClient,
     return throttle_decider_.ids();
   }
 
+#ifdef OHOS_NWEB_EX
+  void SetupScrollBy() override;
+#endif
+
  protected:
   LayerTreeHostImpl(
       const LayerTreeSettings& settings,

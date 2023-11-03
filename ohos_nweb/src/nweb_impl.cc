@@ -1317,6 +1317,22 @@ double NWebImpl::GetBrowserZoomLevel() const {
   return nweb_delegate_->GetBrowserZoomLevel();
 }
 
+void NWebImpl::UpdateBrowserControlsState(int constraints,
+                                          int current,
+                                          bool animate) const {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->UpdateBrowserControlsState(constraints, current, animate);
+}
+
+void NWebImpl::UpdateBrowserControlsHeight(int height, bool animate) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->UpdateBrowserControlsHeight(height, animate);
+}
+
 // static
 void NWebImpl::SetDefaultBrowserZoomLevel(double zoom_factor) {
   if (g_nweb_count == 0) { 

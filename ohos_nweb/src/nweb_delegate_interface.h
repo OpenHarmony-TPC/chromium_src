@@ -232,6 +232,10 @@ class NWebDelegateInterface
 
   virtual void SetBrowserZoomLevel(double zoom_factor) = 0;
   virtual double GetBrowserZoomLevel() = 0;
+  virtual void UpdateBrowserControlsState(int constraints,
+                                          int current,
+                                          bool animate) const = 0;
+  virtual void UpdateBrowserControlsHeight(int height, bool animate) = 0;
 #endif
 
   virtual void SetShouldFrameSubmissionBeforeDraw(bool should) = 0;
