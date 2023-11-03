@@ -121,9 +121,11 @@ class NWebImpl : public NWeb {
   int LoadWithData(const std::string& data,
                     const std::string& mimeType,
                     const std::string& encoding) override;
-  void RegisterArkJSfunction(
-      const std::string& object_name,
-      const std::vector<std::string>& method_list) override;
+  void RegisterArkJSfunction(const std::string& object_name,
+                             const std::vector<std::string>& method_list) override;
+  void RegisterArkJSfunctionExt(const std::string& object_name,
+                             const std::vector<std::string>& method_list,
+                             const int32_t object_id) override;
   void UnregisterArkJSfunction(
       const std::string& object_name,
       const std::vector<std::string>& method_list) override;
