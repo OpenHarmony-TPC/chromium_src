@@ -109,15 +109,12 @@ void JsCommunicationHost::AddDocumentStartJavaScripts(
     std::string error_message =
         ConvertToNativeAllowedOriginRulesWithSanityCheck(scriptItem.second,
                                                          origin_matcher);
-    AddScriptResult result;
     if (!error_message.empty()) {
-      result.error_message = std::move(error_message);
       return;
     }
     scripts.emplace_back(base::UTF8ToUTF16(scriptItem.first), origin_matcher,
                          next_script_id++);
   }
-  scripts_.clear();
   for (auto& item : scripts) {
     scripts_.emplace_back(item.script_, item.allowed_origin_rules_, item.script_id_);
   }
