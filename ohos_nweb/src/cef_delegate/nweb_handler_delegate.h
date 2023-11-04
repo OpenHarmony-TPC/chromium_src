@@ -35,7 +35,7 @@
 #include <list>
 #include <mutex>
 #include <string>
-#include <set>
+#include <unordered_set>
 #include "capi/nweb_app_client_extension_callback.h"
 #include "nweb_download_callback.h"
 #include "nweb_javascript_result_callback.h"
@@ -128,7 +128,17 @@ class NWebHandlerDelegate : public CefClient,
   int NotifyJavaScriptResult(CefRefPtr<CefListValue> args,
                              const CefString& method,
                              const CefString& object_name,
-                             CefRefPtr<CefListValue> result) override;
+                             CefRefPtr<CefListValue> result,
+                             int32_t routing_id,
+                             int32_t object_id) override;
+  bool HasJavaScriptObjectMethods(int32_t object_id,
+                                  const CefString& method_name) override;
+  void GetJavaScriptObjectMethods(
+      int32_t object_id,
+      CefRefPtr<CefValue> returned_method_names) override;
+  void RemoveJavaScriptObjectHolder(int32_t holder, int32_t object_id) override;
+  void RemoveTransientJavaScriptObject() override;
+
   CefRefPtr<CefFormHandler> GetFormHandler() override;
   // #if defined(OHOS_NWEB_EX)
   void ShowPasswordDialog(bool is_update, const CefString& url) override;
@@ -492,6 +502,12 @@ class NWebHandlerDelegate : public CefClient,
   void SetContinueNeedFocus(bool continueNeedFocus);
 
   void NotifyPopupWindowResult(bool result);
+
+  // save ark js function for window.open 
+  void SavaArkJSFunctionForPopup(const std::string& object_name,
+                                 const std::vector<std::string>& method_list,
+                                 const int32_t object_id);
+
  private:
   void CopyImageToClipboard(CefRefPtr<CefImage> image);
   // List of existing browser windows. Only accessed on the CEF UI thread.
@@ -551,6 +567,11 @@ class NWebHandlerDelegate : public CefClient,
   float scale_ = 100.0;
   bool focusState_ = false;
   bool continueNeedFocus_ = false;
+
+  // js property name and object id
+  using MethodPair = std::pair<std::string, std::unordered_set<std::string>>;
+  using ObjectMethodMap = std::map<int32_t, MethodPair>;
+  ObjectMethodMap javascript_method_map_;
 };
 }  // namespace OHOS::NWeb
 
