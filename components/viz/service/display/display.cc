@@ -536,7 +536,7 @@ void Display::SetShouldFrameSubmissionBeforeDraw(bool should) {
 void Display::SetDrawRect(const gfx::Rect& new_rect)
 {
   if ((draw_rect_ == new_rect) || (draw_mode_ == 0)) {
-     TRACE_EVENT1("viz", "Display::repeate set draw", "new_rect", new_rect.ToString());
+    LOG(ERROR) << "draw_mode =" << draw_mode_;
     return;
   }
   TRACE_EVENT1("viz", "Display::SetDrawRect", "new_rect", new_rect.ToString());
