@@ -163,8 +163,7 @@ class NWebDelegateInterface
   virtual int ContentHeight() = 0;
   virtual void RegisterArkJSfunction(
       const std::string& object_name,
-      const std::vector<std::string>& method_list,
-      const int32_t object_id) const = 0;
+      const std::vector<std::string>& method_list) const = 0;
   virtual void UnregisterArkJSfunction(
       const std::string& object_name,
       const std::vector<std::string>& method_list) const = 0;

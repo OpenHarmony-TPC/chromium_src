@@ -508,20 +508,6 @@ void NWebHandlerDelegate::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
         main_browser_->GetHost()->SetBackgroundColor(preference_delegate_->GetBackgroundColor());
       }
       main_browser_->GetHost()->SetNativeWindow(window_);
-
-      // window new case, register ark js functions
-      ObjectMethodMap::iterator it;
-      for (it = javascript_method_map_.begin();
-           it != javascript_method_map_.end(); ++it) {
-        std::vector<CefString> method_vector;
-        for (std::string method : it->second.second) {
-          method_vector.push_back(method);
-        }
-        if(main_browser_ && main_browser_->GetHost()) {
-          main_browser_->GetHost()->RegisterArkJSfunction(
-              it->second.first, method_vector, it->first);
-        }
-      }
     }
     return;
   }
@@ -599,25 +585,6 @@ void NWebHandlerDelegate::NotifyPopupWindowResult(bool result) {
     popupWindowCallback_->Cancel();
   }
   popupWindowCallback_ = nullptr;
-}
-
-void NWebHandlerDelegate::SavaArkJSFunctionForPopup(
-    const std::string& object_name,
-    const std::vector<std::string>& method_list,
-    const int32_t object_id) {
-  if (method_list.empty()) {
-    LOG(INFO) << "NWebHandlerDelegate::SavaArkJSFunctionForPopup method_list "
-                 "is empty";
-    return;
-  }
-  MethodPair object_pair;
-  std::unordered_set<std::string> method_set;
-  for (std::string method : method_list) {
-    method_set.emplace(method);
-  }
-  object_pair.first = object_name;
-  object_pair.second = method_set;
-  javascript_method_map_[object_id] = object_pair;
 }
 
 bool NWebHandlerDelegate::OnPreBeforePopup(CefRefPtr<CefBrowser> browser,
@@ -2016,53 +1983,33 @@ const std::vector<std::string> NWebHandlerDelegate::GetVisitedHistory() {
   return std::vector<std::string>();
 }
 
-std::shared_ptr<NWebValue> AddNWebValueCef(CefRefPtr<CefValue> argument) {
-  if (!argument) {
-    LOG(INFO) << "AddNWebValueCef: argument is null";
-    return std::make_shared<NWebValue>();
-  }
-
-  switch (argument->GetType()) {
-    case CefValueType::VTYPE_INT:
-      return std::make_shared<NWebValue>(argument->GetInt());
-    case CefValueType::VTYPE_DOUBLE:
-      return std::make_shared<NWebValue>(argument->GetDouble());
-    case CefValueType::VTYPE_BOOL:
-      return std::make_shared<NWebValue>(argument->GetBool());
-    case CefValueType::VTYPE_STRING:
-      return std::make_shared<NWebValue>(argument->GetString().ToString());
-    case CefValueType::VTYPE_LIST: {
-      size_t length = argument->GetList()->GetSize();
-      std::vector<NWebValue> vec;
-      for (size_t i = 0; i < length; ++i) {
-        vec.push_back(*AddNWebValueCef(argument->GetList()->GetValue(i)));
-      }
-      return std::make_shared<NWebValue>(vec);
+void AddNWebValueCef(std::vector<std::shared_ptr<NWebValue>>& vector,
+                     NWebValue::Type type,
+                     CefRefPtr<CefValue> argument) {
+  std::shared_ptr<NWebValue> value = std::make_shared<NWebValue>(type);
+  switch (type) {
+    case NWebValue::Type::INTEGER:
+      value->SetInt(argument->GetInt());
+      vector.push_back(value);
+      break;
+    case NWebValue::Type::DOUBLE: {
+      value->SetDouble(argument->GetDouble());
+      vector.push_back(value);
+      break;
     }
-    case CefValueType::VTYPE_DICTIONARY: {
-      std::map<std::string, NWebValue> map;
-      auto dict = argument->GetDictionary();
-      CefDictionaryValue::KeyList keys;
-      dict->GetKeys(keys);
-      for (auto& key : keys) {
-        auto val = dict->GetValue(key);
-        map[key.ToString()] = *AddNWebValueCef(val);
-      }
-      return std::make_shared<NWebValue>(map);
-    }
-    case CefValueType::VTYPE_BINARY: {
-      auto size = argument->GetBinary()->GetSize();
-      auto buff = std::make_unique<char[]>(size);
-      argument->GetBinary()->GetData(buff.get(), size, 0);
-      return std::make_shared<NWebValue>(buff.get(), size);
-    }
-    case CefValueType::VTYPE_INVALID:
-      return std::make_shared<NWebValue>();
+    case NWebValue::Type::BOOLEAN:
+      value->SetBoolean(argument->GetBool());
+      vector.push_back(value);
+      break;
+    case NWebValue::Type::STRING:
+      value->SetString(argument->GetString().ToString());
+      vector.push_back(value);
+      break;
     default:
       LOG(INFO) << "AddNWebValueCef: not support value";
+      vector.push_back(value);
       break;
   }
-  return std::make_shared<NWebValue>();
 }
 
 std::vector<std::shared_ptr<NWebValue>> ParseCefValueTONWebValue(
@@ -2071,7 +2018,28 @@ std::vector<std::shared_ptr<NWebValue>> ParseCefValueTONWebValue(
   std::vector<std::shared_ptr<NWebValue>> value_vector;
   for (int i = 0; i < size; i++) {
     CefRefPtr<CefValue> argument = args->GetValue(i);
-    value_vector.push_back(AddNWebValueCef(argument));
+    switch (argument->GetType()) {
+      case CefValueType::VTYPE_INT:
+        AddNWebValueCef(value_vector, NWebValue::Type::INTEGER, argument);
+        break;
+      case CefValueType::VTYPE_DOUBLE: {
+        AddNWebValueCef(value_vector, NWebValue::Type::DOUBLE, argument);
+        break;
+      }
+      case CefValueType::VTYPE_BOOL:
+        AddNWebValueCef(value_vector, NWebValue::Type::BOOLEAN, argument);
+        break;
+      case CefValueType::VTYPE_STRING:
+        AddNWebValueCef(value_vector, NWebValue::Type::STRING, argument);
+        break;
+      case CefValueType::VTYPE_INVALID:
+        AddNWebValueCef(value_vector, NWebValue::Type::NONE, argument);
+        break;
+      default:
+        LOG(INFO) << "ParseCefValueTONWebValue: not support value";
+        AddNWebValueCef(value_vector, NWebValue::Type::NONE, argument);
+        break;
+    }
   }
   return value_vector;
 }
@@ -2100,78 +2068,37 @@ CefValueType TranslateCefType(NWebValue::Type type) {
   }
 }
 
-CefRefPtr<CefValue> ParseNWebValueToValueHelper(
-    std::shared_ptr<NWebValue> value) {
-  if (!value) {
-    LOG(ERROR) << "ParseNWebValueToValueHelper: value is null";
-    return CefValue::Create();
-  }
-  CefRefPtr<CefValue> cefValue = CefValue::Create();
+CefRefPtr<CefListValue> ParseNWebValueToValue(std::shared_ptr<NWebValue> value,
+                                              CefRefPtr<CefListValue> result) {
   NWebValue::Type type = value->GetType();
   switch (type) {
     case NWebValue::Type::INTEGER:
-      cefValue->SetInt(value->GetInt());
-      return cefValue;
+      result->SetInt(0, value->GetInt());
+      break;
     case NWebValue::Type::DOUBLE: {
-      cefValue->SetDouble(value->GetDouble());
-      return cefValue;
+      result->SetDouble(0, value->GetDouble());
+      break;
     }
     case NWebValue::Type::BOOLEAN:
-      cefValue->SetBool(value->GetBoolean());
-      return cefValue;
+      result->SetBool(0, value->GetBoolean());
+      break;
     case NWebValue::Type::STRING:
-      cefValue->SetString(value->GetString());
-      return cefValue;
-    case NWebValue::Type::LIST: {
-      size_t length = value->GetListValueSize();
-      auto cefList = CefListValue::Create();
-      for (size_t i = 0; i < length; i++) {
-        auto nPtr = std::make_shared<NWebValue>(value->GetListValue(i));
-        auto cefVal = ParseNWebValueToValueHelper(nPtr);
-        cefList->SetValue(i, cefVal);
-      }
-      cefValue->SetList(cefList);
-      return cefValue;
-    }
-    case NWebValue::Type::DICTIONARY: {
-      auto dict = value->GetDictionaryValue();
-      auto cefDict = CefDictionaryValue::Create();
-      for (auto& item : dict) {
-        auto nPtr = std::make_shared<NWebValue>(item.second);
-        auto cefVal = ParseNWebValueToValueHelper(nPtr);
-        cefDict->SetValue(CefString(item.first), cefVal.get());
-      }
-      cefValue->SetDictionary(cefDict);
-      return cefValue;
-    }
-    case NWebValue::Type::BINARY: {
-      auto size = value->GetBinaryValueSize();
-      auto buff = value->GetBinaryValue();
-      auto cefDict = CefBinaryValue::Create(buff, size);
-      cefValue->SetBinary(cefDict);
-      return cefValue;
-    }
+      result->SetString(0, value->GetString());
+      break;
     case NWebValue::Type::NONE:
       break;
     default:
-      LOG(ERROR) << "ParseNWebValueToValueHelper: not support value type";
+      LOG(INFO) << "ParseNWebValueToValue: not support value type";
       break;
   }
-  return cefValue;
-}
-
-CefRefPtr<CefListValue> ParseNWebValueToValue(std::shared_ptr<NWebValue> value,
-                                              CefRefPtr<CefListValue> result) {
-  result->SetValue(0, ParseNWebValueToValueHelper(value));
   return result;
 }
 
-int NWebHandlerDelegate::NotifyJavaScriptResult(CefRefPtr<CefListValue> args,
-                                                const CefString& method,
-                                                const CefString& object_name,
-                                                CefRefPtr<CefListValue> result,
-                                                int32_t routing_id,
-                                                int32_t object_id) {
+int NWebHandlerDelegate::NotifyJavaScriptResult(
+    CefRefPtr<CefListValue> args,
+    const CefString& method,
+    const CefString& object_name,
+    CefRefPtr<CefListValue> result) {
   if (args.get() == nullptr || result.get() == nullptr) {
     return 0;
   }
@@ -2182,63 +2109,14 @@ int NWebHandlerDelegate::NotifyJavaScriptResult(CefRefPtr<CefListValue> args,
   }
 
   std::shared_ptr<NWebValue> ark_result =
-      nweb_javascript_callback_->GetJavaScriptResult(
-          value_vector, method, object_name, routing_id, object_id);
+      nweb_javascript_callback_->GetJavaScriptResult(value_vector, method,
+                                                     object_name);
 
   if (!ark_result) {
     return 1;
   }
   ParseNWebValueToValue(ark_result, result);
   return ark_result->error_;
-}
-
-bool NWebHandlerDelegate::HasJavaScriptObjectMethods(
-    int32_t object_id,
-    const CefString& method_name) {
-  if (!nweb_javascript_callback_) {
-    LOG(ERROR) << "NWebHandlerDelegate::GetJavaScriptObjectMethods "
-                  "nweb_javascript_callback_ is null";
-    return false;
-  }
-  return nweb_javascript_callback_->HasJavaScriptObjectMethods(object_id,
-                                                               method_name);
-}
-
-void NWebHandlerDelegate::GetJavaScriptObjectMethods(
-    int32_t object_id,
-    CefRefPtr<CefValue> returned_method_names) {
-  if (!nweb_javascript_callback_) {
-    LOG(ERROR) << "NWebHandlerDelegate::GetJavaScriptObjectMethods "
-                  "nweb_javascript_callback_ is null";
-    return;
-  }
-  std::shared_ptr<NWebValue> ark_result =
-      nweb_javascript_callback_->GetJavaScriptObjectMethods(object_id);
-  if (!ark_result) {
-    LOG(ERROR) << "NWebHandlerDelegate::GetJavaScriptObjectMethods "
-                  "result is null";
-    return;
-  }
-  returned_method_names = ParseNWebValueToValueHelper(ark_result);
-}
-
-void NWebHandlerDelegate::RemoveJavaScriptObjectHolder(int32_t holder,
-                                                       int32_t object_id) {
-  if (!nweb_javascript_callback_) {
-    LOG(ERROR) << "NWebHandlerDelegate::RemoveJavaScriptObjectHolder "
-                  "nweb_javascript_callback_ is null";
-    return;
-  }
-  nweb_javascript_callback_->RemoveJavaScriptObjectHolder(holder, object_id);
-}
-
-void NWebHandlerDelegate::RemoveTransientJavaScriptObject() {
-  if (!nweb_javascript_callback_) {
-    LOG(ERROR) << "NWebHandlerDelegate::RemoveTransientJavaScriptObject "
-                  "nweb_javascript_callback_ is null";
-    return;
-  }
-  nweb_javascript_callback_->RemoveTransientJavaScriptObject();
 }
 
 #if defined(REPORT_SYS_EVENT)
