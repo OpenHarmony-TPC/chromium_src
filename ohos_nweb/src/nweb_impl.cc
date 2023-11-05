@@ -381,16 +381,33 @@ void NWebImpl::Resize(uint32_t width, uint32_t height, bool isKeyboard) {
     return;
   }
   if (width > kSurfaceMaxWidth || height > kSurfaceMaxHeight) {
-    return;
+    if (draw_mode_ == 0) {
+      WVLOG_E("size too large in surface mode (%{public}u , %{public}u)", width, height);
+      return;
+    };
   }
 
   if (nweb_delegate_ == nullptr) {
     WVLOG_E("resize failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
     return;
   }
-
+  nweb_delegate_->SetDrawMode(draw_mode_);
   nweb_delegate_->Resize(width, height, isKeyboard);
   output_handler_->Resize(width, height);
+}
+
+void NWebImpl::SetDrawRect(int x, int y, int width, int height) {
+  if (nweb_delegate_) {
+    nweb_delegate_->SetDrawRect(x, y, width, height);
+  }
+}
+
+void NWebImpl::SetDrawMode(int mode) {
+  WVLOG_D("NWebImpl::SetDrawMode %{public}d", mode);
+  draw_mode_ = mode;
+  if (nweb_delegate_) {
+    nweb_delegate_->SetDrawMode(mode);
+  }
 }
 
 void NWebImpl::OnTouchPress(int32_t id, double x, double y, bool from_overlay) {

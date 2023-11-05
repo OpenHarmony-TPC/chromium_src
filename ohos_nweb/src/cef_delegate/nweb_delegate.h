@@ -207,6 +207,8 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) override;
   void SetAudioMuted(bool muted) override;
   void SetShouldFrameSubmissionBeforeDraw(bool should) override;
+  void SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) override;
+  void SetDrawMode(int32_t mode) override;
   void SetAudioResumeInterval(int32_t resumeInterval) override;
   void SetAudioExclusive(bool audioExclusive) override;
   void PrefetchPage(
