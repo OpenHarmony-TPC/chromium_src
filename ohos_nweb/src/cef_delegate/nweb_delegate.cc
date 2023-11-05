@@ -1929,6 +1929,18 @@ void NWebDelegate::SetVirtualKeyBoardArg(int32_t width, int32_t height, double k
   }
 }
 
+void NWebDelegate::SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) {
+  if (GetBrowser().get()) {
+    GetBrowser()->GetHost()->SetDrawRect(x, y, width, height);
+  }
+}
+
+void NWebDelegate::SetDrawMode(int32_t mode) {
+  if (GetBrowser().get()) {
+    GetBrowser()->GetHost()->SetDrawMode(mode);
+  }
+}
+
 bool NWebDelegate::ShouldVirtualKeyboardOverlay() {
   if (GetBrowser().get()) {
     return GetBrowser()->GetHost()->ShouldVirtualKeyboardOverlay();

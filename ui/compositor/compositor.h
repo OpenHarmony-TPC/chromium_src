@@ -238,6 +238,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
 
 #if BUILDFLAG(IS_OHOS)
   void SetShouldFrameSubmissionBeforeDraw(bool should);
+  void SetDrawRect(const gfx::Rect& new_rect);
+  void SetDrawMode(const int32_t& mode);
 #endif
 
   // Sets the compositor's device scale factor and size.
