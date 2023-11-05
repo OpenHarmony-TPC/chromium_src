@@ -865,14 +865,11 @@ int NWebImpl::LoadWithData(const std::string& data,
 
 void NWebImpl::RegisterArkJSfunction(
     const std::string& object_name,
-    const std::vector<std::string>& method_list,
-    const int32_t object_id) {
+    const std::vector<std::string>& method_list) {
   if (nweb_delegate_ == nullptr) {
-    WVLOG_E("fail to register ark js function");
     return;
   }
-  return nweb_delegate_->RegisterArkJSfunction(object_name, method_list,
-                                               object_id);
+  return nweb_delegate_->RegisterArkJSfunction(object_name, method_list);
 }
 
 void NWebImpl::UnregisterArkJSfunction(
@@ -1405,6 +1402,7 @@ extern "C" OHOS_NWEB_EXPORT void CreateNWeb(const NWebCreateInfo& create_info,
           create_info.init_args.is_enhance_surface);
   nweb = std::make_shared<NWebImpl>(nweb_id);
   if (nweb == nullptr) {
+    WVLOG_E("fail to create nweb instance");
     return;
   }
 
