@@ -1353,6 +1353,13 @@ void NWebImpl::PrefetchPage(
   nweb_delegate_->PrefetchPage(url, additionalHttpHeaders);
 }
 
+void* NWebImpl::CreateWebPrintDocumentAdapter(const std::string& jobName) {
+  if (nweb_delegate_ == nullptr) {
+    return nullptr;
+  }
+  return nweb_delegate_->CreateWebPrintDocumentAdapter(jobName);
+}
+
 void NWebImpl::SetShouldFrameSubmissionBeforeDraw(bool should) {
   if (nweb_delegate_) {
     nweb_delegate_->SetShouldFrameSubmissionBeforeDraw(should);
