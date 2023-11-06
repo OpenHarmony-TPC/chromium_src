@@ -156,6 +156,8 @@ class NWebImpl : public NWeb {
   bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) override;
   void SetScreenOffSet(double x, double y) override;
   void SetShouldFrameSubmissionBeforeDraw(bool should) override;
+  void SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) override;
+  void SetDrawMode(int32_t mode) override;
   void RegisterScreenLockFunction(int32_t windowId, const SetKeepScreenOn&& handle) override;
   void UnRegisterScreenLockFunction(int32_t windowId) override;
   void NotifyMemoryLevel(int32_t level) override;
@@ -229,6 +231,7 @@ class NWebImpl : public NWeb {
 
  private:
   uint32_t nweb_id_ = 0;
+  int32_t draw_mode_ = 0;
   std::shared_ptr<NWebHandler> nweb_handle_ = nullptr;
   std::shared_ptr<NWebOutputHandler> output_handler_ = nullptr;
   std::shared_ptr<NWebInputHandler> input_handler_ = nullptr;

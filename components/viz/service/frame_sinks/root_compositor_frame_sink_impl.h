@@ -74,6 +74,8 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
   void SetShouldFrameSubmissionBeforeDraw(
       bool should,
       SetShouldFrameSubmissionBeforeDrawCallback callback) override;
+  void SetDrawRect(const gfx::Rect& new_rect) override;
+  void SetDrawMode(int32_t mode) override;
 #endif
   void Resize(const gfx::Size& size) override;
   void SetDisplayColorMatrix(const gfx::Transform& color_matrix) override;

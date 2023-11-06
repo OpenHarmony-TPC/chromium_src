@@ -795,6 +795,18 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
     virtual bool ShouldVirtualKeyboardOverlay() = 0;
 
     /**
+     * Set draw rect.
+     *
+    */
+    virtual void SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) = 0;
+
+    /**
+     * Set draw mode.
+     *
+    */
+    virtual void SetDrawMode(int32_t mode) = 0;
+
+    /**
      * Inject the JavaScript before WebView load the DOM tree.
      */
     virtual void JavaScriptOnDocumentStart(const ScriptItems& scriptItems) = 0;

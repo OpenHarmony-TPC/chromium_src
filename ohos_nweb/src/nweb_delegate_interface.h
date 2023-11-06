@@ -236,6 +236,8 @@ class NWebDelegateInterface
 #endif
 
   virtual void SetShouldFrameSubmissionBeforeDraw(bool should) = 0;
+  virtual void SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) = 0;
+  virtual void SetDrawMode(int32_t mode) = 0;
   virtual void SetAudioResumeInterval(int32_t resumeInterval) = 0;
   virtual void SetAudioExclusive(bool audioExclusive) = 0;
   virtual void NotifyPopupWindowResult(bool result) = 0;
