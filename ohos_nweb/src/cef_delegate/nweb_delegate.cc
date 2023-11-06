@@ -678,6 +678,25 @@ int NWebDelegate::Load(const std::string& url) {
   return NWEB_OK;
 }
 
+int NWebDelegate::PostUrl(const std::string& url, std::vector<char>& postData) {
+  GURL gurl = GURL(url);
+  if (gurl.is_empty() || !gurl.is_valid()) {
+    GURL gurlWithHttp = GURL("https://" + url);
+    if (!gurlWithHttp.is_valid()) {
+      return NWEB_INVALID_URL;
+    }
+  }
+  LOG(DEBUG) << "NWebDelegate::PostUrl url=" << url;
+  auto browser = GetBrowser();
+  if (browser == nullptr) {
+    LOG(ERROR) << "NWebDelegate::PostUrl browser is nullptr";
+    return NWEB_ERR;
+  }
+  browser->GetMainFrame()->PostURL(CefString(url), postData);
+  RequestVisitedHistory();
+  return NWEB_OK;
+}
+
 bool NWebDelegate::IsNavigatebackwardAllowed() const {
   LOG(DEBUG) << "NWebDelegate::IsNavigatebackwardAllowed";
   if (GetBrowser().get()) {

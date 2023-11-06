@@ -240,6 +240,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void SetToken(void* token) override;
   void SetVirtualPixelRatio(float ratio) override;
   void* CreateWebPrintDocumentAdapter(const std::string& jobName) override;
+  int PostUrl(const std::string& url, std::vector<char>& postData) override;
 
  public:
   int argc_;
