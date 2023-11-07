@@ -1814,6 +1814,18 @@ void NWebDelegate::PrefetchPage(
   }
 }
 
+void* NWebDelegate::CreateWebPrintDocumentAdapter(const std::string& jobName) {
+  LOG(DEBUG) << "Create Web print document adapter jobName = " << jobName;
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "CreateWebPrintDocumentAdapter can not get browser";
+    return nullptr;
+  }
+
+  void* webPrintDocumentAdapter = nullptr;
+  GetBrowser()->GetHost()->CreateWebPrintDocumentAdapter(CefString(jobName), &webPrintDocumentAdapter);
+  return webPrintDocumentAdapter;
+}
+
 #if defined (OHOS_NWEB_EX)
 void NWebDelegate::SetForceEnableZoom(bool forceEnableZoom) {
   LOG(DEBUG) << "NWebDelegate::SetForceEnableZoom " << forceEnableZoom;

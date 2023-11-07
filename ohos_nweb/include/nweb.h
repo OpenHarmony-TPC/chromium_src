@@ -807,6 +807,12 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
     virtual void SetDrawMode(int32_t mode) = 0;
 
     /**
+     * Create web print document adapter.
+     *
+    */
+    virtual void* CreateWebPrintDocumentAdapter(const std::string& jobName) = 0;
+
+    /**
      * Inject the JavaScript before WebView load the DOM tree.
      */
     virtual void JavaScriptOnDocumentStart(const ScriptItems& scriptItems) = 0;
