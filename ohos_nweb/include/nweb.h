@@ -132,6 +132,7 @@ enum class NestedScrollMode : int32_t {
     PARALLEL = 3,
 };
 
+using ScriptItems = std::map<std::string, std::vector<std::string>>;
 using WebState = std::shared_ptr<std::vector<uint8_t>>;
 using SetKeepScreenOn = std::function<void(bool)>;
 
@@ -823,6 +824,10 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      */
     virtual int PostUrl(const std::string& url, std::vector<char>& postData) = 0;
 
+    /**
+     * Inject the JavaScript before WebView load the DOM tree.
+     */
+    virtual void JavaScriptOnDocumentStart(const ScriptItems& scriptItems) = 0;
 };
 }  // namespace OHOS::NWeb
 
