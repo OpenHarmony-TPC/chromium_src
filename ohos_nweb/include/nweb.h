@@ -813,6 +813,18 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
     virtual void* CreateWebPrintDocumentAdapter(const std::string& jobName) = 0;
 
     /**
+     * Loads the URL with postData using "POST" method into this WebView.
+     * If url is not a network URL, it will be loaded with loadUrl(String) instead.
+     *
+     * @param url String: the URL of the resource to load This value cannot be null.
+     * @param postData the data will be passed to "POST" request,
+     * whilch must be "application/x-www-form-urlencoded" encoded.
+     *
+     * @return title string for the current page.
+     */
+    virtual int PostUrl(const std::string& url, std::vector<char>& postData) = 0;
+
+    /**
      * Inject the JavaScript before WebView load the DOM tree.
      */
     virtual void JavaScriptOnDocumentStart(const ScriptItems& scriptItems) = 0;

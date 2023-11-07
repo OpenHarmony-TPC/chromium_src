@@ -246,6 +246,7 @@ class NWebDelegateInterface
   virtual void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) = 0;
   virtual bool ShouldVirtualKeyboardOverlay() = 0;
   virtual void* CreateWebPrintDocumentAdapter(const std::string& jobName) = 0;
+  virtual int PostUrl(const std::string& url, std::vector<char>& postData) = 0;
 };
 }  // namespace OHOS::NWeb
 

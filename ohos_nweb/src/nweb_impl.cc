@@ -853,6 +853,14 @@ int NWebImpl::Load(std::string& url,
   return nweb_delegate_->Load(url, additionalHttpHeaders);
 }
 
+int NWebImpl::PostUrl(const std::string& url,
+                      std::vector<char>& postData) {
+  if (nweb_delegate_ == nullptr) {
+    return NWEB_ERR;
+  }
+  return nweb_delegate_->PostUrl(url, postData);
+}
+
 int NWebImpl::LoadWithDataAndBaseUrl(const std::string& baseUrl,
                                      const std::string& data,
                                      const std::string& mimeType,
