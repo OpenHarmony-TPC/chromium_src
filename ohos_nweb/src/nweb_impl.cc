@@ -31,6 +31,7 @@
 #include "camera_manager_adapter.h"
 #include "cef/include/cef_app.h"
 #include "cef/libcef/browser/net_service/net_helpers.h"
+#include "cef/libcef/browser/devtools/devtools_manager_delegate.h"
 #include "nweb_delegate_adapter.h"
 #include "nweb_export.h"
 #include "nweb_handler.h"
@@ -1581,5 +1582,18 @@ extern "C" OHOS_NWEB_EXPORT void SetConnectionTimeout(const int& timeout) {
       WVLOG_I("set connection timeout value in NetHelpers is: %{public}d", net_service::NetHelpers::connection_timeout);
   } else {
       WVLOG_E("net_work_service is nullptr");
+  }
+}
+
+extern "C" OHOS_NWEB_EXPORT void SetWebDebuggingAccess(bool isEnableDebug) {
+  static bool isDebuggingEnabled = false;
+  if (isEnableDebug && !isDebuggingEnabled) {
+      CefDevToolsManagerDelegate::StartHttpHandler(nullptr);
+      WVLOG_I("StartHttpHandler Enabled");
+      isDebuggingEnabled = true;
+  } else if (!isEnableDebug && !isDebuggingEnabled) {
+      CefDevToolsManagerDelegate::StopHttpHandler();
+      WVLOG_I("StopHttpHandler Enabled");
+      isDebuggingEnabled = false;
   }
 }
