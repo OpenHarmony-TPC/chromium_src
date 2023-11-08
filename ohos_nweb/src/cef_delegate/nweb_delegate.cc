@@ -1438,7 +1438,16 @@ void NWebDelegate::UnregisterArkJSfunction(
 }
 
 void NWebDelegate::JavaScriptOnDocumentStart(const ScriptItems& scriptItems) {
-  GetBrowser()->GetHost()->JavaScriptOnDocumentStart(scriptItems);
+  for (auto item: scriptItems) {
+    CefString script = item.first;
+    std::vector<CefString> scriptRules;
+    for (std::string rule : item.second) {
+      CefString cefRule;
+      cefRule.FromString(rule);
+      scriptRules.push_back(cefRule);
+    }
+    GetBrowser()->GetHost()->JavaScriptOnDocumentStart(script, scriptRules);
+  }
 }
 
 void NWebDelegate::RegisterNWebJavaScriptCallBack(
