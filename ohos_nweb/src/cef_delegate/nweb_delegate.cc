@@ -1438,6 +1438,7 @@ void NWebDelegate::UnregisterArkJSfunction(
 }
 
 void NWebDelegate::JavaScriptOnDocumentStart(const ScriptItems& scriptItems) {
+  GetBrowser()->GetHost()->RemoveJavaScriptOnDocumentStart();
   for (auto item: scriptItems) {
     CefString script = item.first;
     std::vector<CefString> scriptRules;
