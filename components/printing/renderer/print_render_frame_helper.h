@@ -279,6 +279,10 @@ class PrintRenderFrameHelper
   void PrintingDone(bool success) override;
   void SetPrintingEnabled(bool enabled) override;
   void PrintNodeUnderContextMenu() override;
+#if BUILDFLAG(IS_OHOS)
+  void DidDispatchPrintEvent(bool isBefore) override;
+  void ApplicationPrintRequestedPages() override;
+#endif
 
   // Get |page_size| and |content_area| information from
   // |page_layout_in_points|.
