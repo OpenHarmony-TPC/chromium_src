@@ -2381,11 +2381,14 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
 #if BUILDFLAG(IS_OHOS)
   std::vector<uint64_t> edited_forms_id_;
 #endif
-  
+
+#if BUILDFLAG(IS_OHOS) || defined(OHOS_NWEB_EX)
+  std::string user_agent_{""};
+#endif
+
 #if defined(OHOS_NWEB_EX)
   bool force_enable_zoom_;
   bool is_selectable_;
-  std::string user_agent_{""};
   bool enable_blank_target_popup_intercept_ = true;
   bool save_password_ = true;
   bool save_password_automatically_ = false;
