@@ -30,8 +30,8 @@
 #include "base/trace_event/common/trace_event_common.h"
 #include "camera_manager_adapter.h"
 #include "cef/include/cef_app.h"
-#include "cef/libcef/browser/net_service/net_helpers.h"
 #include "cef/libcef/browser/devtools/devtools_manager_delegate.h"
+#include "cef/libcef/browser/net_service/net_helpers.h"
 #include "nweb_delegate_adapter.h"
 #include "nweb_export.h"
 #include "nweb_handler.h"
@@ -1591,7 +1591,7 @@ extern "C" OHOS_NWEB_EXPORT void SetWebDebuggingAccess(bool isEnableDebug) {
       CefDevToolsManagerDelegate::StartHttpHandler(nullptr);
       WVLOG_I("StartHttpHandler Enabled");
       isDebuggingEnabled = true;
-  } else if (!isEnableDebug && !isDebuggingEnabled) {
+  } else if (!isEnableDebug && isDebuggingEnabled) {
       CefDevToolsManagerDelegate::StopHttpHandler();
       WVLOG_I("StopHttpHandler Enabled");
       isDebuggingEnabled = false;
