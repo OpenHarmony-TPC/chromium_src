@@ -1816,21 +1816,17 @@ void WebContentsImpl::SetUserAgentOverride(
     return;
   }
 
-#if defined(OHOS_NWEB_EX)
-  const base::CommandLine& command_line =
-      *base::CommandLine::ForCurrentProcess();
-  if (command_line.HasSwitch(switches::kForBrowser)) {
-    user_agent_ = ua_override.ua_string_override;
-    UpdateOverridingUserAgent();
+#if BUILDFLAG(IS_OHOS) || defined(OHOS_NWEB_EX)
+  user_agent_ = ua_override.ua_string_override;
+  UpdateOverridingUserAgent();
 
-    // DTS2023022711784
-    // 子进程打开新窗口时，会先创建delayed_load_url_params_，等到加载url时直接使用
-    // delayed_load_url_params_的值创建NavigationRequest。其override_user_agent默认值是
-    // UA_OVERRIDE_FALSE，故这里也要更新。
-    if (delayed_load_url_params_) {
-      delayed_load_url_params_->override_user_agent =
-          NavigationController::UA_OVERRIDE_TRUE;
-    }
+  // DTS2023022711784
+  // 子进程打开新窗口时，会先创建delayed_load_url_params_，等到加载url时直接使用
+  // delayed_load_url_params_的值创建NavigationRequest。其override_user_agent默认值是
+  // UA_OVERRIDE_FALSE，故这里也要更新。
+  if (delayed_load_url_params_) {
+    delayed_load_url_params_->override_user_agent =
+        NavigationController::UA_OVERRIDE_TRUE;
   }
 #endif
 
@@ -2882,13 +2878,11 @@ const blink::web_pref::WebPreferences WebContentsImpl::ComputeWebPreferences() {
 
   GetContentClient()->browser()->OverrideWebkitPrefs(this, &prefs);
 
-#if defined(OHOS_NWEB_EX)
-  if (command_line.HasSwitch(switches::kForBrowser)) {
-    bool is_win = (user_agent_.find("Windows NT") != std::string::npos) &&
-                  (user_agent_.find("Win64") != std::string::npos ||
-                   user_agent_.find("WOW64") != std::string::npos);
-    prefs.viewport_meta_enabled = !is_win;
-  }
+#if BUILDFLAG(IS_OHOS) || defined(OHOS_NWEB_EX)
+  bool is_win = (user_agent_.find("Windows NT") != std::string::npos) &&
+                (user_agent_.find("Win64") != std::string::npos ||
+                 user_agent_.find("WOW64") != std::string::npos);
+  prefs.viewport_meta_enabled = !is_win;
 #endif
 
   return prefs;
