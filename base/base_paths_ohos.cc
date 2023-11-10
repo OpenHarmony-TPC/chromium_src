@@ -65,8 +65,12 @@ bool PathProviderOHOS(int key, FilePath* result) {
       NOTIMPLEMENTED();
       return false;
     case base::DIR_CACHE:
+    #if BUILDFLAG(IS_OHOS)
+      *result = FilePath("/data/storage/el2/base/cache/web");
+    #else
       // set to /data/local directory for W|X permission.
       *result = FilePath("/data/local");
+    #endif // BUILDFLAG(IS_OHOS)
       return true;
     case base::DIR_ASSETS:
       // resource file packed to system images
