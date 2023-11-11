@@ -110,7 +110,7 @@ group("gn_all") {
       "//ohos_browser_shell",
       "//ohos_nweb_ex/browser_service",
       "//ohos_nweb_ex/test:ohos_nweb_ex_unittests",
-      "//ohos_nweb_hap",
+      "//third_party/ohos_nweb_hap",
     ]
   }  # endif // OHOS_NWEB_EX
 
