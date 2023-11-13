@@ -2002,4 +2002,21 @@ double NWebDelegate::GetBrowserZoomLevel() {
   return zoom_factor;
 }
 #endif
+
+#ifdef OHOS_NWEB_EX
+void NWebDelegate::UpdateBrowserControlsState(int constraints,
+                                              int current,
+                                              bool animate) const {
+  if (GetBrowser().get()) {
+    GetBrowser()->UpdateBrowserControlsState(constraints, current, animate);
+  }
+}
+
+void NWebDelegate::UpdateBrowserControlsHeight(int height, bool animate) {
+  if (GetBrowser().get()) {
+    GetBrowser()->UpdateBrowserControlsHeight(height, animate);
+  }
+}
+
+#endif
 }  // namespace OHOS::NWeb

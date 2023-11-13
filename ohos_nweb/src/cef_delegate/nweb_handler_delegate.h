@@ -492,6 +492,13 @@ class NWebHandlerDelegate : public CefClient,
   void SetContinueNeedFocus(bool continueNeedFocus);
 
   void NotifyPopupWindowResult(bool result);
+
+  // #if defined(OHOS_NWEB_EX)
+  void OnTopControlsChanged(float top_controls_offset,
+                            float top_content_offset) override;
+  int OnGetTopControlsHeight() override;
+  bool DoBrowserControlsShrinkRendererSize() override;
+  // #endif
  private:
   void CopyImageToClipboard(CefRefPtr<CefImage> image);
   // List of existing browser windows. Only accessed on the CEF UI thread.
@@ -546,6 +553,7 @@ class NWebHandlerDelegate : public CefClient,
 
 #if defined(OHOS_NWEB_EX)
   bool on_load_start_notified_ = false;
+  float top_content_offset_ = 0;
 #endif  // OHOS_NWEB_EX
 
   float scale_ = 100.0;

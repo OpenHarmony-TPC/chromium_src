@@ -1766,7 +1766,11 @@ void WebContentsViewAura::OnGotVirtualFilesAsTempFiles(
 }
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+int WebContentsViewAura::GetTopControlsHeight() {
+#else
 int WebContentsViewAura::GetTopControlsHeight() const {
+#endif
   WebContentsDelegate* delegate = web_contents_->GetDelegate();
   if (!delegate)
     return 0;

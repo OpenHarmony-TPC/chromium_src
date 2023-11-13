@@ -2419,6 +2419,7 @@ RenderFrameMetadata LayerTreeHostImpl::MakeRenderFrameMetadata(
 #endif
 
 #if BUILDFLAG(IS_OHOS)
+  metadata.scrollable_viewport_size = active_tree_->ScrollableViewportSize();
   metadata.root_layer_size = active_tree_->ScrollableSize();
 #endif
 
@@ -5177,5 +5178,25 @@ void LayerTreeHostImpl::RequestInvalidationForAnimatedImages() {
 base::WeakPtr<LayerTreeHostImpl> LayerTreeHostImpl::AsWeakPtr() {
   return weak_factory_.GetWeakPtr();
 }
+
+#ifdef OHOS_NWEB_EX
+void LayerTreeHostImpl::SetupScrollBy() {
+  if (!input_delegate_) {
+    return;
+  }
+
+  gfx::Vector2dF scroll_delta(
+      0.f, browser_controls_offset_manager_->ContentTopOffset());
+  // This counter-scrolls the page to keep the appearance of the page content
+  // being fixed while the browser controls animate.
+  viewport().ScrollBy(scroll_delta,
+                      /*viewport_point=*/gfx::Point(),
+                      /*is_wheel_scroll=*/false,
+                      /*affect_browser_controls=*/false,
+                      /*scroll_outer_viewport=*/true);
+  client_->SetNeedsCommitOnImplThread();
+  client_->RenewTreePriority();
+}
+#endif
 
 }  // namespace cc

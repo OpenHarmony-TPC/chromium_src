@@ -59,6 +59,11 @@
 #include "event_reporter.h"
 #endif
 
+#if defined(OHOS_NWEB_EX)
+#include "cef/include/cef_command_line.h"
+#include "content/public/common/content_switches.h"
+#endif
+
 namespace OHOS::NWeb {
 namespace {
 const int kEpochBeginYear = 1970;
@@ -2147,4 +2152,48 @@ bool NWebHandlerDelegate::GetContinueNeedFocus() {
 void NWebHandlerDelegate::SetContinueNeedFocus(bool continueNeedFocus) {
   continueNeedFocus_ = continueNeedFocus;
 }
+
+// #if defined(OHOS_NWEB_EX)
+void NWebHandlerDelegate::OnTopControlsChanged(float top_controls_offset,
+                                               float top_content_offset) {
+#if defined(OHOS_NWEB_EX)
+  if (web_app_client_extension_listener_ == nullptr ||
+      web_app_client_extension_listener_->OnTopControlsChanged == nullptr) {
+    return;
+  }
+
+  top_content_offset_ = top_content_offset;
+  web_app_client_extension_listener_->OnTopControlsChanged(
+      top_controls_offset, top_content_offset,
+      web_app_client_extension_listener_->nweb_id);
+#endif
+}
+
+int NWebHandlerDelegate::OnGetTopControlsHeight() {
+#if defined(OHOS_NWEB_EX)
+  if (web_app_client_extension_listener_ == nullptr ||
+      web_app_client_extension_listener_->OnGetTopControlsHeight == nullptr) {
+    return 0;
+  }
+
+  return web_app_client_extension_listener_->OnGetTopControlsHeight(
+      web_app_client_extension_listener_->nweb_id);
+#else
+  return 0;
+#endif
+}
+
+bool NWebHandlerDelegate::DoBrowserControlsShrinkRendererSize() {
+#if defined(OHOS_NWEB_EX)
+  if (CefCommandLine::GetGlobalCommandLine()->HasSwitch(
+          ::switches::kForBrowser) &&
+      top_content_offset_ > 0) {
+    return true;
+  }
+#endif
+
+  return false;
+}
+// #endif
+
 }  // namespace OHOS::NWeb

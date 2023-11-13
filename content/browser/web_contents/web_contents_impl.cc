@@ -7300,6 +7300,14 @@ void WebContentsImpl::RenderViewReady(RenderViewHost* rvh) {
     observers_.NotifyObservers(&WebContentsObserver::RenderViewReady);
   }
   view_->RenderViewReady();
+
+#ifdef OHOS_NWEB_EX
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kForBrowser)) {
+    UpdateBrowserControlsState(browser_controls_state_,
+                               cc::BrowserControlsState::kShown, false);
+  }
+#endif
 }
 
 void WebContentsImpl::RenderViewTerminated(RenderViewHost* rvh,
@@ -7465,6 +7473,18 @@ void WebContentsImpl::DidStartLoading(FrameTreeNode* frame_tree_node,
                                       bool should_show_loading_ui) {
   OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::DidStartLoading",
                         "frame_tree_node", frame_tree_node);
+
+#ifdef OHOS_NWEB_EX
+  if (frame_tree_node->IsMainFrame()) {
+    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+            switches::kForBrowser) &&
+        should_show_loading_ui) {
+      UpdateBrowserControlsState(browser_controls_state_,
+                                 cc::BrowserControlsState::kShown, false);
+    }
+  }
+#endif
+
   LoadingStateChanged(frame_tree_node->IsMainFrame() && should_show_loading_ui,
                       nullptr);
 
@@ -9426,10 +9446,21 @@ void WebContentsImpl::UpdateBrowserControlsState(
     cc::BrowserControlsState constraints,
     cc::BrowserControlsState current,
     bool animate) {
+#ifdef OHOS_NWEB_EX
+  browser_controls_state_ = constraints;
+#endif
   // Browser controls should be synchronised with the scroll state. Therefore,
   // they are controlled from the renderer by the main RenderFrame(Host).
   GetPrimaryPage().UpdateBrowserControlsState(constraints, current, animate);
 }
+
+#ifdef OHOS_NWEB_EX
+void WebContentsImpl::UpdateBrowserControlsHeight(int height, bool animate) {
+  if (view_) {
+    view_->UpdateBrowserControlsHeight(height, animate);
+  }
+}
+#endif
 
 void WebContentsImpl::SetTabSwitchStartTime(base::TimeTicks start_time,
                                             bool destination_is_loaded) {

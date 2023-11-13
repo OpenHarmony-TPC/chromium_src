@@ -179,8 +179,12 @@ void TouchSelectionController::OnViewportChanged(
     end_selection_handle_->SetViewportRect(viewport_rect);
   }
 
+#ifdef OHOS_NWEB_EX
+  OnSelectionChanged();
+#else
   // Update handle layout after setting the new Viewport size.
   UpdateHandleLayoutIfNecessary();
+#endif
 }
 
 bool TouchSelectionController::WillHandleTouchEvent(const MotionEvent& event) {

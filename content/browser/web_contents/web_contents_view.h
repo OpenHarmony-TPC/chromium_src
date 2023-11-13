@@ -109,6 +109,10 @@ class CONTENT_EXPORT WebContentsView {
 #endif
 
   virtual void FullscreenStateChanged(bool is_fullscreen) = 0;
+
+#if defined(OHOS_NWEB_EX)
+  virtual void UpdateBrowserControlsHeight(int, bool){};
+#endif
 };
 
 }  // namespace content

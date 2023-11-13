@@ -439,6 +439,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
       bool is_rtl,
       const std::vector<autofill::Suggestion>& suggestions) override;
   void HideAutofillPopup() override;
+
+  void UpdateBrowserControlsHeight(int height, bool animate) override;
 #endif  // OHOS_NWEB_EX
 
 #endif
@@ -2393,6 +2395,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   bool save_password_ = true;
   bool save_password_automatically_ = false;
   std::unique_ptr<password_manager::PasswordFormManagerForUI> form_to_save_;
+  cc::BrowserControlsState browser_controls_state_ =
+      cc::BrowserControlsState::kBoth;
 #endif  // OHOS_NWEB_EX
 
   base::WeakPtr<FileChooserImpl> active_file_chooser_;

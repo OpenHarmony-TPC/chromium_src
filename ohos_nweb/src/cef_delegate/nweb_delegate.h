@@ -234,6 +234,10 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) override;
   void SetBrowserZoomLevel(double zoom_factor) override;
   double GetBrowserZoomLevel() override;
+  void UpdateBrowserControlsState(int constraints,
+                                  int current,
+                                  bool animate) const override;
+  void UpdateBrowserControlsHeight(int height, bool animate) override;
 #endif
 
   void NotifyPopupWindowResult(bool result) override;

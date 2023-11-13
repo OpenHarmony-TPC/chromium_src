@@ -81,8 +81,11 @@ class CONTENT_EXPORT RenderViewHostDelegateView {
   virtual void TakeFocus(bool reverse) {}
 
   // Returns the height of the top controls in DIP.
+#if BUILDFLAG(IS_OHOS)
+  virtual int GetTopControlsHeight();
+#else
   virtual int GetTopControlsHeight() const;
-
+#endif
   // Returns the minimum visible height the top controls can have in DIP.
   virtual int GetTopControlsMinHeight() const;
 
