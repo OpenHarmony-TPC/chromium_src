@@ -1,3 +1,4 @@
+#include "base/logging.h"
 #include "base/report_loss_frame.h"
 #include <chrono>
 #include "ohos_nweb/src/sysevent/event_reporter.h"
@@ -41,9 +42,7 @@ void ReportLossFrame::Report() {
   int64_t now = GetCurrentTimestampMS();
   int duration = now - start_time_for_scroll_;
   ReportJankStats(start_time_for_scroll_, duration, jank_stats_, JANK_STATS_VER);
-  start_time_for_scroll_ = 0;
-  std::fill(jank_stats_.begin(), jank_stats_.end(), 0);
-  need_report_ = false;
+  Reset();
 }
 
 void ReportLossFrame::Record() {
@@ -60,7 +59,7 @@ void ReportLossFrame::Record() {
   int64_t now = GetCurrentTimestampMS();
   int duration = now - start_time_;
   // ns->ms
-  double period = vsync_period_ / 1000000;
+  double period = vsync_period_ / 1000000.0;
   start_time_ = now;
 
   if (duration <= period * 2) {
@@ -68,6 +67,9 @@ void ReportLossFrame::Record() {
   }
 
   double loss_frame = duration / period;
+  LOG(INFO) << "ReportLossFrame: period: " << period;
+  LOG(INFO) << "ReportLossFrame: duration: " << duration;
+  LOG(INFO) << "ReportLossFrame: loss_frame: " << loss_frame;
 
   size_t type = JANK_FREQ_EXCEED_FRAME;
   if (loss_frame < 6) {
@@ -90,4 +92,10 @@ void ReportLossFrame::Record() {
 
   jank_stats_[type]++;
   need_report_ = true;
+}
+
+void ReportLossFrame::Reset() {
+  start_time_for_scroll_ = 0;
+  std::fill(jank_stats_.begin(), jank_stats_.end(), 0);
+  need_report_ = false;
 }
