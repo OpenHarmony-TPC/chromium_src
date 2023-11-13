@@ -28,6 +28,7 @@
 #include "base/memory/memory_pressure_listener.h"
 #include "base/time/time.h"
 #include "base/trace_event/common/trace_event_common.h"
+#include "base/trace_event/trace_event.h"
 #include "camera_manager_adapter.h"
 #include "cef/include/cef_app.h"
 #include "cef/libcef/browser/devtools/devtools_manager_delegate.h"
