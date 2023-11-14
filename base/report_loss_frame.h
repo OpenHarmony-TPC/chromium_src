@@ -52,6 +52,7 @@ class ReportLossFrame {
 
   bool need_report_ = false;
 
+  // the number 9 comes from type JankRangeType
   std::vector<uint16_t> jank_stats_ = std::vector<uint16_t>(9, 0);
 
   static ReportLossFrame* instance;

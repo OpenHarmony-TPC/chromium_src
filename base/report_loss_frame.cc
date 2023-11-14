@@ -67,9 +67,7 @@ void ReportLossFrame::Record() {
   }
 
   double loss_frame = duration / period;
-  LOG(INFO) << "ReportLossFrame: period: " << period;
-  LOG(INFO) << "ReportLossFrame: duration: " << duration;
-  LOG(INFO) << "ReportLossFrame: loss_frame: " << loss_frame;
+  LOG(DEBUG) << "ReportLossFrame: period: " << period << " duration:" << duration << " loss_frame: " << loss_frame;
 
   size_t type = JANK_FREQ_EXCEED_FRAME;
   if (loss_frame < 6) {

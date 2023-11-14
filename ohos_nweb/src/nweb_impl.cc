@@ -26,9 +26,7 @@
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/memory/memory_pressure_listener.h"
-#if BUILDFLAG(IS_OHOS)
 #include "base/report_loss_frame.h"
-#endif
 #include "base/time/time.h"
 #include "base/trace_event/common/trace_event_common.h"
 #include "camera_manager_adapter.h"
@@ -185,10 +183,8 @@ NWebImpl::NWebImpl(uint32_t id) : nweb_id_(id) {
 NWebImpl::~NWebImpl() {
   ResSchedClientAdapter::ReportNWebInit(ResSchedStatusAdapter::WEB_SCENE_EXIT,
                                         nweb_id_);
-#if BUILDFLAG(IS_OHOS)
   ReportLossFrame::GetInstance()->Reset();
   ReportLossFrame::GetInstance()->SetScrollState(ScrollMode::STOP);
-#endif
   g_nweb_map.Get().erase(nweb_id_);
 }
 
