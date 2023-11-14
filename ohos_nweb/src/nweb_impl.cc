@@ -26,6 +26,7 @@
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/memory/memory_pressure_listener.h"
+#include "base/report_loss_frame.h"
 #include "base/time/time.h"
 #include "base/trace_event/common/trace_event_common.h"
 #include "base/trace_event/trace_event.h"
@@ -183,6 +184,8 @@ NWebImpl::NWebImpl(uint32_t id) : nweb_id_(id) {
 NWebImpl::~NWebImpl() {
   ResSchedClientAdapter::ReportNWebInit(ResSchedStatusAdapter::WEB_SCENE_EXIT,
                                         nweb_id_);
+  ReportLossFrame::GetInstance()->Reset();
+  ReportLossFrame::GetInstance()->SetScrollState(ScrollMode::STOP);
   g_nweb_map.Get().erase(nweb_id_);
 }
 
