@@ -46,7 +46,7 @@ GestureConfiguration::GestureConfiguration()
       max_time_between_double_click_in_ms_(700),
       max_touch_down_duration_for_click_in_ms_(800),
 #ifdef BUILDFLAG(IS_OHOS)
-      max_touch_move_in_pixels_for_click_(5),
+      max_touch_move_in_pixels_for_click_(3),
 #else
       max_touch_move_in_pixels_for_click_(15),
 #endif
