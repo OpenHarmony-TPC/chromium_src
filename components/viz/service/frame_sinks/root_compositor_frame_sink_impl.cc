@@ -236,6 +236,17 @@ void RootCompositorFrameSinkImpl::SetShouldFrameSubmissionBeforeDraw(
   if (callback)
     std::move(callback).Run();
 }
+
+void RootCompositorFrameSinkImpl::SetDrawRect(const gfx::Rect& new_rect)
+{
+   display_->SetDrawRect(new_rect);
+}
+
+void RootCompositorFrameSinkImpl::SetDrawMode(int32_t mode)
+{
+   LOG(INFO) << "ootCompositorFrameSinkImpl::SetDrawMode";
+   display_->SetDrawMode(mode);
+}
 #endif
 
 void RootCompositorFrameSinkImpl::Resize(const gfx::Size& size) {
@@ -569,6 +580,10 @@ void RootCompositorFrameSinkImpl::SetCurrentFrameSinkId(
 
 void RootCompositorFrameSinkImpl::SendInternalBeginFrame() {
   external_begin_frame_source_->SendInternalBeginFrame();
+}
+
+void RootCompositorFrameSinkImpl::SetEnableLowerFrameRate(bool enabled) {
+  external_begin_frame_source_->SetEnableLowerFrameRate(enabled);
 }
 #endif
 

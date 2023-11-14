@@ -140,6 +140,7 @@ class UI_TOUCH_SELECTION_EXPORT TouchHandle : public TouchSelectionDraggable {
   void SetEdge(const gfx::PointF& top, const gfx::PointF& bottom);
   const gfx::PointF& focus_top() const { return focus_top_; }
   bool GetEnabled() const { return enabled_; };
+  const gfx::RectF& viewport() const { return viewport_rect_; }
 #endif
 
  private:

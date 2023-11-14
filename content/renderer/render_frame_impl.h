@@ -340,6 +340,7 @@ class CONTENT_EXPORT RenderFrameImpl
   // RenderFrame implementation:
 #if BUILDFLAG(IS_OHOS)
   void SetZoomLevel(float magnify_delta, const gfx::Point& anchor) override;
+  void SetOverscrollMode(int mode) override;
 #endif  // BUILDFLAG(IS_OHOS)
   RenderView* GetRenderView() override;
   RenderFrame* GetMainRenderFrame() override;

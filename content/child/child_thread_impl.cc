@@ -91,6 +91,10 @@
 #include "base/mac/mach_port_rendezvous.h"
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+#include "res_sched_client_adapter.h"
+#endif
+
 #if BUILDFLAG(CLANG_PROFILING_INSIDE_SANDBOX)
 #include <stdio.h>
 #include "base/test/clang_profiling.h"
@@ -808,6 +812,15 @@ const mojo::Remote<mojom::FontCacheWin>& ChildThreadImpl::GetFontCacheWin() {
   if (!font_cache_win_)
     BindHostReceiver(font_cache_win_.BindNewPipeAndPassReceiver());
   return font_cache_win_;
+}
+#endif
+
+#if BUILDFLAG(IS_OHOS)
+void ChildThreadImpl::ReportKeyThread(int32_t status, int32_t process_id, int32_t thread_id) {
+  using namespace OHOS::NWeb;
+  if (child_process_host_)
+    child_process_host_->ReportKeyThread(
+      status, process_id, thread_id, static_cast<int32_t>(ResSchedRoleAdapter::USER_INTERACT));
 }
 #endif
 

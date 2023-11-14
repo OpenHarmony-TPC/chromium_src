@@ -34,7 +34,7 @@ class NWebInputMethodHandler : public NWebInputMethodClient {
   NWebInputMethodHandler(const NWebInputMethodHandler&) = delete;
   NWebInputMethodHandler& operator=(const NWebInputMethodHandler&) = delete;
 
-  void Attach(CefRefPtr<CefBrowser> browser, bool show_keyboard, cef_text_input_mode_t input_mode) override;
+  void Attach(CefRefPtr<CefBrowser> browser, bool show_keyboard, cef_text_input_type_t input_type) override;
   void ShowTextInput() override;
   void HideTextInput(uint32_t nwebId = 0, HideTextinputType hideType = HideTextinputType::FROM_KERNEL) override;
   void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,

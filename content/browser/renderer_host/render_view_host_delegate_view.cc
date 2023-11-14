@@ -15,7 +15,11 @@ content::RenderViewHostDelegateView::GetOverscrollRefreshHandler() const {
 }
 #endif
 
+#if BUILDFLAG(IS_OHOS)
+int RenderViewHostDelegateView::GetTopControlsHeight() {
+#else
 int RenderViewHostDelegateView::GetTopControlsHeight() const {
+#endif
   return 0;
 }
 

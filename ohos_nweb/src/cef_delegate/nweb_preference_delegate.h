@@ -70,6 +70,8 @@ class NWebPreferenceDelegate : public NWebPreference {
   void PutHorizontalScrollBarAccess(bool flag) override;
   void PutVerticalScrollBarAccess(bool flag) override;
   void PutScrollBarColor(uint32_t colorValue) override;
+  void PutOverscrollMode(int overScrollMode) override;
+
   /* get methods*/
   bool EnableContentAccess() override;
   bool EnableRawFileAccess() override;
@@ -114,6 +116,7 @@ class NWebPreferenceDelegate : public NWebPreference {
   bool UseStricMixedContentCheckingAllowed();
   bool MixedContentAutoupgradesAllowed();
   bool GetPinchSmoothMode() override;
+  int GetOverscrollMode() override;
 
   void PutHasInternetPermission(bool flag);
   void SetBackgroundColor(int32_t color);
@@ -162,6 +165,7 @@ class NWebPreferenceDelegate : public NWebPreference {
   bool has_internet_permission_;
   bool overload_mode_enabled_{true};
   uint32_t scrollbar_color_{0};
+  int overscroll_mode_{0};
   CacheModeFlag cache_mode_flag_{CacheModeFlag::USE_DEFAULT};
   int32_t background_color_{0xffffffff};
   bool enable_blank_target_popup_intercept_{true};

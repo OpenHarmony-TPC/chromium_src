@@ -135,6 +135,7 @@ class NWebDelegateInterface
   virtual void OnContinue() = 0;
   virtual void OnOccluded() = 0;
   virtual void OnUnoccluded() = 0;
+  virtual void SetEnableLowerFrameRate(bool enabled) = 0;
   virtual std::shared_ptr<NWebPreference> GetPreference() const = 0;
   virtual std::string Title() = 0;
   virtual void CreateWebMessagePorts(std::vector<std::string>& ports) = 0;
@@ -166,6 +167,7 @@ class NWebDelegateInterface
   virtual void UnregisterArkJSfunction(
       const std::string& object_name,
       const std::vector<std::string>& method_list) const = 0;
+  virtual void JavaScriptOnDocumentStart(const ScriptItems& ScriptItems) = 0;
   virtual void RegisterNWebJavaScriptCallBack(
       std::shared_ptr<NWebJavaScriptResultCallBack> callback) = 0;
   virtual bool OnFocus(const FocusReason& focusReason = FocusReason::FOCUS_DEFAULT) const = 0;
@@ -228,14 +230,27 @@ class NWebDelegateInterface
   virtual void SetSavePassword(bool enable) = 0;
   virtual bool GetSavePassword() = 0;
   virtual void SaveOrUpdatePassword(bool is_update) = 0;
+
+  virtual void SetBrowserZoomLevel(double zoom_factor) = 0;
+  virtual double GetBrowserZoomLevel() = 0;
+  virtual void UpdateBrowserControlsState(int constraints,
+                                          int current,
+                                          bool animate) const = 0;
+  virtual void UpdateBrowserControlsHeight(int height, bool animate) = 0;
 #endif
 
   virtual void SetShouldFrameSubmissionBeforeDraw(bool should) = 0;
+  virtual void SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) = 0;
+  virtual void SetDrawMode(int32_t mode) = 0;
   virtual void SetAudioResumeInterval(int32_t resumeInterval) = 0;
   virtual void SetAudioExclusive(bool audioExclusive) = 0;
   virtual void NotifyPopupWindowResult(bool result) = 0;
   virtual void SetWindowId(uint32_t window_id);
   virtual void SetToken(void* token) = 0;
+  virtual void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) = 0;
+  virtual bool ShouldVirtualKeyboardOverlay() = 0;
+  virtual void* CreateWebPrintDocumentAdapter(const std::string& jobName) = 0;
+  virtual int PostUrl(const std::string& url, std::vector<char>& postData) = 0;
 };
 }  // namespace OHOS::NWeb
 

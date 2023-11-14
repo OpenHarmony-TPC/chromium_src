@@ -23,6 +23,7 @@
 #include "cef/include/internal/cef_types_wrappers.h"
 
 #include "base/trace_event/common/trace_event_common.h"
+#include "base/trace_event/trace_event.h"
 #include "res_sched_client_adapter.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
 #include "ui/events/keycodes/keysym_to_unicode.h"

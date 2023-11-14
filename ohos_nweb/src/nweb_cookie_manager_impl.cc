@@ -76,6 +76,15 @@ void NWebCookieManagerImpl::PutAcceptFileURLSchemeCookiesEnabled(bool allow) {
   }
 }
 
+void NWebCookieManagerImpl::ConfigCookie(
+    const std::string& url,
+    const std::string& value,
+    std::shared_ptr<NWebValueCallback<long>> callback) {
+  if (delegate_ != nullptr) {
+    delegate_->ConfigCookie(url, value, callback);
+  }
+}
+
 void NWebCookieManagerImpl::SetCookie(
     const std::string& url,
     const std::string& value,

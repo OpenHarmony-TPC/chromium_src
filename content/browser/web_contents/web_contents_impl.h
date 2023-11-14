@@ -1,4 +1,4 @@
-// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+ // Copyright (c) 2012 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -439,6 +439,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
       bool is_rtl,
       const std::vector<autofill::Suggestion>& suggestions) override;
   void HideAutofillPopup() override;
+
+  void UpdateBrowserControlsHeight(int height, bool animate) override;
 #endif  // OHOS_NWEB_EX
 
 #endif
@@ -2379,14 +2381,23 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
   VisibleTimeRequestTrigger visible_time_request_trigger_;
 
   
+#if BUILDFLAG(IS_OHOS)
+  std::vector<uint64_t> edited_forms_id_;
+#endif
+
+#if BUILDFLAG(IS_OHOS) || defined(OHOS_NWEB_EX)
+  std::string user_agent_{""};
+#endif
+
 #if defined(OHOS_NWEB_EX)
   bool force_enable_zoom_;
   bool is_selectable_;
-  std::string user_agent_{""};
   bool enable_blank_target_popup_intercept_ = true;
   bool save_password_ = true;
   bool save_password_automatically_ = false;
   std::unique_ptr<password_manager::PasswordFormManagerForUI> form_to_save_;
+  cc::BrowserControlsState browser_controls_state_ =
+      cc::BrowserControlsState::kBoth;
 #endif  // OHOS_NWEB_EX
 
   base::WeakPtr<FileChooserImpl> active_file_chooser_;

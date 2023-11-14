@@ -620,6 +620,7 @@ class WebContents : public PageNavigator,
       bool is_rtl,
       const std::vector<autofill::Suggestion>& suggestions) = 0;
   virtual void HideAutofillPopup() = 0;
+  virtual void UpdateBrowserControlsHeight(int, bool) = 0;
 #endif  // OHOS_NWEB_EX
 
   // Saves the given title to the navigation entry and does associated work. It

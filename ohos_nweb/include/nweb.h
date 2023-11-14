@@ -132,6 +132,7 @@ enum class NestedScrollMode : int32_t {
     PARALLEL = 3,
 };
 
+using ScriptItems = std::map<std::string, std::vector<std::string>>;
 using WebState = std::shared_ptr<std::vector<uint8_t>>;
 using SetKeepScreenOn = std::function<void(bool)>;
 
@@ -777,6 +778,56 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * Set the nested scroll mode.
      */
     virtual void SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) = 0;
+
+    /**
+     * Set enable lower the frame rate.
+     */
+    virtual void SetEnableLowerFrameRate(bool enabled) const = 0;
+
+    /**
+     * Set the property values for width, height, and keyboard height.
+     */
+    virtual void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) = 0;
+
+    /**
+     * Set the virtual keyboard to override the web status.
+     */
+    virtual bool ShouldVirtualKeyboardOverlay() = 0;
+
+    /**
+     * Set draw rect.
+     *
+    */
+    virtual void SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) = 0;
+
+    /**
+     * Set draw mode.
+     *
+    */
+    virtual void SetDrawMode(int32_t mode) = 0;
+
+    /**
+     * Create web print document adapter.
+     *
+    */
+    virtual void* CreateWebPrintDocumentAdapter(const std::string& jobName) = 0;
+
+    /**
+     * Loads the URL with postData using "POST" method into this WebView.
+     * If url is not a network URL, it will be loaded with loadUrl(String) instead.
+     *
+     * @param url String: the URL of the resource to load This value cannot be null.
+     * @param postData the data will be passed to "POST" request,
+     * whilch must be "application/x-www-form-urlencoded" encoded.
+     *
+     * @return title string for the current page.
+     */
+    virtual int PostUrl(const std::string& url, std::vector<char>& postData) = 0;
+
+    /**
+     * Inject the JavaScript before WebView load the DOM tree.
+     */
+    virtual void JavaScriptOnDocumentStart(const ScriptItems& scriptItems) = 0;
 };
 }  // namespace OHOS::NWeb
 

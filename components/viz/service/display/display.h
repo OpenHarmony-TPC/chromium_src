@@ -143,6 +143,8 @@ class VIZ_SERVICE_EXPORT Display : public DisplaySchedulerClient,
 
 #if BUILDFLAG(IS_OHOS)
   void SetShouldFrameSubmissionBeforeDraw(bool should);
+  void SetDrawRect(const gfx::Rect& new_rect);
+  void SetDrawMode(const int32_t mode);
 #endif
 
   // Sets the color matrix that will be used to transform the output of this
@@ -283,6 +285,10 @@ class VIZ_SERVICE_EXPORT Display : public DisplaySchedulerClient,
   bool visible_ = false;
   bool swapped_since_resize_ = false;
   bool output_is_secure_ = false;
+#if BUILDFLAG(IS_OHOS)
+  gfx::Rect draw_rect_;
+  int32_t draw_mode_ = 0;
+#endif
 
 #if DCHECK_IS_ON()
   std::unique_ptr<gpu::ScopedAllowScheduleGpuTask>

@@ -20,6 +20,7 @@
 #include "base/containers/contains.h"
 #include "base/containers/cxx20_erase.h"
 #include "base/location.h"
+#include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/field_trial.h"
@@ -213,6 +214,9 @@ NoStatePrefetchManager::StartOhPrefetchingFromOmnibox(
     content::SessionStorageNamespace* session_storage_namespace,
     const gfx::Size& size,
     const std::string& extra_headers) {
+  if (!url.is_empty() && url.is_valid()) {
+    oh_prefetch_urls.insert(url);
+  }
   return StartPrefetchingWithPreconnectFallback(
       ORIGIN_OMNIBOX, url, content::Referrer(), absl::nullopt, gfx::Rect(size),
       session_storage_namespace, extra_headers);
@@ -608,9 +612,20 @@ NoStatePrefetchManager::StartPrefetchingWithPreconnectFallback(
   if (content::RenderProcessHost::ShouldTryToUseExistingProcessHost(
           browser_context_, url) &&
       !content::RenderProcessHost::run_renderer_in_process()) {
+#if BUILDFLAG(IS_OHOS)
+    auto it = oh_prefetch_urls.find(url);
+    if (it == oh_prefetch_urls.end()) {
+      SkipNoStatePrefetchContentsAndMaybePreconnect(
+          url, origin, FINAL_STATUS_TOO_MANY_PROCESSES);
+      return nullptr;
+    }
+    LOG(DEBUG) << "Prefetch url in single-process mode.";
+    oh_prefetch_urls.erase(it);
+#else
     SkipNoStatePrefetchContentsAndMaybePreconnect(
         url, origin, FINAL_STATUS_TOO_MANY_PROCESSES);
     return nullptr;
+#endif
   }
 
   // Check if enough time has passed since the last prefetch.

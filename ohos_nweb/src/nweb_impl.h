@@ -84,6 +84,7 @@ class NWebImpl : public NWeb {
   void OnContinue() const override;
   void OnOccluded() const override;
   void OnUnoccluded() const override;
+  void SetEnableLowerFrameRate(bool enabled) const override;
   const std::shared_ptr<NWebPreference> GetPreference() const override;
   void PutDownloadCallback(
       std::shared_ptr<NWebDownloadCallback> downloadListener) override;
@@ -155,6 +156,8 @@ class NWebImpl : public NWeb {
   bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) override;
   void SetScreenOffSet(double x, double y) override;
   void SetShouldFrameSubmissionBeforeDraw(bool should) override;
+  void SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) override;
+  void SetDrawMode(int32_t mode) override;
   void RegisterScreenLockFunction(int32_t windowId, const SetKeepScreenOn&& handle) override;
   void UnRegisterScreenLockFunction(int32_t windowId) override;
   void NotifyMemoryLevel(int32_t level) override;
@@ -163,7 +166,11 @@ class NWebImpl : public NWeb {
   void SetWindowId(uint32_t window_id) override;
   void SetToken(void* token) override;
   void SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) override;
-
+  void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) override;
+  bool ShouldVirtualKeyboardOverlay() override;
+  void JavaScriptOnDocumentStart(const ScriptItems& scriptItems) override;
+  void* CreateWebPrintDocumentAdapter(const std::string& jobName) override;
+  int PostUrl(const std::string& url, std::vector<char>& postData) override;
   // For NWebEx
   static NWebImpl* FromID(int32_t nweb_id);
   std::string GetUrl() const override;
@@ -179,10 +186,11 @@ class NWebImpl : public NWeb {
   void AddNWebToMap(uint32_t id, std::shared_ptr<NWebImpl>& nweb);
 
 #if defined (OHOS_NWEB_EX)
-  static void ResumeDownloadStatic(std::shared_ptr<NWebDownloadItem> download_item);
   static const std::vector<std::string>& GetCommandLineArgsForNWebEx();
   static void InitBrowserServiceApi(std::vector<std::string>& browser_args);
   static bool GetBrowserServiceApiEnabled();
+  static void SetDefaultBrowserZoomLevel(double zoom_factor);
+  static void SetConnectTimeout(int32_t seconds);
 
   void PutWebAppClientExtensionCallback(
       std::shared_ptr<NWebAppClientExtensionCallback>
@@ -203,12 +211,19 @@ class NWebImpl : public NWeb {
 
   void SelectAndCopy() const;
   bool ShouldShowFreeCopy() const;
+  void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) const;
+  void SetBrowserZoomLevel(double zoom_factor) const;
+  double GetBrowserZoomLevel() const;
+  void UpdateBrowserControlsState(int constraints,
+                                  int current,
+                                  bool animate) const;
+  void UpdateBrowserControlsHeight(int height, bool animate);
+#endif  // OHOS_NWEB_EX
+  static void ResumeDownloadStatic(std::shared_ptr<NWebDownloadItem> download_item);
   void PutWebDownloadDelegateCallback(
       std::shared_ptr<NWebDownloadDelegateCallback>);
   void StartDownload(const char* url);
   void ResumeDownload(std::shared_ptr<NWebDownloadItem>);
-  void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) const;
-#endif  // OHOS_NWEB_EX
   void NotifyPopupWindowResult(bool result) override {
     nweb_delegate_->NotifyPopupWindowResult(result);
   }
@@ -222,6 +237,7 @@ class NWebImpl : public NWeb {
 
  private:
   uint32_t nweb_id_ = 0;
+  int32_t draw_mode_ = 0;
   std::shared_ptr<NWebHandler> nweb_handle_ = nullptr;
   std::shared_ptr<NWebOutputHandler> output_handler_ = nullptr;
   std::shared_ptr<NWebInputHandler> input_handler_ = nullptr;

@@ -40,6 +40,10 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
     frame_sink_id_ = frame_sink_id;
   };
 
+  void SetEnableLowerFrameRate(bool enabled) override {
+    lower_frame_rate_enabled_ = enabled;
+  }
+
  private:
   // ExternalBeginFrameSourceClient implementation.
   void OnNeedsBeginFrames(bool needs_begin_frames) override;
@@ -48,16 +52,18 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceOHOS
 
   BeginFrameArgsGenerator begin_frame_args_generator_;
   bool vsync_notification_enabled_;
+  bool first_vsync_since_notify_enabled_;
 
   std::unique_ptr<VSyncUserData> user_data_;
   OHOS::NWeb::VSyncAdapter& vsync_adapter_;
 
   FrameSinkId frame_sink_id_;
   const raw_ptr<FrameSinkManagerImpl> frame_sink_manager_;
-  int64_t vsync_period_ = 16666666;
+  int64_t vsync_period_ = 0;
   int64_t pre_vsync_period_ = 0;
   int64_t last_vsync_period_ = 0;
   base::TimeTicks last_dead_line_ = base::TimeTicks();
+  bool lower_frame_rate_enabled_ = false;
   base::WeakPtrFactory<ExternalBeginFrameSourceOHOS> weak_factory_{this};
 };
 }  // namespace viz

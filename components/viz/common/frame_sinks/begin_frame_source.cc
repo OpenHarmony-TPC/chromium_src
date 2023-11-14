@@ -475,6 +475,10 @@ void ExternalBeginFrameSource::AddObserver(BeginFrameObserver* obs) {
   BeginFrameArgs missed_args = GetMissedBeginFrameArgs(obs);
   if (missed_args.IsValid()) {
     DCHECK_EQ(BeginFrameArgs::MISSED, missed_args.type);
+    base::TimeTicks now = base::TimeTicks::Now();
+    if (missed_args.deadline < now) {
+      missed_args.deadline = now + missed_args.interval / 2;
+    }
     FilterAndIssueBeginFrame(obs, missed_args);
   }
 }

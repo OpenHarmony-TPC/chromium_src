@@ -453,6 +453,22 @@ void Compositor::SetShouldFrameSubmissionBeforeDraw(bool should) {
     display_private_->SetShouldFrameSubmissionBeforeDraw(should);
   }
 }
+
+void Compositor::SetDrawRect(const gfx::Rect& new_rect) {
+  if (display_private_) {
+    TRACE_EVENT0("viz", "Compositor::SetDrawRect");
+    mojo::SyncCallRestrictions::ScopedAllowSyncCall scoped_allow_sync_call;
+    display_private_->SetDrawRect(new_rect);
+  }
+}
+
+void Compositor::SetDrawMode(const int32_t& mode) {
+  if (display_private_) {
+    TRACE_EVENT0("viz", "Compositor::SetDrawMode");
+    mojo::SyncCallRestrictions::ScopedAllowSyncCall scoped_allow_sync_call;
+    display_private_->SetDrawMode(mode);
+  }
+}
 #endif
 
 void Compositor::SetScaleAndSize(float scale,
@@ -920,6 +936,10 @@ void Compositor::SetCurrentFrameSinkId(const viz::FrameSinkId& id) {
   } else {
     LOG(ERROR) << "Compositor::SetCurrentDisplay display_private error";
   }
+}
+
+void Compositor::SetEnableLowerFrameRate(bool enabled) {
+  context_factory_->GetHostFrameSinkManager()->SetEnableLowerFrameRate(enabled, frame_sink_id());
 }
 #endif
 

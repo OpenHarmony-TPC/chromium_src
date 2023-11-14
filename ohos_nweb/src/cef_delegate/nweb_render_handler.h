@@ -89,6 +89,7 @@ class NWebRenderHandler : public CefRenderHandler {
 
   void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
                                   TextInputMode input_mode,
+                                  TextInputType input_type,
                                   bool show_keyboard) override;
 
   void GetTouchHandleSize(CefRefPtr<CefBrowser> browser,
@@ -129,6 +130,11 @@ class NWebRenderHandler : public CefRenderHandler {
   void OnOverScrollFlingEnd(CefRefPtr<CefBrowser> browser) override;
   void OnScrollState(CefRefPtr<CefBrowser> browser,
                      bool scroll_state) override;
+  bool FilterScrollEvent(CefRefPtr<CefBrowser> browser,
+                         const float x,
+                         const float y,
+                         const float fling_x,
+                         const float fling_y) override;
   /* CefRenderHandler method end */
 
   std::shared_ptr<NWebTouchHandleState> GetTouchHandleState(

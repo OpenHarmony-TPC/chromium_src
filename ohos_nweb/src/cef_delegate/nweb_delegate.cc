@@ -38,7 +38,14 @@
 #include "nweb_preference_delegate.h"
 #include "url/gurl.h"
 
+#ifdef OHOS_NWEB_EX
+#include <cmath>
+#endif
+
 namespace OHOS::NWeb {
+#ifdef OHOS_NWEB_EX
+static const double kZoomLevelToFactorRatio = 1.2;
+#endif
 
 void ConvertCefValueToNWebMessage(CefRefPtr<CefValue> src, std::shared_ptr<NWebMessage> dst) {
   int type = src->GetType();
@@ -671,6 +678,25 @@ int NWebDelegate::Load(const std::string& url) {
   return NWEB_OK;
 }
 
+int NWebDelegate::PostUrl(const std::string& url, std::vector<char>& postData) {
+  GURL gurl = GURL(url);
+  if (gurl.is_empty() || !gurl.is_valid()) {
+    GURL gurlWithHttp = GURL("https://" + url);
+    if (!gurlWithHttp.is_valid()) {
+      return NWEB_INVALID_URL;
+    }
+  }
+  LOG(DEBUG) << "NWebDelegate::PostUrl url=" << url;
+  auto browser = GetBrowser();
+  if (browser == nullptr) {
+    LOG(ERROR) << "NWebDelegate::PostUrl browser is nullptr";
+    return NWEB_ERR;
+  }
+  browser->GetMainFrame()->PostURL(CefString(url), postData);
+  RequestVisitedHistory();
+  return NWEB_OK;
+}
+
 bool NWebDelegate::IsNavigatebackwardAllowed() const {
   LOG(DEBUG) << "NWebDelegate::IsNavigatebackwardAllowed";
   if (GetBrowser().get()) {
@@ -1014,6 +1040,15 @@ void NWebDelegate::OnUnoccluded() {
   occluded_ = false;
 }
 
+void NWebDelegate::SetEnableLowerFrameRate(bool enabled) {
+  LOG(DEBUG) << "NWebDelegate::SetEnableLowerFrameRate, nweb_id = " << nweb_id_;
+  if (!GetBrowser().get()) {
+    return;
+  }
+
+  GetBrowser()->GetHost()->SetEnableLowerFrameRate(enabled);
+}
+
 void NWebDelegate::OnContextInitializeComplete(const std::string& url,
                                                void* window) {
   // Create browser after context initialzed complete.
@@ -1055,10 +1090,10 @@ void NWebDelegate::InitializeCef(std::string url,
   settings.windowless_rendering_enabled = true;
   settings.log_severity = LOGSEVERITY_INFO;
   settings.multi_threaded_message_loop = false;
-  auto& system_properties_adapter = 
+  auto& system_properties_adapter =
         OHOS::NWeb::OhosAdapterHelper::GetInstance()
               .GetSystemPropertiesInstance();
-  OHOS::NWeb::ProductDeviceType deviceType = 
+  OHOS::NWeb::ProductDeviceType deviceType =
       system_properties_adapter.GetProductDeviceType();
   bool is_pc_device =
       deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_TABLET ||
@@ -1400,6 +1435,20 @@ void NWebDelegate::UnregisterArkJSfunction(
     method_vector.push_back(method);
   }
   GetBrowser()->GetHost()->UnregisterArkJSfunction(object_name, method_vector);
+}
+
+void NWebDelegate::JavaScriptOnDocumentStart(const ScriptItems& scriptItems) {
+  GetBrowser()->GetHost()->RemoveJavaScriptOnDocumentStart();
+  for (auto item: scriptItems) {
+    CefString script = item.first;
+    std::vector<CefString> scriptRules;
+    for (std::string rule : item.second) {
+      CefString cefRule;
+      cefRule.FromString(rule);
+      scriptRules.push_back(cefRule);
+    }
+    GetBrowser()->GetHost()->JavaScriptOnDocumentStart(script, scriptRules);
+  }
 }
 
 void NWebDelegate::RegisterNWebJavaScriptCallBack(
@@ -1794,6 +1843,18 @@ void NWebDelegate::PrefetchPage(
   }
 }
 
+void* NWebDelegate::CreateWebPrintDocumentAdapter(const std::string& jobName) {
+  LOG(DEBUG) << "Create Web print document adapter jobName = " << jobName;
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "CreateWebPrintDocumentAdapter can not get browser";
+    return nullptr;
+  }
+
+  void* webPrintDocumentAdapter = nullptr;
+  GetBrowser()->GetHost()->CreateWebPrintDocumentAdapter(CefString(jobName), &webPrintDocumentAdapter);
+  return webPrintDocumentAdapter;
+}
+
 #if defined (OHOS_NWEB_EX)
 void NWebDelegate::SetForceEnableZoom(bool forceEnableZoom) {
   LOG(DEBUG) << "NWebDelegate::SetForceEnableZoom " << forceEnableZoom;
@@ -1880,6 +1941,31 @@ void NWebDelegate::SetShouldFrameSubmissionBeforeDraw(bool should) {
   }
 }
 
+void NWebDelegate::SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) {
+  if (GetBrowser().get()) {
+    GetBrowser()->GetHost()->SetVirtualKeyBoardArg(width, height, keyboard);
+  }
+}
+
+void NWebDelegate::SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) {
+  if (GetBrowser().get()) {
+    GetBrowser()->GetHost()->SetDrawRect(x, y, width, height);
+  }
+}
+
+void NWebDelegate::SetDrawMode(int32_t mode) {
+  if (GetBrowser().get()) {
+    GetBrowser()->GetHost()->SetDrawMode(mode);
+  }
+}
+
+bool NWebDelegate::ShouldVirtualKeyboardOverlay() {
+  if (GetBrowser().get()) {
+    return GetBrowser()->GetHost()->ShouldVirtualKeyboardOverlay();
+  }
+  return false;
+}
+
 void NWebDelegate::SetAudioResumeInterval(int32_t resumeInterval) {
   if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
     LOG(ERROR) << "SetAudioResumeInterval can not get browser";
@@ -1897,4 +1983,40 @@ void NWebDelegate::SetAudioExclusive(bool audioExclusive) {
 
   GetBrowser()->GetHost()->SetAudioExclusive(audioExclusive);
 }
+
+#ifdef OHOS_NWEB_EX
+void NWebDelegate::SetBrowserZoomLevel(double zoom_factor) {
+  LOG(DEBUG) << "NWebDelegate::SetBrowserZoomLevel: " << zoom_factor;
+  if (GetBrowser().get()) {
+    GetBrowser()->GetHost()->SetBrowserZoomLevel(zoom_factor);
+  }
+}
+
+double NWebDelegate::GetBrowserZoomLevel() {
+  LOG(DEBUG) << "NWebDelegate::GetBrowserZoomLevel.";
+  double zoom_factor = 1.0;
+  if (GetBrowser().get()) {
+    zoom_factor =
+        std::pow(kZoomLevelToFactorRatio, GetBrowser()->GetHost()->GetZoomLevel());
+  }
+  return zoom_factor;
+}
+#endif
+
+#ifdef OHOS_NWEB_EX
+void NWebDelegate::UpdateBrowserControlsState(int constraints,
+                                              int current,
+                                              bool animate) const {
+  if (GetBrowser().get()) {
+    GetBrowser()->UpdateBrowserControlsState(constraints, current, animate);
+  }
+}
+
+void NWebDelegate::UpdateBrowserControlsHeight(int height, bool animate) {
+  if (GetBrowser().get()) {
+    GetBrowser()->UpdateBrowserControlsHeight(height, animate);
+  }
+}
+
+#endif
 }  // namespace OHOS::NWeb

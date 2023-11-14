@@ -401,6 +401,15 @@ void NWebPreferenceDelegate::PutScrollBarColor(uint32_t colorValue) {
   WebPreferencesChanged();
 }
 
+void NWebPreferenceDelegate::PutOverscrollMode(int mode) {
+  overscroll_mode_ = mode;
+  if (!browser_) {
+    LOG(ERROR) << "PutOverscrollMode failed, browser is null";
+    return;
+  }
+  browser_->GetHost()->SetOverscrollMode(mode);
+}
+
 bool NWebPreferenceDelegate::EnableContentAccess() {
   return content_access_;
 }
@@ -598,6 +607,10 @@ void NWebPreferenceDelegate::SetBackgroundColor(int32_t color) {
 
 int32_t NWebPreferenceDelegate::GetBackgroundColor() const {
   return background_color_;
+}
+
+int NWebPreferenceDelegate::GetOverscrollMode() {
+  return overscroll_mode_;
 }
 
 void NWebPreferenceDelegate::SetEnableBlankTargetPopupIntercept(bool enable) {

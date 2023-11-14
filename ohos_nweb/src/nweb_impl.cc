@@ -28,14 +28,17 @@
 #include "base/memory/memory_pressure_listener.h"
 #include "base/time/time.h"
 #include "base/trace_event/common/trace_event_common.h"
+#include "base/trace_event/trace_event.h"
 #include "camera_manager_adapter.h"
 #include "cef/include/cef_app.h"
+#include "cef/libcef/browser/devtools/devtools_manager_delegate.h"
 #include "cef/libcef/browser/net_service/net_helpers.h"
 #include "nweb_delegate_adapter.h"
 #include "nweb_export.h"
 #include "nweb_handler.h"
 #include "nweb_hilog.h"
 #include "ohos_adapter_helper.h"
+#include "cef_delegate/nweb_download_handler_delegate.h"
 
 #include "services/device/wake_lock/power_save_blocker/nweb_screen_lock_tracker.h"
 
@@ -53,6 +56,9 @@
 #include "res_sched_client_adapter.h"
 #include "services/network/network_service.h"
 #include "soc_perf_client_adapter.h"
+#include "third_party/blink/public/common/page/page_zoom.h"
+#include "chrome/browser/ui/zoom/chrome_zoom_level_prefs.h"
+#include "cef/libcef/browser/alloy/alloy_browser_context.h"
 #endif
 
 #include "libcef/browser/predictors/loading_predictor.h"
@@ -96,6 +102,7 @@ base::LazyInstance<NWebMap>::DestructorAtExit g_nweb_map =
 #ifdef OHOS_NWEB_EX
 base::LazyInstance<std::vector<std::string>>::DestructorAtExit g_browser_args =
     LAZY_INSTANCE_INITIALIZER;
+static double default_zoom_factor_ = 1.0;
 #endif  // OHOS_NWEB_EX
 
 void InitialWebEngineArgs(std::list<std::string>& web_engine_args,
@@ -376,16 +383,33 @@ void NWebImpl::Resize(uint32_t width, uint32_t height, bool isKeyboard) {
     return;
   }
   if (width > kSurfaceMaxWidth || height > kSurfaceMaxHeight) {
-    return;
+    if (draw_mode_ == 0) {
+      WVLOG_E("size too large in surface mode (%{public}u , %{public}u)", width, height);
+      return;
+    };
   }
 
   if (nweb_delegate_ == nullptr) {
     WVLOG_E("resize failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
     return;
   }
-
+  nweb_delegate_->SetDrawMode(draw_mode_);
   nweb_delegate_->Resize(width, height, isKeyboard);
   output_handler_->Resize(width, height);
+}
+
+void NWebImpl::SetDrawRect(int x, int y, int width, int height) {
+  if (nweb_delegate_) {
+    nweb_delegate_->SetDrawRect(x, y, width, height);
+  }
+}
+
+void NWebImpl::SetDrawMode(int mode) {
+  WVLOG_D("NWebImpl::SetDrawMode %{public}d", mode);
+  draw_mode_ = mode;
+  if (nweb_delegate_) {
+    nweb_delegate_->SetDrawMode(mode);
+  }
 }
 
 void NWebImpl::OnTouchPress(int32_t id, double x, double y, bool from_overlay) {
@@ -666,6 +690,14 @@ void NWebImpl::OnUnoccluded() const {
   nweb_delegate_->OnUnoccluded();
 }
 
+void NWebImpl::SetEnableLowerFrameRate(bool enabled) const {
+  if (nweb_delegate_ == nullptr) {
+    LOG(ERROR) << "nweb_delegate_ is nullptr.";
+    return;
+  }
+  nweb_delegate_->SetEnableLowerFrameRate(enabled);
+}
+
 void NWebImpl::StopCameraSession() const {
   OhosAdapterHelper::GetInstance().GetCameraManagerAdapter().SetForegroundFlag(false);
 }
@@ -707,6 +739,21 @@ void NWebImpl::SetToken(void* token) {
 
 void NWebImpl::SetNestedScrollMode(const NestedScrollMode& nestedScrollMode) {}
 
+void NWebImpl::SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("SetVirtualKeyBoardArg nweb delegate is null");
+    return;
+  }
+  nweb_delegate_->SetVirtualKeyBoardArg(width, height, keyboard);
+}
+
+bool NWebImpl::ShouldVirtualKeyboardOverlay() {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("ShouldVirtualKeyboardOverlay nweb delegate is null");
+    return false;
+  }
+  return nweb_delegate_->ShouldVirtualKeyboardOverlay();
+}
 const std::shared_ptr<NWebPreference> NWebImpl::GetPreference() const {
   if (nweb_delegate_ == nullptr) {
     return nullptr;
@@ -808,6 +855,14 @@ int NWebImpl::Load(std::string& url,
   return nweb_delegate_->Load(url, additionalHttpHeaders);
 }
 
+int NWebImpl::PostUrl(const std::string& url,
+                      std::vector<char>& postData) {
+  if (nweb_delegate_ == nullptr) {
+    return NWEB_ERR;
+  }
+  return nweb_delegate_->PostUrl(url, postData);
+}
+
 int NWebImpl::LoadWithDataAndBaseUrl(const std::string& baseUrl,
                                      const std::string& data,
                                      const std::string& mimeType,
@@ -845,6 +900,13 @@ void NWebImpl::UnregisterArkJSfunction(
     return;
   }
   return nweb_delegate_->UnregisterArkJSfunction(object_name, method_list);
+}
+
+void NWebImpl::JavaScriptOnDocumentStart(const ScriptItems& scriptItems) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  return nweb_delegate_->JavaScriptOnDocumentStart(scriptItems);
 }
 
 void NWebImpl::SetNWebJavaScriptResultCallBack(
@@ -1222,46 +1284,6 @@ bool NWebImpl::GetForceEnableZoom() const {
   return nweb_delegate_->GetForceEnableZoom();
 }
 
-void NWebImpl::PutWebDownloadDelegateCallback(
-    std::shared_ptr<NWebDownloadDelegateCallback>
-        web_download_delegate_listener) {
-  if (nweb_delegate_ == nullptr) {
-    WVLOG_E("set web download delegate callback failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
-    return;
-  }
-
-  nweb_delegate_->RegisterWebDownloadDelegateListener(
-      web_download_delegate_listener);
-}
-
-void NWebImpl::StartDownload(const char* url) {
-  if (nweb_delegate_ == nullptr) {
-    WVLOG_E("start download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
-    return;
-  }
-
-  nweb_delegate_->StartDownload(url);
-}
-
-void NWebImpl::ResumeDownload(std::shared_ptr<NWebDownloadItem> web_download) {
-  if (nweb_delegate_ == nullptr) {
-    WVLOG_E("resume download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
-    return;
-  }
-
-  nweb_delegate_->ResumeDownload(web_download);
-}
-
-// static
-void NWebImpl::ResumeDownloadStatic(
-    std::shared_ptr<NWebDownloadItem> web_download) {
-  CefResumeDownload(web_download->guid, web_download->url,
-                    web_download->full_path, web_download->received_bytes,
-                    web_download->total_bytes, web_download->etag,
-                    web_download->mime_type, web_download->last_modified,
-                    web_download->received_slices);
-}
-
 void NWebImpl::SetEnableBlankTargetPopupIntercept(
     bool enableBlankTargetPopup) const {
   if (nweb_delegate_ == nullptr) {
@@ -1298,6 +1320,61 @@ void NWebImpl::SetSavePassword(bool enable) const {
   nweb_delegate_->SetSavePassword(enable);
 }
 
+void NWebImpl::SetBrowserZoomLevel(double zoom_factor) const {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->SetBrowserZoomLevel(zoom_factor);
+}
+
+double NWebImpl::GetBrowserZoomLevel() const {
+  if (nweb_delegate_ == nullptr) {
+    return default_zoom_factor_;
+  }
+  return nweb_delegate_->GetBrowserZoomLevel();
+}
+
+void NWebImpl::UpdateBrowserControlsState(int constraints,
+                                          int current,
+                                          bool animate) const {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->UpdateBrowserControlsState(constraints, current, animate);
+}
+
+void NWebImpl::UpdateBrowserControlsHeight(int height, bool animate) {
+  if (nweb_delegate_ == nullptr) {
+    return;
+  }
+  nweb_delegate_->UpdateBrowserControlsHeight(height, animate);
+}
+
+// static
+void NWebImpl::SetDefaultBrowserZoomLevel(double zoom_factor) {
+  if (g_nweb_count == 0) { 
+    WVLOG_I("nweb had not initiated try to set default browser zoom level.");
+    return;
+  }
+  for (const auto& cef_browser_context : CefBrowserContext::GetAll()) {
+    content::BrowserContext* browser_context =
+        cef_browser_context->AsBrowserContext();
+    if (!browser_context) {
+      LOG(ERROR) << "SetDefaultBrowserZoomLevel null browser_context";
+      return;
+    }
+    static_cast<AlloyBrowserContext*>(browser_context)
+	->GetZoomLevelPrefs()
+        ->SetDefaultZoomLevelPref(
+	    blink::PageZoomFactorToZoomLevel(zoom_factor));
+    default_zoom_factor_ = zoom_factor;
+  }
+}
+
+// static
+void NWebImpl::SetConnectTimeout(int32_t seconds) {
+  content::GetNetworkService()->SetConnectTimeout(seconds);
+}
 #endif  // OHOS_NWEB_EX
 
 void NWebImpl::PrefetchPage(
@@ -1307,6 +1384,13 @@ void NWebImpl::PrefetchPage(
     return;
   }
   nweb_delegate_->PrefetchPage(url, additionalHttpHeaders);
+}
+
+void* NWebImpl::CreateWebPrintDocumentAdapter(const std::string& jobName) {
+  if (nweb_delegate_ == nullptr) {
+    return nullptr;
+  }
+  return nweb_delegate_->CreateWebPrintDocumentAdapter(jobName);
 }
 
 void NWebImpl::SetShouldFrameSubmissionBeforeDraw(bool should) {
@@ -1431,6 +1515,58 @@ extern "C" OHOS_NWEB_EXPORT void SetHttpDns(const NWebDOHConfig& config) {
   CefApplyHttpDns();
 }
 
+extern "C" OHOS_NWEB_EXPORT void WebDownloadManager_PutDownloadCallback(NWebDownloadDelegateCallback* callback) {
+  if (!callback) {
+    WVLOG_E("invalid callback");
+    return;
+  }
+  WVLOG_I("[WebDownloadManager] put download callback.");
+  CefRefPtr<NWebDownloadHandlerDelegate> delegate =
+      new NWebDownloadHandlerDelegate(nullptr);
+  delegate->RegisterWebDownloadDelegateListener(std::make_shared<NWebDownloadDelegateCallback>(*callback));
+  CefSetDownloadHandler(delegate);
+}
+
+void NWebImpl::PutWebDownloadDelegateCallback(
+    std::shared_ptr<NWebDownloadDelegateCallback>
+        web_download_delegate_listener) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("set web download delegate callback failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
+  nweb_delegate_->RegisterWebDownloadDelegateListener(
+      web_download_delegate_listener);
+}
+
+void NWebImpl::StartDownload(const char* url) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("start download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
+  nweb_delegate_->StartDownload(url);
+}
+
+void NWebImpl::ResumeDownload(std::shared_ptr<NWebDownloadItem> web_download) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("resume download failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return;
+  }
+
+  nweb_delegate_->ResumeDownload(web_download);
+}
+
+// static
+void NWebImpl::ResumeDownloadStatic(
+    std::shared_ptr<NWebDownloadItem> web_download) {
+  CefResumeDownload(web_download->guid, web_download->url,
+                    web_download->full_path, web_download->received_bytes,
+                    web_download->total_bytes, web_download->etag,
+                    web_download->mime_type, web_download->last_modified,
+                    web_download->received_slices);
+}
+
 extern "C" OHOS_NWEB_EXPORT void PrepareForPageLoad(std::string url,
                                                     bool preconnectable,
                                                     int32_t num_sockets) {
@@ -1453,5 +1589,28 @@ extern "C" OHOS_NWEB_EXPORT void PrepareForPageLoad(std::string url,
     }
   } else {
     WVLOG_I("nweb hadn't initiated try to prepare for page load later");
+  }
+}
+
+extern "C" OHOS_NWEB_EXPORT void SetConnectionTimeout(const int& timeout) {
+  net_service::NetHelpers::connection_timeout = timeout;
+  if (content::GetNetworkService() != nullptr) {
+      content::GetNetworkService()->SetConnectTimeout(net_service::NetHelpers::connection_timeout);
+      WVLOG_I("set connection timeout value in NetHelpers is: %{public}d", net_service::NetHelpers::connection_timeout);
+  } else {
+      WVLOG_E("net_work_service is nullptr");
+  }
+}
+
+extern "C" OHOS_NWEB_EXPORT void SetWebDebuggingAccess(bool isEnableDebug) {
+  static bool isDebuggingEnabled = false;
+  if (isEnableDebug && !isDebuggingEnabled) {
+      CefDevToolsManagerDelegate::StartHttpHandler(nullptr);
+      WVLOG_I("StartHttpHandler Enabled");
+      isDebuggingEnabled = true;
+  } else if (!isEnableDebug && isDebuggingEnabled) {
+      CefDevToolsManagerDelegate::StopHttpHandler();
+      WVLOG_I("StopHttpHandler Enabled");
+      isDebuggingEnabled = false;
   }
 }

@@ -933,6 +933,8 @@ TEST_F(SpdySessionTest, CreateStreamAfterGoAway) {
 TEST_F(SpdySessionTest, HeadersAfterGoAway) {
   base::HistogramTester histogram_tester;
 
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+
   spdy::SpdySerializedFrame goaway(spdy_util_.ConstructSpdyGoAway(1));
   spdy::SpdySerializedFrame push(
       spdy_util_.ConstructSpdyPush(nullptr, 0, 2, 1, kDefaultUrl));
@@ -993,6 +995,8 @@ TEST_F(SpdySessionTest, HeadersAfterGoAway) {
 // code different from 2xx or 3xx or 416 should be rejected.
 TEST_F(SpdySessionTest, UnsupportedPushedStatusCode) {
   base::HistogramTester histogram_tester;
+
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
 
   spdy::Http2HeaderBlock push_promise_header_block;
   push_promise_header_block[spdy::kHttp2MethodHeader] = "GET";
@@ -1649,6 +1653,8 @@ TEST_F(SpdySessionTest, UnstallRacesWithStreamCreation) {
 TEST_F(SpdySessionTest, CancelPushAfterSessionGoesAway) {
   base::HistogramTester histogram_tester;
 
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+
   spdy::SpdySerializedFrame req(
       spdy_util_.ConstructSpdyGet(nullptr, 0, 1, MEDIUM));
   spdy::SpdySerializedFrame priority(
@@ -1709,7 +1715,7 @@ TEST_F(SpdySessionTest, CancelPushAfterSessionGoesAway) {
 
 TEST_F(SpdySessionTestWithMockTime, CancelPushAfterExpired) {
   base::HistogramTester histogram_tester;
-
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
   spdy::SpdySerializedFrame req(
       spdy_util_.ConstructSpdyGet(nullptr, 0, 1, MEDIUM));
   spdy::SpdySerializedFrame priority(
@@ -1794,6 +1800,7 @@ TEST_F(SpdySessionTestWithMockTime, CancelPushAfterExpired) {
 
 TEST_F(SpdySessionTestWithMockTime, ClaimPushedStreamBeforeExpires) {
   base::HistogramTester histogram_tester;
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
 
   spdy::SpdySerializedFrame req(
       spdy_util_.ConstructSpdyGet(nullptr, 0, 1, MEDIUM));
@@ -1882,6 +1889,8 @@ TEST_F(SpdySessionTestWithMockTime, ClaimPushedStreamBeforeExpires) {
 
 TEST_F(SpdySessionTest, CancelPushBeforeClaimed) {
   base::HistogramTester histogram_tester;
+
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
 
   spdy::SpdySerializedFrame req(
       spdy_util_.ConstructSpdyGet(nullptr, 0, 1, MEDIUM));
@@ -5655,6 +5664,8 @@ TEST_F(SpdySessionTest, GoAwayOnSessionFlowControlError) {
 // Regression. Sorta. Push streams and client streams were sharing a single
 // limit for a long time.
 TEST_F(SpdySessionTest, PushedStreamShouldNotCountToClientConcurrencyLimit) {
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+
   spdy::SettingsMap new_settings;
   new_settings[spdy::SETTINGS_MAX_CONCURRENT_STREAMS] = 2;
   spdy::SpdySerializedFrame settings_frame(
@@ -5744,6 +5755,7 @@ TEST_F(SpdySessionTest, PushedStreamShouldNotCountToClientConcurrencyLimit) {
 
 TEST_F(SpdySessionTest, RejectPushedStreamExceedingConcurrencyLimit) {
   base::HistogramTester histogram_tester;
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
 
   spdy::SpdySerializedFrame push_a(
       spdy_util_.ConstructSpdyPush(nullptr, 0, 2, 1, kPushedUrl));
@@ -5835,6 +5847,8 @@ TEST_F(SpdySessionTest, RejectPushedStreamExceedingConcurrencyLimit) {
 TEST_F(SpdySessionTest, StreamsAdvertisingDifferentOriginAreRefused) {
   base::HistogramTester histogram_tester;
 
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+
   // Origin of kDefaultUrl should be different from the origin of
   // kHttpURLFromAnotherOrigin.
   ASSERT_NE(GURL(kDefaultUrl).host(), GURL(kHttpURLFromAnotherOrigin).host());
@@ -5903,6 +5917,8 @@ TEST_F(SpdySessionTest, StreamsAdvertisingDifferentOriginAreRefused) {
 
 TEST_F(SpdySessionTest, IgnoreReservedRemoteStreamsCount) {
   base::HistogramTester histogram_tester;
+
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
 
   spdy::SpdySerializedFrame push_a(
       spdy_util_.ConstructSpdyPush(nullptr, 0, 2, 1, kPushedUrl));
@@ -6006,6 +6022,8 @@ TEST_F(SpdySessionTest, IgnoreReservedRemoteStreamsCount) {
 }
 
 TEST_F(SpdySessionTest, CancelReservedStreamOnHeadersReceived) {
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
+
   spdy::Http2HeaderBlock push_headers;
   push_headers[":method"] = "GET";
   spdy_util_.AddUrlToHeaderBlock(kPushedUrl, &push_headers);
@@ -6114,6 +6132,7 @@ TEST_F(SpdySessionTest, CancelReservedStreamOnHeadersReceived) {
 }
 
 TEST_F(SpdySessionTest, GetPushedStream) {
+  session_deps_.http2_settings[spdy::SETTINGS_ENABLE_PUSH] = 1;
   spdy::Http2HeaderBlock push_headers;
   push_headers[":method"] = "GET";
   spdy_util_.AddUrlToHeaderBlock(kPushedUrl, &push_headers);
@@ -6400,6 +6419,7 @@ TEST_F(SpdySessionTest, GreaseFrameTypeAfterSettings) {
       kSpdyMaxConcurrentPushedStreams;
   expected_settings[spdy::SETTINGS_MAX_HEADER_LIST_SIZE] =
       kSpdyMaxHeaderListSize;
+  expected_settings[spdy::SETTINGS_ENABLE_PUSH] = 0;
   spdy::SpdySerializedFrame settings_frame(
       spdy_util_.ConstructSpdySettings(expected_settings));
 
@@ -6547,6 +6567,7 @@ TEST_F(SendInitialSettingsOnNewSpdySessionTest, Empty) {
       kSpdyMaxConcurrentPushedStreams;
   expected_settings[spdy::SETTINGS_MAX_HEADER_LIST_SIZE] =
       kSpdyMaxHeaderListSize;
+  expected_settings[spdy::SETTINGS_ENABLE_PUSH] = 0;
   RunInitialSettingsTest(expected_settings);
 }
 
@@ -6597,6 +6618,7 @@ TEST_F(SendInitialSettingsOnNewSpdySessionTest, UnknownSettings) {
       kSpdyMaxConcurrentPushedStreams;
   expected_settings[spdy::SETTINGS_MAX_HEADER_LIST_SIZE] =
       kSpdyMaxHeaderListSize;
+  expected_settings[spdy::SETTINGS_ENABLE_PUSH] = 0;
   expected_settings[7] = 1234;
   expected_settings[25] = 5678;
   RunInitialSettingsTest(expected_settings);

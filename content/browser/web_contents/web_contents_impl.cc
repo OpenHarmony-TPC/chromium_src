@@ -1816,21 +1816,17 @@ void WebContentsImpl::SetUserAgentOverride(
     return;
   }
 
-#if defined(OHOS_NWEB_EX)
-  const base::CommandLine& command_line =
-      *base::CommandLine::ForCurrentProcess();
-  if (command_line.HasSwitch(switches::kForBrowser)) {
-    user_agent_ = ua_override.ua_string_override;
-    UpdateOverridingUserAgent();
+#if BUILDFLAG(IS_OHOS) || defined(OHOS_NWEB_EX)
+  user_agent_ = ua_override.ua_string_override;
+  UpdateOverridingUserAgent();
 
-    // DTS2023022711784
-    // 子进程打开新窗口时，会先创建delayed_load_url_params_，等到加载url时直接使用
-    // delayed_load_url_params_的值创建NavigationRequest。其override_user_agent默认值是
-    // UA_OVERRIDE_FALSE，故这里也要更新。
-    if (delayed_load_url_params_) {
-      delayed_load_url_params_->override_user_agent =
-          NavigationController::UA_OVERRIDE_TRUE;
-    }
+  // DTS2023022711784
+  // 子进程打开新窗口时，会先创建delayed_load_url_params_，等到加载url时直接使用
+  // delayed_load_url_params_的值创建NavigationRequest。其override_user_agent默认值是
+  // UA_OVERRIDE_FALSE，故这里也要更新。
+  if (delayed_load_url_params_) {
+    delayed_load_url_params_->override_user_agent =
+        NavigationController::UA_OVERRIDE_TRUE;
   }
 #endif
 
@@ -2882,13 +2878,11 @@ const blink::web_pref::WebPreferences WebContentsImpl::ComputeWebPreferences() {
 
   GetContentClient()->browser()->OverrideWebkitPrefs(this, &prefs);
 
-#if defined(OHOS_NWEB_EX)
-  if (command_line.HasSwitch(switches::kForBrowser)) {
-    bool is_win = (user_agent_.find("Windows NT") != std::string::npos) &&
-                  (user_agent_.find("Win64") != std::string::npos ||
-                   user_agent_.find("WOW64") != std::string::npos);
-    prefs.viewport_meta_enabled = !is_win;
-  }
+#if BUILDFLAG(IS_OHOS) || defined(OHOS_NWEB_EX)
+  bool is_win = (user_agent_.find("Windows NT") != std::string::npos) &&
+                (user_agent_.find("Win64") != std::string::npos ||
+                 user_agent_.find("WOW64") != std::string::npos);
+  prefs.viewport_meta_enabled = !is_win;
 #endif
 
   return prefs;
@@ -7306,6 +7300,14 @@ void WebContentsImpl::RenderViewReady(RenderViewHost* rvh) {
     observers_.NotifyObservers(&WebContentsObserver::RenderViewReady);
   }
   view_->RenderViewReady();
+
+#ifdef OHOS_NWEB_EX
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kForBrowser)) {
+    UpdateBrowserControlsState(browser_controls_state_,
+                               cc::BrowserControlsState::kShown, false);
+  }
+#endif
 }
 
 void WebContentsImpl::RenderViewTerminated(RenderViewHost* rvh,
@@ -7471,6 +7473,18 @@ void WebContentsImpl::DidStartLoading(FrameTreeNode* frame_tree_node,
                                       bool should_show_loading_ui) {
   OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::DidStartLoading",
                         "frame_tree_node", frame_tree_node);
+
+#ifdef OHOS_NWEB_EX
+  if (frame_tree_node->IsMainFrame()) {
+    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+            switches::kForBrowser) &&
+        should_show_loading_ui) {
+      UpdateBrowserControlsState(browser_controls_state_,
+                                 cc::BrowserControlsState::kShown, false);
+    }
+  }
+#endif
+
   LoadingStateChanged(frame_tree_node->IsMainFrame() && should_show_loading_ui,
                       nullptr);
 
@@ -9417,10 +9431,21 @@ void WebContentsImpl::UpdateBrowserControlsState(
     cc::BrowserControlsState constraints,
     cc::BrowserControlsState current,
     bool animate) {
+#ifdef OHOS_NWEB_EX
+  browser_controls_state_ = constraints;
+#endif
   // Browser controls should be synchronised with the scroll state. Therefore,
   // they are controlled from the renderer by the main RenderFrame(Host).
   GetPrimaryPage().UpdateBrowserControlsState(constraints, current, animate);
 }
+
+#ifdef OHOS_NWEB_EX
+void WebContentsImpl::UpdateBrowserControlsHeight(int height, bool animate) {
+  if (view_) {
+    view_->UpdateBrowserControlsHeight(height, animate);
+  }
+}
+#endif
 
 void WebContentsImpl::SetTabSwitchStartTime(base::TimeTicks start_time,
                                             bool destination_is_loaded) {

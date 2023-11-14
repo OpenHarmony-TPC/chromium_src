@@ -119,6 +119,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void OnContinue() override;
   void OnOccluded() override;
   void OnUnoccluded() override;
+  void SetEnableLowerFrameRate(bool enabled) override;
   std::shared_ptr<NWebPreference> GetPreference() const override;
   std::string Title() override;
   void CreateWebMessagePorts(std::vector<std::string>& ports) override;
@@ -150,6 +151,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void UnregisterArkJSfunction(
       const std::string& object_name,
       const std::vector<std::string>& method_list) const override;
+  void JavaScriptOnDocumentStart(const ScriptItems& scriptItems) override;
 
   void RegisterNWebJavaScriptCallBack(
       std::shared_ptr<NWebJavaScriptResultCallBack> callback) override;
@@ -206,11 +208,17 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   bool GetCertChainDerData(std::vector<std::string>& certChainData, bool isSingleCert) override;
   void SetAudioMuted(bool muted) override;
   void SetShouldFrameSubmissionBeforeDraw(bool should) override;
+  void SetDrawRect(int32_t x, int32_t y, int32_t width, int32_t height) override;
+  void SetDrawMode(int32_t mode) override;
   void SetAudioResumeInterval(int32_t resumeInterval) override;
   void SetAudioExclusive(bool audioExclusive) override;
   void PrefetchPage(
       std::string& url,
       std::map<std::string, std::string> additionalHttpHeaders) override;
+  void SetVirtualKeyBoardArg(int32_t width, int32_t height, double keyboard) override;
+  bool ShouldVirtualKeyboardOverlay() override;
+
+
 #if defined (OHOS_NWEB_EX)
   void SetForceEnableZoom(bool forceEnableZoom) override;
   bool GetForceEnableZoom() override;
@@ -224,12 +232,20 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void SelectAndCopy() override;
   bool ShouldShowFreeCopy() override;
   void SetEnableBlankTargetPopupIntercept(bool enableBlankTargetPopup) override;
+  void SetBrowserZoomLevel(double zoom_factor) override;
+  double GetBrowserZoomLevel() override;
+  void UpdateBrowserControlsState(int constraints,
+                                  int current,
+                                  bool animate) const override;
+  void UpdateBrowserControlsHeight(int height, bool animate) override;
 #endif
 
   void NotifyPopupWindowResult(bool result) override;
   void SetWindowId(uint32_t window_id) override;
   void SetToken(void* token) override;
   void SetVirtualPixelRatio(float ratio) override;
+  void* CreateWebPrintDocumentAdapter(const std::string& jobName) override;
+  int PostUrl(const std::string& url, std::vector<char>& postData) override;
 
  public:
   int argc_;

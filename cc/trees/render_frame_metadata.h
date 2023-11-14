@@ -121,6 +121,7 @@ class CC_EXPORT RenderFrameMetadata {
   base::TimeDelta visual_properties_update_duration;
 
 #if BUILDFLAG(IS_OHOS)
+  gfx::SizeF scrollable_viewport_size;
   gfx::SizeF root_layer_size;
 #endif
 #if BUILDFLAG(IS_ANDROID)

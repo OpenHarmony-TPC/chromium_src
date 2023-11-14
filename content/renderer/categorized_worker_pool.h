@@ -6,6 +6,7 @@
 #define CONTENT_RENDERER_CATEGORIZED_WORKER_POOL_H_
 
 #include <memory>
+#include <set>
 
 #include "base/callback.h"
 #include "base/synchronization/condition_variable.h"
@@ -76,6 +77,10 @@ class CONTENT_EXPORT CategorizedWorkerPool : public base::TaskRunner,
   void SetBackgroundingCallback(
       scoped_refptr<base::SingleThreadTaskRunner> task_runner,
       base::OnceCallback<void(base::PlatformThreadId)> callback);
+
+#if BUILDFLAG(IS_OHOS)
+  std::set<int32_t> GetTidOfAllWorker();
+#endif
 
  protected:
   ~CategorizedWorkerPool() override;

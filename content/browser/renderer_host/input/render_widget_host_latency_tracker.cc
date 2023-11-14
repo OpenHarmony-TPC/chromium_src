@@ -194,11 +194,29 @@ void RenderWidgetHostLatencyTracker::OnInputEventAck(
     const WebTouchEvent& touch_event =
         *static_cast<const WebTouchEvent*>(&event);
     if (event.GetType() == WebInputEvent::Type::kTouchStart) {
+      base::TimeTicks original_event_timestamp;
+      if (latency->FindLatency(ui::INPUT_EVENT_LATENCY_BEGIN_RWH_COMPONENT,
+                               &original_event_timestamp)) {
+        TRACE_EVENT1("input", "RenderWidgetHostLatencyTracker::TouchStartAck",
+                     "time",
+                     (base::TimeTicks::Now() - original_event_timestamp)
+                         .InMillisecondsF());
+      }
+
       touch_start_default_prevented_ =
           ack_result == blink::mojom::InputEventResultState::kConsumed;
     } else if (event.GetType() == WebInputEvent::Type::kTouchEnd ||
                event.GetType() == WebInputEvent::Type::kTouchCancel) {
       active_multi_finger_gesture_ = touch_event.touches_length > 2;
+    } else if (event.GetType() == WebInputEvent::Type::kTouchMove ) {
+      base::TimeTicks original_event_timestamp;
+      if (latency->FindLatency(ui::INPUT_EVENT_LATENCY_BEGIN_RWH_COMPONENT,
+                               &original_event_timestamp)) {
+        TRACE_EVENT1("input", "RenderWidgetHostLatencyTracker::TouchMoveAck",
+                     "time",
+                     (base::TimeTicks::Now() - original_event_timestamp)
+                         .InMillisecondsF());
+      }
     }
   }
 

@@ -223,6 +223,7 @@ class VIZ_HOST_EXPORT HostFrameSinkManager
 
 #if BUILDFLAG(IS_OHOS)
   void SendInternalBeginFrame(const FrameSinkId& id);
+  void SetEnableLowerFrameRate(bool enabled, const FrameSinkId& frame_sink_id);
 #endif
 
  private:

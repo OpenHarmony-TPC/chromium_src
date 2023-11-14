@@ -21,8 +21,10 @@
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/command_line.h"
 #include "base/logging.h"
 #include "cef/libcef/common/drag_data_impl.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/common/drop_data.h"
 #include "nweb_delegate_interface.h"
 #include "nweb_drag_data.h"
@@ -127,7 +129,11 @@ void NWebRenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser,
     rect.height = height_;
   } else {
     // Surface greater than Web Compoment in case show black line.
-    rect.width = std::ceil(width_ / screen_info_.display_ratio);
+    if ((*base::CommandLine::ForCurrentProcess()).HasSwitch(switches::kForBrowser)) {
+      rect.width = std::ceil(width_ / screen_info_.display_ratio) + 1;
+    } else {
+      rect.width = std::ceil(width_ / screen_info_.display_ratio);
+    }
     rect.height = std::ceil(height_ / screen_info_.display_ratio);
   }
 
@@ -198,6 +204,10 @@ void NWebRenderHandler::OnRootLayerChanged(CefRefPtr<CefBrowser> browser,
                                            int width) {
   content_height_ = height;
   content_width_ = width;
+  if (auto handler = handler_.lock()) {
+    handler->OnRootLayerChanged(width * screen_info_.display_ratio,
+                                height * screen_info_.display_ratio);
+  }
 }
 
 void NWebRenderHandler::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser,
@@ -251,9 +261,11 @@ void NWebRenderHandler::OnEditableChanged(CefRefPtr<CefBrowser> browser,
 void NWebRenderHandler::OnVirtualKeyboardRequested(
     CefRefPtr<CefBrowser> browser,
     TextInputMode input_mode,
+    TextInputType input_type,
     bool show_keyboard) {
   LOG(INFO) << "NWebRenderHandler::OnVirtualKeyboardRequested input_mode = "
-            << input_mode << ", show_keyboard = " << show_keyboard;
+            << input_mode << ", input_type = " << input_type
+            << ", show_keyboard = " << show_keyboard;
   if (!inputmethod_client_) {
     LOG(ERROR) << "inputmethod_client_ is nullptr.";
     return;
@@ -262,7 +274,7 @@ void NWebRenderHandler::OnVirtualKeyboardRequested(
   if (input_mode != CEF_TEXT_INPUT_MODE_NONE) {
     auto delegete = delegate_interface_.lock();
     if (delegete && delegete->OnFocus()) {
-      inputmethod_client_->Attach(browser, show_keyboard, input_mode);
+      inputmethod_client_->Attach(browser, show_keyboard, input_type);
     }
   } else {
     inputmethod_client_->HideTextInput();
@@ -500,11 +512,47 @@ void NWebRenderHandler::OnOverScrollFlingVelocity(CefRefPtr<CefBrowser> browser,
                                                   const float x,
                                                   const float y,
                                                   bool is_fling) {
+  double display_ratio = 1.0;
+  if (screen_info_.display_ratio > 0) {
+    display_ratio = screen_info_.display_ratio;
+  }
+  if (auto handler = handler_.lock()) {
+    // Value multiplied by virtual pixel ratio.
+    handler->OnOverScrollFlingVelocity(x * screen_info_.display_ratio,
+                                       y * screen_info_.display_ratio,
+                                       is_fling);
+  }
 }
 
 void NWebRenderHandler::OnOverScrollFlingEnd(CefRefPtr<CefBrowser> browser) {
+  if (auto handler = handler_.lock()) {
+    handler->OnOverScrollFlingEnd();
+  }
 }
 
 void NWebRenderHandler::OnScrollState(CefRefPtr<CefBrowser> browser,
-                                      bool scroll_state) {}
+                                      bool scroll_state) {
+  if (auto handler = handler_.lock()) {
+    handler->OnScrollState(scroll_state);
+  }
+}
+
+bool NWebRenderHandler::FilterScrollEvent(CefRefPtr<CefBrowser> browser,
+                                          const float x,
+                                          const float y,
+                                          const float fling_x,
+                                          const float fling_y) {
+  double display_ratio = 1.0;
+  if (screen_info_.display_ratio > 0) {
+    display_ratio = screen_info_.display_ratio;
+  }
+  if (auto handler = handler_.lock()) {
+    // Value multiplied by virtual pixel ratio.
+    return handler->FilterScrollEvent(x * screen_info_.display_ratio,
+                                      y * screen_info_.display_ratio,
+                                      fling_x * screen_info_.display_ratio,
+                                      fling_y * screen_info_.display_ratio);
+  }
+  return false;
+}
 }  // namespace OHOS::NWeb
