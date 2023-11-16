@@ -280,12 +280,24 @@ target(link_target_type, "gles2_sources") {
 
   if (is_ohos) {
     sources += [
+      "ohos/native_image_texture_gl_owner.h",
+      "ohos/native_image_texture_gl_owner.cc",
+      "ohos/native_image_texture_owner.h",
+      "ohos/native_image_texture_owner.cc",
+      "ohos/shared_image_backing_ohos.h",
+      "ohos/shared_image_backing_ohos.cc",
+      "ohos/shared_image_video_ohos_native_image.h",
+      "ohos/shared_image_video_ohos_native_image.cc",
+      "ohos/shared_image_video_ohos.h",
+      "ohos/shared_image_video_ohos.cc",
       "shared_image_backing_factory_egl.h",
       "shared_image_backing_factory_egl.cc",
       "shared_image_backing_egl_image.cc",
       "shared_image_backing_egl_image.h",
       "shared_image_batch_access_manager.cc",
       "shared_image_batch_access_manager.h",
+      "ref_counted_lock.cc",
+      "ref_counted_lock.h",
     ]
   }
 
