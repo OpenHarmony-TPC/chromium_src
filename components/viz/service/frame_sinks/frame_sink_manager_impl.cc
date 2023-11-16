@@ -711,7 +711,9 @@ void FrameSinkManagerImpl::Throttle(const std::vector<FrameSinkId>& ids,
 
 #if BUILDFLAG(IS_OHOS)
 void FrameSinkManagerImpl::SendInternalBeginFrame(const FrameSinkId& id) {
-  root_sink_map_[id]->SendInternalBeginFrame();
+  if (root_sink_map_[id]) {
+    root_sink_map_[id]->SendInternalBeginFrame();
+  }
 }
 #endif
 
