@@ -223,12 +223,14 @@ void NWebEventHandler::SendMouseEvent(int x,
 
   if (browser_ && browser_->GetHost()) {
     if (NWebInputDelegate::IsMouseDown(action)) {
+      previous_action = action;
       if (buttonType == MBT_LEFT) {
         browser_->GetHost()->SetFocus(true);
       }
       browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, false,
                                                count);
     } else if (NWebInputDelegate::IsMouseUp(action)) {
+      previous_action = action;
       browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, true, 1);
     } else if (NWebInputDelegate::IsMouseMove(action)) {
       if (last_mouse_x_ == x && last_mouse_y_ == y) {
@@ -240,7 +242,9 @@ void NWebEventHandler::SendMouseEvent(int x,
       last_mouse_y_ = y;
       browser_->GetHost()->SendMouseMoveEvent(mouseEvent, false);
     } else if (NWebInputDelegate::IsMouseLeave(action)) {
-      browser_->GetHost()->SendMouseMoveEvent(mouseEvent, true);
+      if(NWebInputDelegate::IsMouseUp(previous_action)){
+        browser_->GetHost()->SendMouseMoveEvent(mouseEvent, true);
+      }
     } else {
       LOG(DEBUG) << "mouse event action: " << action;
     }
