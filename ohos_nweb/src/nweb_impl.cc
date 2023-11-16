@@ -87,6 +87,12 @@ bool GetWebOptimizationValue() {
   return system_properties_adapter.GetWebOptimizationValue();
 }
 
+static bool GetLockdownModeStatus() {
+  auto& system_properties_adapter = OHOS::NWeb::OhosAdapterHelper::GetInstance()
+                                    .GetSystemPropertiesInstance();
+  return system_properties_adapter.GetLockdownModeStatus();
+}
+
 }  // namespace
 
 namespace OHOS::NWeb {
@@ -132,6 +138,10 @@ void InitialWebEngineArgs(std::list<std::string>& web_engine_args,
   // http://crbug.com/479767
   web_engine_args.emplace_back("--enable-aggressive-domstorage-flushing");
   web_engine_args.emplace_back("--ohos-enable-drdc");
+
+  if (GetLockdownModeStatus()) {
+    web_engine_args.emplace_back("--js-flags=--jitless");
+  }
 
   web_engine_args.emplace_back("--enable-media-stream");
   if (init_args.is_enhance_surface) {
