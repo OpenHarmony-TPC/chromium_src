@@ -916,7 +916,7 @@ void NWebHandlerDelegate::OnRefreshAccessedHistory(
     LOG(ERROR) << "nweb handler is null";
     return;
   }
-
+  edited_forms_id_.clear();
   nweb_handler_->OnRefreshAccessedHistory(url.ToString(), isReload);
 }
 
@@ -933,7 +933,7 @@ void NWebHandlerDelegate::OnMediaStateChanged(CefRefPtr<CefBrowser> browser,
   LOG(INFO) 
        << "NWebHandlerDelegate::OnMediaStateChanged, MediaType: " << static_cast<int>(type) 
        << " MediaPlayingState: " << static_cast<int>(state)
-       << "nweb_id: " << nweb_id_;
+       << " nweb_id: " << nweb_id_;
 }
 /* CefLoadHandler methods end */
 
@@ -1529,8 +1529,24 @@ bool NWebHandlerDelegate::OnSetFocus(CefRefPtr<CefBrowser> browser,
 /* CefFocusHandler method end */
 
 /* CefFormHandler method begin */
-void NWebHandlerDelegate::OnFormEditingStateChanged(CefRefPtr<CefBrowser> browser, bool is_editing) {
-  LOG(INFO) << "NWebHandlerDelegate::OnFormEditingStateChanged, is_editing: " << is_editing << "nweb_id: " << nweb_id_;
+void NWebHandlerDelegate::OnFormEditingStateChanged(CefRefPtr<CefBrowser> browser, bool is_editing, uint64_t form_id ) {
+  bool form_editing_state_ = edited_forms_id_.size();
+  std::vector<uint64_t>::iterator it = find(edited_forms_id_.begin(), edited_forms_id_.end(), form_id);
+  
+  if (it == edited_forms_id_.end() && is_editing) {
+    edited_forms_id_.push_back(form_id);
+  } else if (it != edited_forms_id_.end() && !is_editing) {
+    edited_forms_id_.erase(it);
+  } else {
+    return;
+  }
+
+  bool current_is_editing_ = edited_forms_id_.size() != 0;
+  if (current_is_editing_ != form_editing_state_) {
+    LOG(INFO) << "NWebHandlerDelegate::OnFormEditingStateChanged, is_editing: " << is_editing << " nweb_id: " << nweb_id_;
+    // call handler
+  }
+  
 }
 /* CefFormHandler method end */
 

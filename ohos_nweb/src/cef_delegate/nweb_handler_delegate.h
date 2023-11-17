@@ -337,7 +337,7 @@ class NWebHandlerDelegate : public CefClient,
   /* CefFocusHandler method end */
 
   /* CefFormHandler method begin */
-  void OnFormEditingStateChanged(CefRefPtr<CefBrowser> browser, bool is_editing) override;
+  void OnFormEditingStateChanged(CefRefPtr<CefBrowser> browser, bool is_editing, uint64_t form_id) override;
   /* CefFormHandler method end */
 
   /* CefPermissionRequest method begin */
@@ -559,6 +559,10 @@ class NWebHandlerDelegate : public CefClient,
   float scale_ = 100.0;
   bool focusState_ = false;
   bool continueNeedFocus_ = false;
+
+#if BUILDFLAG(IS_OHOS)
+  std::vector<uint64_t> edited_forms_id_;
+#endif
 };
 }  // namespace OHOS::NWeb
 

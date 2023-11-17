@@ -4,31 +4,25 @@
 
 namespace ui {
 namespace {
-//constexpr float kUnitConvert = 1000.0f;
 constexpr float kDefaultFriction = 0.6f;
 constexpr float kFrictionScale = -4.2f;
 constexpr float kDefaultThreshold = 0.75f;
 constexpr float kDefaultMultiplier = 60.0f;
 constexpr float kThresholdForFlingEnd = 0.001f;
+constexpr double Epsilon = 0.001f;
+constexpr double kFriction = kDefaultFriction * kFrictionScale;
 
 inline bool NearEqual(const double left,
-                      const double right,
-                      const double epsilon) {
-    return (std::abs(left - right) <= epsilon);
-}
-
-inline bool NearZero(const double value, const double epsilon) {
-    return NearEqual(value, 0.0, epsilon);
+                      const double right) {
+    return (std::abs(left - right) <= Epsilon);
 }
 
 inline bool NearZero(const double left) {
-    constexpr double epsilon = 0.001f;
-    return NearZero(left, epsilon);
+    return NearEqual(left, 0.0);
 }
 
 inline bool GreatNotEqual(double left, double right) {
-    constexpr double epsilon = 0.001f;
-    return (left - right) > epsilon;
+    return (left - right) > Epsilon;
 }
 } // namespace
 
@@ -43,7 +37,7 @@ void NativeScrollerOhos::Fling(float start_x,
                                base::TimeTicks start_time) {
     curr_time_ = start_time;
     start_time_ = start_time;
-    friction_ = kDefaultFriction * kFrictionScale;
+    friction_ = kFriction;
 
     // currently only vertical fling is supported
     init_velocity_y_ = std::abs(velocity_y);

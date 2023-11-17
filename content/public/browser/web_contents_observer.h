@@ -792,7 +792,7 @@ class CONTENT_EXPORT WebContentsObserver {
                                        const GURL& manifest_url) {}
 #if BUILDFLAG(IS_OHOS)
   // Called when form editing state changed
-  virtual void OnFormEditingStateChanged(bool state) {}
+  virtual void OnFormEditingStateChanged(bool state, uint64_t form_id) {}
 #endif
 
   // Called when "audible" playback starts or stops on a WebAudio AudioContext.
