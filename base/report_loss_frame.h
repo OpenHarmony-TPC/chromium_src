@@ -27,6 +27,8 @@ class ReportLossFrame {
 
   void Report();
 
+  void Reset();
+
   void SetScrollState(ScrollMode state);
 
   void SetVsyncPeriod(int64_t vsync_period);
@@ -50,7 +52,8 @@ class ReportLossFrame {
 
   bool need_report_ = false;
 
-  std::vector<uint16_t> jank_stats_ = std::vector<uint16_t>(8, 0);
+  // the number 9 comes from type JankRangeType
+  std::vector<uint16_t> jank_stats_ = std::vector<uint16_t>(9, 0);
 
   static ReportLossFrame* instance;
 };
