@@ -38,9 +38,9 @@ void OhosNativeImage::SetFrameAvailableCallback(
   DCHECK(!frame_available_cb_);
   frame_available_cb_ = std::move(callback);
   if (native_image_adapter_ != nullptr && listener_ == nullptr) {
-    listener_ = std::make_unique<OHOS::NWeb::FirstFrameAvailableListenerCb>();
+    listener_ = std::make_unique<OHOS::NWeb::OnFrameAvailableListener>();
     listener_->context = reinterpret_cast<void*>(this);
-    listener_->cb = &OhosNativeImage::OnFirstFrameAvailable;
+    listener_->cb = &OhosNativeImage::OnFrameAvailableListener;
     native_image_adapter_->SetOnFrameAvailableListener(listener_.get());
   }
 }
@@ -96,7 +96,7 @@ void* OhosNativeImage::AquireOhosNativeWindow() {
   return native_image_adapter_->AquireNativeWindowFromNativeImage();
 }
 
-void OhosNativeImage::OnFirstFrameAvailable(void* context) {
+void OhosNativeImage::OnFrameAvailableListener(void* context) {
   OhosNativeImage* nativeImage = reinterpret_cast<OhosNativeImage*>(context);
   if (nativeImage == nullptr) {
     return;

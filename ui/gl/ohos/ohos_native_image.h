@@ -28,7 +28,7 @@ class GL_EXPORT OhosNativeImage
   void DetachFromGLContext();
   void ReleaseNativeImage();
   void* AquireOhosNativeWindow();
-  static void OnFirstFrameAvailable(void* context);
+  static void OnFrameAvailableListener(void* context);
 
  protected:
   explicit OhosNativeImage(
@@ -39,7 +39,7 @@ class GL_EXPORT OhosNativeImage
   virtual ~OhosNativeImage();
 
   std::unique_ptr<OHOS::NWeb::NativeImageAdapter> native_image_adapter_;
-  std::unique_ptr<OHOS::NWeb::FirstFrameAvailableListenerCb> listener_;
+  std::unique_ptr<OHOS::NWeb::OnFrameAvailableListener> listener_;
 
   base::RepeatingClosure frame_available_cb_;
 };
