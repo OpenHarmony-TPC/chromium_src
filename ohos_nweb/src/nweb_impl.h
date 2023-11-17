@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -88,6 +88,11 @@ class NWebImpl : public NWeb {
   const std::shared_ptr<NWebPreference> GetPreference() const override;
   void PutDownloadCallback(
       std::shared_ptr<NWebDownloadCallback> downloadListener) override;
+  void PutAccessibilityEventCallback(
+      std::shared_ptr<NWebAccessibilityEventCallback>
+          accessibilityEventListener) override;
+  void PutAccessibilityIdGenerator(
+      std::function<int32_t()> accessibilityIdGenerator) override;
   void PutReleaseSurfaceCallback(
     std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) override;
   void SetNWebHandler(std::shared_ptr<NWebHandler> handler) override;
@@ -227,6 +232,20 @@ class NWebImpl : public NWeb {
   void NotifyPopupWindowResult(bool result) override {
     nweb_delegate_->NotifyPopupWindowResult(result);
   }
+  void ExecuteAction(int32_t accessibilityId, uint32_t action) const override;
+  bool GetFocusedAccessibilityNodeInfo(
+      int32_t accessibilityId,
+      bool isAccessibilityFocus,
+      OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
+  bool GetAccessibilityNodeInfoById(
+      bool accessibilityId,
+      OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
+  bool GetAccessibilityNodeInfoByFocusMove(
+      int32_t accessibilityId,
+      int32_t direction,
+      OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
+  void SetAccessibilityState(bool state) override;
+
  private:
   void ProcessInitArgs(const NWebInitArgs& init_args);
   void InitWebEngineArgs(const NWebInitArgs& init_args);

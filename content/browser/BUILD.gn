@@ -2228,6 +2228,10 @@ source_set("browser") {
   if (is_ohos) {
     import("//build/config/ohos/config.gni")
     sources += [
+      "accessibility/browser_accessibility_manager_ohos.cc",
+      "accessibility/browser_accessibility_manager_ohos.h",
+      "accessibility/browser_accessibility_ohos.cc",
+      "accessibility/browser_accessibility_ohos.h",
       "media/ohos/ohos_media_player_renderer.cc",
       "media/ohos/ohos_media_player_renderer.h",
       "media/ohos/ohos_media_player_renderer_web_contents_observer.cc",

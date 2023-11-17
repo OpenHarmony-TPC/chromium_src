@@ -15,6 +15,7 @@
 #include "ui/accessibility/ax_role_properties.h"
 #include "ui/accessibility/ax_serializable_tree.h"
 #include "ui/accessibility/platform/ax_android_constants.h"
+#include "ui/accessibility/platform/ax_ohos_constants.h"
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/geometry/transform.h"
 #include "ui/gfx/range/range.h"
@@ -418,6 +419,65 @@ const char* AXRoleToAndroidClassName(ax::mojom::Role role, bool has_parent) {
       return kAXTextViewClassname;
     default:
       return kAXViewClassname;
+  }
+}
+
+const char* AXRoleToOHOSClassName(ax::mojom::Role role, bool has_parent) {
+  switch (role) {
+    case ax::mojom::Role::kSearchBox:
+    case ax::mojom::Role::kSpinButton:
+    case ax::mojom::Role::kTextField:
+    case ax::mojom::Role::kTextFieldWithComboBox:
+      return TEXTINPUT_ETS_TAG;
+    case ax::mojom::Role::kSlider:
+      return SLIDER_ETS_TAG;
+    case ax::mojom::Role::kColorWell:
+    case ax::mojom::Role::kComboBoxMenuButton:
+    case ax::mojom::Role::kDate:
+    case ax::mojom::Role::kDateTime:
+    case ax::mojom::Role::kInputTime:
+      return CALENDAR_ETS_TAG;
+    case ax::mojom::Role::kButton:
+    case ax::mojom::Role::kPdfActionableHighlight:
+      return BUTTON_ETS_TAG;
+    case ax::mojom::Role::kCheckBox:
+      return CHECK_BOX_ETS_TAG;
+    case ax::mojom::Role::kRadioButton:
+      return RADIO_ETS_TAG;
+    case ax::mojom::Role::kSwitch:
+    case ax::mojom::Role::kToggleButton:
+      return TOGGLE_ETS_TAG;
+    case ax::mojom::Role::kCanvas:
+    case ax::mojom::Role::kImage:
+    case ax::mojom::Role::kSvgRoot:
+      return IMAGE_ETS_TAG;
+    case ax::mojom::Role::kMeter:
+    case ax::mojom::Role::kProgressIndicator:
+      return PROGRESS_ETS_TAG;
+    case ax::mojom::Role::kTabList:
+      return TABS_ETS_TAG;
+    case ax::mojom::Role::kGrid:
+    case ax::mojom::Role::kTreeGrid:
+    case ax::mojom::Role::kTable:
+      return GRID_ETS_TAG;
+    case ax::mojom::Role::kList:
+    case ax::mojom::Role::kListBox:
+    case ax::mojom::Role::kDescriptionList:
+    case ax::mojom::Role::kDirectory:
+      return LIST_ETS_TAG;
+    case ax::mojom::Role::kDialog:
+      return DIALOG_ETS_TAG;
+    case ax::mojom::Role::kRootWebArea:
+      return has_parent ? ROOT_ETS_TAG : WEB_ETS_TAG;
+    case ax::mojom::Role::kMenuItem:
+    case ax::mojom::Role::kMenuItemCheckBox:
+    case ax::mojom::Role::kMenuItemRadio:
+      return MENU_ETS_TAG;
+    case ax::mojom::Role::kPre:
+    case ax::mojom::Role::kStaticText:
+      return TEXT_ETS_TAG;
+    default:
+      return ROOT_ETS_TAG;
   }
 }
 
