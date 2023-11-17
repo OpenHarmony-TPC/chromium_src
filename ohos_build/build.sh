@@ -268,7 +268,7 @@ if [ ${with_nweb_ex} -eq 1 -a ${artifact_mode} -eq 1 ]; then
       mkdir "${CONFIG_AUTO_GEN_DIR}"
   fi
 
-  result=python build/config_to_gn.py \
+  result=/usr/bin/python2.7 build/config_to_gn.py \
      -o "${ROOT_DIR}"/"${build_dir}""${BUILD_CONFIG_NAME}" \
      -d ${CONFIG_AUTO_GEN_DIR} \
      -i ${config_override} ${config_to_gn_args}
@@ -300,7 +300,7 @@ else
       mkdir "${CONFIG_AUTO_GEN_DIR}"
   fi
 
-  result=python build/config_to_gn.py \
+  result=/usr/bin/python2.7 build/config_to_gn.py \
      -o "${ROOT_DIR}"/"${build_dir}""${BUILD_CONFIG_NAME}" \
      -d ${CONFIG_AUTO_GEN_DIR} \
      -i ${config_override} ${config_to_gn_args}
