@@ -83,7 +83,6 @@ std::unique_ptr<GestureCurve> CreateDefaultPlatformCurve(
   }
 
   return std::make_unique<FlingCurve>(initial_velocity, base::TimeTicks());
-#endif
 }
 
 }  // namespace

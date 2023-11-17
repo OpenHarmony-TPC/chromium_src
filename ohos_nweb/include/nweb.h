@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,6 +21,8 @@
 #include <memory>
 #include <string>
 
+#include "nweb_accessibility_event_callback.h"
+#include "nweb_accessibility_node_info.h"
 #include "nweb_download_callback.h"
 #include "nweb_drag_data.h"
 #include "nweb_export.h"
@@ -310,6 +312,23 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      */
     virtual void PutDownloadCallback(
             std::shared_ptr<NWebDownloadCallback> downloadListener) = 0;
+
+    /**
+     * Set the NWebAccessibilityEventCallback that will receive accessibility event.
+     * This will replace the current handler.
+     *
+     * @param accessibilityEventListener NWebDownloadCallback.
+     */
+    virtual void PutAccessibilityEventCallback(
+        std::shared_ptr<NWebAccessibilityEventCallback> accessibilityEventListener) = 0;
+
+     /**
+     * Set the accessibility id generator that will generate accessibility id for accessibility nodes in the web.
+     * This will replace the current handler.
+     *
+     * @param accessibilityIdGenerator Accessibility id generator.
+     */
+    virtual void PutAccessibilityIdGenerator(std::function<int32_t()> accessibilityIdGenerator) = 0;
 
     /**
      * Set the NWebHandler that will receive various notifications and
@@ -828,6 +847,49 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * Inject the JavaScript before WebView load the DOM tree.
      */
     virtual void JavaScriptOnDocumentStart(const ScriptItems& scriptItems) = 0;
+	
+	/**
+     * Execute an accessibility action on an accessibility node in the browser.
+     * @param accessibilityId The id of the accessibility node.
+     * @param action The action to be performed on the accessibility node.
+     */
+    virtual void ExecuteAction(int32_t accessibilityId, uint32_t action) const = 0;
+
+    /**
+     * Get the information of the focused accessibility node on the given accessibility node in the browser.
+     * @param accessibilityId Indicate the accessibility id of the parent node of the focused accessibility node.
+     * @param isAccessibilityFocus Indicate whether the focused accessibility node is accessibility focused or input
+     * focused.
+     * @param nodeInfo The obtained information of the accessibility node.
+     * @return true if get accessibility node info successfully, otherwise false.
+     */
+    virtual bool GetFocusedAccessibilityNodeInfo(
+        int32_t accessibilityId, bool isAccessibilityFocus, OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const = 0;
+
+    /**
+     * Get the information of the accessibility node by its accessibility id in the browser.
+     * @param accessibilityId The accessibility id of the accessibility node.
+     * @param nodeInfo The obtained information of the accessibility node.
+     * @return true if get accessibility node info successfully, otherwise false.
+     */
+    virtual bool GetAccessibilityNodeInfoById(
+        bool accessibilityId, OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const = 0;
+
+    /**
+     * Get the information of the accessibility node by focus move in the browser.
+     * @param accessibilityId The accessibility id of the original accessibility node.
+     * @param direction The focus move direction of the original accessibility node.
+     * @param nodeInfo The obtained information of the accessibility node.
+     * @return true if get accessibility node info successfully, otherwise false.
+     */
+    virtual bool GetAccessibilityNodeInfoByFocusMove(
+        int32_t accessibilityId, int32_t direction, OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const = 0;
+
+    /**
+     * Set the accessibility state in the browser.
+     * @param state Indicate whether the accessibility state is enabled or disabled.
+     */
+    virtual void SetAccessibilityState(bool state) = 0;
 };
 }  // namespace OHOS::NWeb
 

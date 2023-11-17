@@ -41,14 +41,14 @@ class EVENTS_BASE_EXPORT NativeScrollerOhos : public GestureCurve {
     base::TimeTicks curr_time_;
     base::TimeTicks final_time_;
 
-    float friction_{0};
-    float init_velocity_y_{0};
-    float curr_velocity_y_{0};
+    float friction_{0.0};
+    float init_velocity_y_{0.0};
+    float curr_velocity_y_{0.0};
     
-    float init_y_{0};
-    float curr_y_{0};
-    float last_y_{0};
-    float final_y_{0};
+    float init_y_{0.0};
+    float curr_y_{0.0};
+    float last_y_{0.0};
+    float final_y_{0.0};
 
     float value_threshold_{0.0};
     float velocity_threshold_{0.0};

@@ -157,6 +157,13 @@ component("accessibility") {
     "test_ax_tree_manager.h",
   ]
 
+  if (is_ohos) {
+    sources += [
+      "ax_assistant_structure.cc",
+      "ax_assistant_structure.h",
+    ]
+  }
+
   deps = [
     "//base",
     "//components/crash/core/common:crash_key",
