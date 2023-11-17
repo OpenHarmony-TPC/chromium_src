@@ -54,6 +54,8 @@ std::string GetDecoderName(VideoDecoderType type) {
       return "V4L2VideoDecoder";
     case VideoDecoderType::kTesting:
       return "Testing or Mock Video decoder";
+    case VideoDecoderType::kOHOS:
+      return "OHOSVideoDecoder";
     default:
       NOTREACHED();
       return "VideoDecoderType created through invalid static_cast";
