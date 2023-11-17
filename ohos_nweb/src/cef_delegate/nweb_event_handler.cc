@@ -220,7 +220,11 @@ void NWebEventHandler::SendMouseEvent(int x,
   cef_mouse_button_type_t buttonType = static_cast<cef_mouse_button_type_t>(
       NWebInputDelegate::CefConverter("mousebutton", button));
   mouseEvent.modifiers = input_delegate_.GetModifiers(buttonType);
-
+  if (NWebInputDelegate::IsMouseLeave(action)) {
+    in_web = false;
+  } else if (NWebInputDelegate::IsMouseEnter(action)) {
+    in_web = true;
+  }
   if (browser_ && browser_->GetHost()) {
     if (NWebInputDelegate::IsMouseDown(action)) {
       previous_action = action;
@@ -232,6 +236,9 @@ void NWebEventHandler::SendMouseEvent(int x,
     } else if (NWebInputDelegate::IsMouseUp(action)) {
       previous_action = action;
       browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, true, 1);
+      if (!in_web) {
+        browser_->GetHost()->SendMouseMoveEvent(mouseEvent, true);
+      }
     } else if (NWebInputDelegate::IsMouseMove(action)) {
       if (last_mouse_x_ == x && last_mouse_y_ == y) {
         LOG(INFO) << "no change in coordinates, cancel mouse move event";
