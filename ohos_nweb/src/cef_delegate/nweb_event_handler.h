@@ -53,6 +53,7 @@ class NWebEventHandler {
   std::unique_ptr<MMIAdapter> mmi_adapter_ = nullptr;
   int32_t mmi_id_ = -1;
   int32_t previous_action = 2;
+  bool in_web = false;
   bool isFocus_ = false;
   double sum_deltaY_ = 0.0;
 // last mouse move coordinates
