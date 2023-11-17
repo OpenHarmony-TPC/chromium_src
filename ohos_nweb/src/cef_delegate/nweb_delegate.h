@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,6 +23,8 @@
 #include "capi/nweb_app_client_extension_callback.h"
 #include "capi/nweb_download_delegate_callback.h"
 #include "cef/include/cef_command_line.h"
+#include "content/browser/accessibility/browser_accessibility_manager_ohos.h"
+#include "content/browser/accessibility/browser_accessibility_ohos.h"
 #include "nweb_application.h"
 #include "nweb_delegate_interface.h"
 #include "nweb_display_listener.h"
@@ -52,6 +54,11 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void UnRegisterWebAppClientExtensionListener() override;
   void RegisterDownLoadListener(
       std::shared_ptr<NWebDownloadCallback> downloadListener) override;
+  void RegisterAccessibilityEventListener(
+      std::shared_ptr<NWebAccessibilityEventCallback>
+          accessibility_event_listener) override;
+  void RegisterAccessibilityIdGenerator(
+      std::function<int32_t()> accessibilityIdGenerator) const override;
   void RegisterReleaseSurfaceListener(
       std::shared_ptr<NWebReleaseSurfaceCallback> releaseSurfaceListener) override;
   void RegisterWebDownloadDelegateListener(
@@ -246,6 +253,19 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   void SetVirtualPixelRatio(float ratio) override;
   void* CreateWebPrintDocumentAdapter(const std::string& jobName) override;
   int PostUrl(const std::string& url, std::vector<char>& postData) override;
+  void SetAccessibilityState(cef_state_t accessibility_state) const override;
+  void ExecuteAction(int32_t node_id, uint32_t action) const override;
+  bool GetFocusedAccessibilityNodeInfo(
+      int32_t accessibilityId,
+      bool isAccessibilityFocus,
+      OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
+  bool GetAccessibilityNodeInfoById(
+      int32_t accessibilityId,
+      OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
+  bool GetAccessibilityNodeInfoByFocusMove(
+      int32_t accessibilityId,
+      int32_t direction,
+      OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
 
  public:
   int argc_;
@@ -265,6 +285,17 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
                                 std::vector<std::string>& certChainData, bool isSingleCert);
   bool HasBackgroundColorWithInit(int32_t& backgroundColor);
   void OnContextInitializeComplete(const std::string& url, void* windows);
+  content::BrowserAccessibilityManagerOHOS* GetAccessibilityManager() const;
+  void AddAccessibilityNodeInfoRect(
+      NWebAccessibilityNodeInfo& nodeInfo,
+      const content::BrowserAccessibilityOHOS* node) const;
+  void AddAccessibilityNodeInfoCollection(
+    NWebAccessibilityNodeInfo& nodeInfo,
+    const content::BrowserAccessibilityOHOS* node) const;
+  void AddAccessibilityNodeInfoActions(
+    NWebAccessibilityNodeInfo& nodeInfo) const;
+  bool PopulateAccessibilityNodeInfo(const content::BrowserAccessibilityOHOS* node,
+                                     NWebAccessibilityNodeInfo& nodeInfo) const;
 
  private:
   std::string ohos_temp_dir_;

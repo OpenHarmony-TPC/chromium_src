@@ -88,6 +88,13 @@ source_set("platform") {
     "//ui/display",
   ]
 
+  if (is_ohos) {
+    sources += [
+      "ax_ohos_constants.cc",
+      "ax_ohos_constants.h",
+    ]
+  }
+
   if (is_fuchsia) {
     sources += [
       "fuchsia/accessibility_bridge_fuchsia.h",

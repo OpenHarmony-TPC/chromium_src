@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -374,6 +374,22 @@ void NWebImpl::PutDownloadCallback(
   }
 
   nweb_delegate_->RegisterDownLoadListener(downloadListener);
+}
+
+void NWebImpl::PutAccessibilityEventCallback(
+    std::shared_ptr<NWebAccessibilityEventCallback>
+        accessibilityEventListener) {
+  if (nweb_delegate_ != nullptr) {
+    nweb_delegate_->RegisterAccessibilityEventListener(
+        accessibilityEventListener);
+  }
+}
+
+void NWebImpl::PutAccessibilityIdGenerator(
+    std::function<int32_t()> accessibilityIdGenerator) {
+  if (nweb_delegate_ != nullptr) {
+    nweb_delegate_->RegisterAccessibilityIdGenerator(accessibilityIdGenerator);
+  }
 }
 
 void NWebImpl::SetNWebHandler(std::shared_ptr<NWebHandler> client) {
@@ -1452,6 +1468,50 @@ void NWebImpl::NotifyMemoryLevel(int32_t level) {
   base::MemoryPressureListener::NotifyMemoryPressure(memory_pressure_level);
 }
 
+void NWebImpl::ExecuteAction(int32_t accessibilityId, uint32_t action) const {
+  if (nweb_delegate_ != nullptr) {
+    nweb_delegate_->ExecuteAction(accessibilityId, action);
+  }
+}
+
+bool NWebImpl::GetFocusedAccessibilityNodeInfo(
+    int32_t accessibilityId,
+    bool isAccessibilityFocus,
+    OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const {
+  if (nweb_delegate_ != nullptr) {
+    return nweb_delegate_->GetFocusedAccessibilityNodeInfo(
+        accessibilityId, isAccessibilityFocus, nodeInfo);
+  }
+  return false;
+}
+
+bool NWebImpl::GetAccessibilityNodeInfoById(
+    bool accessibilityId,
+    OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const {
+  if (nweb_delegate_ != nullptr) {
+    return nweb_delegate_->GetAccessibilityNodeInfoById(accessibilityId,
+                                                        nodeInfo);
+  }
+  return false;
+}
+
+bool NWebImpl::GetAccessibilityNodeInfoByFocusMove(
+    int32_t accessibilityId,
+    int32_t direction,
+    OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const {
+  if (nweb_delegate_ != nullptr) {
+    return nweb_delegate_->GetAccessibilityNodeInfoByFocusMove(
+        accessibilityId, direction, nodeInfo);
+  }
+  return false;
+}
+
+void NWebImpl::SetAccessibilityState(bool state) {
+  if (nweb_delegate_ != nullptr) {
+    nweb_delegate_->SetAccessibilityState(state ? STATE_ENABLED
+                                                : STATE_DISABLED);
+  }
+}
 }  // namespace OHOS::NWeb
 
 using namespace OHOS::NWeb;

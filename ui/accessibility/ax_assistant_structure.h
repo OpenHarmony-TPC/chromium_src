@@ -76,6 +76,7 @@ std::unique_ptr<AssistantTree> CreateAssistantTree(const AXTreeUpdate& update);
 
 std::u16string AXUrlBaseText(std::u16string url);
 const char* AXRoleToAndroidClassName(ax::mojom::Role role, bool has_parent);
+const char* AXRoleToOHOSClassName(ax::mojom::Role role, bool has_parent);
 
 }  // namespace ui
 
