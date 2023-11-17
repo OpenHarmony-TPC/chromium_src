@@ -221,22 +221,22 @@ void NWebEventHandler::SendMouseEvent(int x,
       NWebInputDelegate::CefConverter("mousebutton", button));
   mouseEvent.modifiers = input_delegate_.GetModifiers(buttonType);
   if (NWebInputDelegate::IsMouseLeave(action)) {
-    in_web = false;
+    is_in_web_ = false;
   } else if (NWebInputDelegate::IsMouseEnter(action)) {
-    in_web = true;
+    is_in_web_ = true;
   }
   if (browser_ && browser_->GetHost()) {
     if (NWebInputDelegate::IsMouseDown(action)) {
-      previous_action = action;
+      previous_action_ = action;
       if (buttonType == MBT_LEFT) {
         browser_->GetHost()->SetFocus(true);
       }
       browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, false,
                                                count);
     } else if (NWebInputDelegate::IsMouseUp(action)) {
-      previous_action = action;
+      previous_action_ = action;
       browser_->GetHost()->SendMouseClickEvent(mouseEvent, buttonType, true, 1);
-      if (!in_web) {
+      if (!is_in_web_) {
         browser_->GetHost()->SendMouseMoveEvent(mouseEvent, true);
       }
     } else if (NWebInputDelegate::IsMouseMove(action)) {
@@ -249,7 +249,7 @@ void NWebEventHandler::SendMouseEvent(int x,
       last_mouse_y_ = y;
       browser_->GetHost()->SendMouseMoveEvent(mouseEvent, false);
     } else if (NWebInputDelegate::IsMouseLeave(action)) {
-      if (NWebInputDelegate::IsMouseUp(previous_action)) {
+      if (NWebInputDelegate::IsMouseUp(previous_action_)) {
         browser_->GetHost()->SendMouseMoveEvent(mouseEvent, true);
       }
     } else {
