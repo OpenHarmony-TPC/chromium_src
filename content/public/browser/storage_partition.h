@@ -118,6 +118,9 @@ class CONTENT_EXPORT StoragePartition {
   GetURLLoaderFactoryForBrowserProcessIOThread() = 0;
   virtual network::mojom::CookieManager*
   GetCookieManagerForBrowserProcess() = 0;
+#if BUILDFLAG(IS_OHOS)
+  virtual network::mojom::CookieManager* GetCookieManagerForOhos() = 0;
+#endif
   virtual void CreateHasTrustTokensAnswerer(
       mojo::PendingReceiver<network::mojom::HasTrustTokensAnswerer> receiver,
       const url::Origin& top_frame_origin) = 0;
