@@ -115,6 +115,8 @@ component("services") {
       deps +=
           [ "//chromeos/components/cdm_factory_daemon:cdm_factory_daemon_gpu" ]
     }
+  } else if (is_ohos) {
+    sources += [ "gpu_mojo_media_client_ohos.cc" ]
   } else {
     sources += [ "gpu_mojo_media_client_stubs.cc" ]
   }

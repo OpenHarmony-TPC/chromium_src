@@ -50,8 +50,11 @@ enum class VideoDecoderType : int {
 
   kTesting = 17,  // Never send this to UKM, for tests only.
 
+  kOHOS = 18, // OHOSVideoDecoder
+
   // Keep this at the end and equal to the last entry.
-  kMaxValue = kTesting
+  // kMaxValue = kTesting
+  kMaxValue = kOHOS
 };
 
 MEDIA_EXPORT std::string GetDecoderName(AudioDecoderType type);
