@@ -579,7 +579,9 @@ void RootCompositorFrameSinkImpl::SetCurrentFrameSinkId(
 };
 
 void RootCompositorFrameSinkImpl::SendInternalBeginFrame() {
-  external_begin_frame_source_->SendInternalBeginFrame();
+  if (external_begin_frame_source_) {
+    external_begin_frame_source_->SendInternalBeginFrame();
+  }
 }
 
 void RootCompositorFrameSinkImpl::SetEnableLowerFrameRate(bool enabled) {
