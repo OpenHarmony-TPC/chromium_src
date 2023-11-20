@@ -102,10 +102,10 @@ std::unique_ptr<crypto::SymmetricKey> GenerateEncryptionKey(
   std::string salt(kSalt);
 
 #if BUILDFLAG(IS_OHOS)
-  std::unique_ptr<crypto::SymmetricKey> encryption_key(
-    crypto::SymmetricKey::Import(
-        crypto::SymmetricKey::AES,
-        crypto::ohos::get_symmetric_key_256("nweb_data_key")));
+    std::unique_ptr<crypto::SymmetricKey> encryption_key(
+      crypto::SymmetricKey::Import(
+          crypto::SymmetricKey::AES,
+          crypto::ohos::get_symmetric_key_256("nweb_data_key")));
 #else
   // Create an encryption key from our password and salt.
   std::unique_ptr<crypto::SymmetricKey> encryption_key(
@@ -132,11 +132,6 @@ crypto::SymmetricKey* GetPasswordV10() {
 crypto::SymmetricKey* GetPasswordV11() {
   base::AutoLock auto_lock(g_cache.Get().lock);
   if (!g_cache.Get().is_password_v11_cached) {
-#if BUILDFLAG(IS_OHOS)
-    if (!g_cache.Get().config) {
-      return nullptr;
-    }
-#endif // BUILDFLAG(IS_OHOS)
     std::unique_ptr<KeyStorageLinux> key_storage = g_key_storage_provider();
     if (key_storage) {
       absl::optional<std::string> key = key_storage->GetKey();

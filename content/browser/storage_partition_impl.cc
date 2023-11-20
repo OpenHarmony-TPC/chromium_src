@@ -1421,22 +1421,6 @@ StoragePartitionImpl::GetCookieManagerForBrowserProcess() {
   return cookie_manager_for_browser_process_.get();
 }
 
-#if BUILDFLAG(IS_OHOS)
-network::mojom::CookieManager*
-StoragePartitionImpl::GetCookieManagerForOhos() {
-  DCHECK(initialized_);
-  // Create the CookieManager as needed.
-  if (!cookie_manager_for_ohos_ ||
-      !cookie_manager_for_ohos_.is_connected()) {
-    // Reset `cookie_manager_for_ohos_` before binding it again.
-    cookie_manager_for_ohos_.reset();
-    GetNetworkContext()->GetCookieManager(
-        cookie_manager_for_ohos_.BindNewPipeAndPassReceiver());
-  }
-  return cookie_manager_for_ohos_.get();
-}
-#endif
-
 void StoragePartitionImpl::CreateRestrictedCookieManager(
     network::mojom::RestrictedCookieManagerRole role,
     const url::Origin& origin,

@@ -1572,15 +1572,6 @@ extern "C" OHOS_NWEB_EXPORT void InitializeWebEngine(
   settings.log_severity = LOGSEVERITY_INFO;
   settings.multi_threaded_message_loop = false;
 
-  auto& system_properties_adapter =
-      OHOS::NWeb::OhosAdapterHelper::GetInstance().GetSystemPropertiesInstance();
-  OHOS::NWeb::ProductDeviceType deviceType =
-      system_properties_adapter.GetProductDeviceType();
-  bool is_pc_device =
-      deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_TABLET ||
-      deviceType == OHOS::NWeb::ProductDeviceType::DEVICE_TYPE_2IN1;
-  settings.persist_session_cookies = !is_pc_device;
-
 #if !defined(CEF_USE_SANDBOX)
   settings.no_sandbox = true;
 #endif

@@ -115,10 +115,6 @@ class StartupTabProviderImpl;
 class GaiaConfig;
 class WebEngineBrowserMainParts;
 
-#if BUILDFLAG(IS_OHOS)
-class CefCookieManagerImpl;
-#endif
-
 Profile* GetLastProfileMac();
 
 namespace android_webview {
@@ -631,9 +627,6 @@ class BASE_EXPORT ScopedAllowBaseSyncPrimitivesOutsideBlockingScope {
   friend class android_webview::
       AwFormDatabaseService;  // http://crbug.com/904431
   friend class android_webview::CookieManager;
-#if BUILDFLAG(IS_OHOS)
-  friend class ::CefCookieManagerImpl;
-#endif
   friend class android_webview::VizCompositorThreadRunnerWebView;
   friend class audio::OutputDevice;
   friend class base::sequence_manager::internal::TaskQueueImpl;

@@ -441,9 +441,7 @@ bool FeatureList::InitializeInstance(
   // accessor call(s) which likely returned incorrect information.
   if (g_initialized_from_accessor) {
     DEBUG_ALIAS_FOR_CSTR(accessor_name, g_initialized_from_accessor->name, 128);
-#if !BUILDFLAG(IS_OHOS)
     CHECK(!g_initialized_from_accessor);
-#endif
   }
   bool instance_existed_before = false;
   if (g_feature_list_instance) {
