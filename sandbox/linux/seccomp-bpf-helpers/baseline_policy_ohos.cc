@@ -141,6 +141,7 @@ ResultExpr BaselinePolicyOhos::EvaluateSyscall(int sysno) const {
     case __NR_execve:
     case __NR_msync:
     case __NR_statx:
+    case __NR_set_robust_list:
 #endif
 #if defined(__arm__)
     case __NR_sched_getaffinity:
@@ -219,7 +220,6 @@ ResultExpr BaselinePolicyOhos::EvaluateSyscall(int sysno) const {
     case __NR_sched_get_priority_min:
     case __NR_times:
     case __NR_get_robust_list:
-    case __NR_set_robust_list:
     case __NR_setresuid:
     case __NR_unlinkat:
     case __NR_flock:
