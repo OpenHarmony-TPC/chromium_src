@@ -2066,9 +2066,11 @@ void NWebDelegate::ExecuteAction(int32_t accessibilityId,
   switch (aceAction) {
     case AceAction::ACTION_CLICK:
       accessibilityManager->DoDefaultAction(*node);
+      break;
     case AceAction::ACTION_ACCESSIBILITY_FOCUS:
       accessibilityManager->MoveAccessibilityFocusToId(accessibilityId);
-    case AceAction::ACTION_CLEAR_ACCESSIBILITY_FOCUS: {
+      break;
+    case AceAction::ACTION_CLEAR_ACCESSIBILITY_FOCUS:
       accessibilityManager->SendAccessibilityEvent(
           accessibilityId, AccessibilityEventType::ACCESSIBILITY_FOCUS_CLEARED);
       if (accessibilityManager->GetAccessibilityFocusId() == accessibilityId) {
@@ -2082,11 +2084,16 @@ void NWebDelegate::ExecuteAction(int32_t accessibilityId,
             AccessibilityEventType::HOVER_EXIT_EVENT);
         accessibilityManager->SetLastHoverId(-1);
       }
-    }
+      break;
     case AceAction::ACTION_FOCUS:
       accessibilityManager->SetFocus(*node);
+      break;
     case AceAction::ACTION_CLEAR_FOCUS:
       accessibilityManager->SetFocus(*accessibilityManager->GetRoot());
+      break;
+    default:
+      LOG(INFO) << "ExecuteAction unsupported action";
+      break;
   }
 }
 
@@ -2096,8 +2103,8 @@ NWebDelegate::GetAccessibilityManager() const {
     LOG(ERROR) << "GetAccessibilityManager can not get browser";
     return nullptr;
   }
-  auto manager =
-      GetBrowser()->GetHost()->GetOrCreateRootBrowserAccessibilityManager();
+  void* manager = nullptr;
+  GetBrowser()->GetHost()->GetOrCreateRootBrowserAccessibilityManager(&manager);
   return static_cast<content::BrowserAccessibilityManagerOHOS*>(manager);
 }
 
@@ -2254,6 +2261,7 @@ bool NWebDelegate::PopulateAccessibilityNodeInfo(
   nodeInfo.selectionStart = node->GetSelectionStart();
   nodeInfo.selectionEnd = node->GetSelectionEnd();
   nodeInfo.itemCounts = node->GetItemCount();
+  nodeInfo.clickable = node->IsClickable();
 
   AddAccessibilityNodeInfoRect(nodeInfo, node);
   AddAccessibilityNodeInfoCollection(nodeInfo, node);
