@@ -2879,10 +2879,10 @@ const blink::web_pref::WebPreferences WebContentsImpl::ComputeWebPreferences() {
   GetContentClient()->browser()->OverrideWebkitPrefs(this, &prefs);
 
 #if BUILDFLAG(IS_OHOS) || defined(OHOS_NWEB_EX)
-  bool is_win = (user_agent_.find("Windows NT") != std::string::npos) &&
-                (user_agent_.find("Win64") != std::string::npos ||
-                 user_agent_.find("WOW64") != std::string::npos);
-  prefs.viewport_meta_enabled = !is_win;
+  if (!user_agent_.empty()) {
+    bool is_desktop = (user_agent_.find("Mobile") == std::string::npos);
+    prefs.viewport_meta_enabled = !is_desktop;
+  }
 #endif
 
   return prefs;
