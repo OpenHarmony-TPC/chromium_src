@@ -34,6 +34,25 @@
 #endif
 
 namespace base {
+extern uintptr_t g_bucket_cookie;
+extern uintptr_t g_root_cookie;
+
+ALWAYS_INLINE static void* EncodeBucket(void* ptr) {
+    if (g_bucket_cookie == 0)
+        g_bucket_cookie = GetRandomValue();
+    if (ptr == nullptr)
+        return nullptr;
+    return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(ptr) ^ g_bucket_cookie);
+}
+
+ALWAYS_INLINE static void* EncodeRoot(void* ptr) {
+    if (g_root_cookie == 0)
+        g_root_cookie = GetRandomValue();
+    if (ptr == nullptr)
+        return nullptr;
+    return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(ptr) ^ g_root_cookie);
+}
+
 namespace internal {
 
 // An "extent" is a span of consecutive superpages. We link the partition's next
@@ -487,8 +506,14 @@ ALWAYS_INLINE PartitionPage<thread_safe>* PartitionPage<thread_safe>::FromPtr(
   PA_DCHECK(IsReservationStart(super_page));
   if (IsManagedByNormalBuckets(address)) {
     auto* extent = PartitionSuperPageToExtent<thread_safe>(super_page);
+#if defined(OHOS_ENABLE_POINTER_HARDENED)
+    PartitionRoot* real_root = (PartitionRoot*)EncodeRoot((void*)(extent->root));
+    PA_DCHECK(
+        IsWithinSuperPagePayload(address, real_root->IsQuarantineAllowed()));
+#else
     PA_DCHECK(
         IsWithinSuperPagePayload(address, extent->root->IsQuarantineAllowed()));
+#endif
   } else {
     PA_CHECK(address >= super_page + PartitionPageSize());
   }
@@ -620,11 +645,7 @@ SlotSpanMetadata<thread_safe>::PopForAlloc(size_t size) {
   PartitionFreelistEntry* result = freelist_head;
   // Not setting freelist_is_sorted_ to false since this doesn't destroy
   // ordering.
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-  freelist_head = freelist_head->GetNext(size, bucket->random_cookie);
-#else
   freelist_head = freelist_head->GetNext(size);
-#endif
   num_allocated_slots++;
   return result;
 }
@@ -642,15 +663,9 @@ ALWAYS_INLINE void SlotSpanMetadata<thread_safe>::Free(uintptr_t slot_start)
   // Catches an immediate double free.
   PA_CHECK(entry != freelist_head);
   // Look for double free one level deeper in debug.
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-  PA_DCHECK(!freelist_head ||
-            entry != freelist_head->GetNext(bucket->slot_size, bucket->random_cookie));
-  entry->SetNext(freelist_head, this->bucket->random_cookie);
-#else
   PA_DCHECK(!freelist_head ||
             entry != freelist_head->GetNext(bucket->slot_size));
   entry->SetNext(freelist_head);
-#endif
   SetFreelistHead(entry);
   // A best effort double-free check. Works only on empty slot spans.
   PA_CHECK(num_allocated_slots);
@@ -676,11 +691,7 @@ ALWAYS_INLINE void SlotSpanMetadata<thread_safe>::AppendFreeList(
 #if DCHECK_IS_ON()
   auto* root = PartitionRoot<thread_safe>::FromSlotSpan(this);
   root->lock_.AssertAcquired();
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-  PA_DCHECK(!tail->GetNext(bucket->slot_size, bucket->random_cookie));
-#else
   PA_DCHECK(!tail->GetNext(bucket->slot_size));
-#endif
   PA_DCHECK(number_of_freed);
   PA_DCHECK(num_allocated_slots);
   if (CanStoreRawSize()) {
@@ -689,11 +700,7 @@ ALWAYS_INLINE void SlotSpanMetadata<thread_safe>::AppendFreeList(
   {
     size_t number_of_entries = 0;
     for (auto* entry = head; entry;
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-         entry = entry->GetNext(bucket->slot_size, bucket->random_cookie), ++number_of_entries) {
-#else
          entry = entry->GetNext(bucket->slot_size), ++number_of_entries) {
-#endif
       uintptr_t unmasked_entry =
           memory::UnmaskPtr(reinterpret_cast<uintptr_t>(entry));
       // Check that all entries belong to this slot span.
@@ -704,11 +711,8 @@ ALWAYS_INLINE void SlotSpanMetadata<thread_safe>::AppendFreeList(
     PA_DCHECK(number_of_entries == number_of_freed);
   }
 #endif
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-  tail->SetNext(freelist_head, bucket->random_cookie);
-#else
+
   tail->SetNext(freelist_head);
-#endif
   SetFreelistHead(head);
   PA_DCHECK(num_allocated_slots >= number_of_freed);
   num_allocated_slots -= number_of_freed;
@@ -798,7 +802,12 @@ void IterateSlotSpans(uintptr_t super_page,
 #if DCHECK_IS_ON()
   PA_DCHECK(!(super_page % kSuperPageAlignment));
   auto* extent_entry = PartitionSuperPageToExtent<thread_safe>(super_page);
+#if defined(OHOS_ENABLE_POINTER_HARDENED)
+  PartitionRoot* real_root = (PartitionRoot*)EncodeRoot((void*)(extent_entry->root));
+  real_root->lock_.AssertAcquired();
+#else
   extent_entry->root->lock_.AssertAcquired();
+#endif
 #endif
 
   using Page = PartitionPage<thread_safe>;
