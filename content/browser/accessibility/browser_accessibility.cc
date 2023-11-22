@@ -30,7 +30,7 @@
 
 namespace content {
 
-#if !BUILDFLAG(HAS_PLATFORM_ACCESSIBILITY_SUPPORT) && !defined(OHOS_ENABLE_ACCESSIBILITY)
+#if !BUILDFLAG(HAS_PLATFORM_ACCESSIBILITY_SUPPORT) && !BUILDFLAG(IS_OHOS)
 // static
 std::unique_ptr<BrowserAccessibility> BrowserAccessibility::Create(
     BrowserAccessibilityManager* manager,
