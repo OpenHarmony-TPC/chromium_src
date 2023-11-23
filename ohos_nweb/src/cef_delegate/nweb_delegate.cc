@@ -1988,19 +1988,23 @@ void NWebDelegate::SetAudioExclusive(bool audioExclusive) {
 #ifdef OHOS_NWEB_EX
 void NWebDelegate::SetBrowserZoomLevel(double zoom_factor) {
   LOG(DEBUG) << "NWebDelegate::SetBrowserZoomLevel: " << zoom_factor;
-  if (GetBrowser().get()) {
-    GetBrowser()->GetHost()->SetBrowserZoomLevel(zoom_factor);
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "SetBrowserZoomLevel can not get browser";
+    return;
   }
+  
+  GetBrowser()->GetHost()->SetBrowserZoomLevel(zoom_factor);
 }
 
 double NWebDelegate::GetBrowserZoomLevel() {
   LOG(DEBUG) << "NWebDelegate::GetBrowserZoomLevel.";
-  double zoom_factor = 1.0;
-  if (GetBrowser().get()) {
-    zoom_factor =
-        std::pow(kZoomLevelToFactorRatio, GetBrowser()->GetHost()->GetZoomLevel());
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "GetBrowserZoomLevel can not get browser";
+    return 1.0;
   }
-  return zoom_factor;
+
+  return
+      std::pow(kZoomLevelToFactorRatio, GetBrowser()->GetHost()->GetZoomLevel());
 }
 #endif
 
