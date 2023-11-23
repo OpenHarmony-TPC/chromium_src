@@ -115,10 +115,12 @@ std::unique_ptr<VideoDecoder> OhosVideoDecoder::Create(
 }
 
 OhosVideoDecoder::~OhosVideoDecoder() {
+  TRACE_EVENT0("media", "OhosVideoDecoder::~OhosVideoDecoder");
   ReleaseCodec();
 }
 
 void OhosVideoDecoder::DestroyAsync(std::unique_ptr<OhosVideoDecoder> decoder) {
+  TRACE_EVENT0("media", "OhosVideoDecoder::DestroyAsync");
   DCHECK(decoder);
   auto* self = decoder.release();
 
@@ -170,6 +172,7 @@ void OhosVideoDecoder::Initialize(const VideoDecoderConfig& config,
 
 void OhosVideoDecoder::StartLazyInit() {
   LOG(INFO) << "OhosVideoDecoder::StartLazyInit";
+  TRACE_EVENT0("media", "OhosVideoDecoder::StartLazyInit");
   lazy_init_pending_ = false;
   video_frame_factory_->Initialize(
       base::BindRepeating(&OhosVideoDecoder::OnVideoFrameFactoryInitialized,
@@ -178,6 +181,8 @@ void OhosVideoDecoder::StartLazyInit() {
 
 void OhosVideoDecoder::OnVideoFrameFactoryInitialized(
     scoped_refptr<gpu::NativeImageTextureOwner> texture_owner) {
+  TRACE_EVENT0("media",
+               "OhosVideoDecoder::OnVideoFrameFactoryInitialized");
   if (!texture_owner) {
     EnterTerminalState(State::kError, "Could not allocated TextureOwner");
     return;
@@ -190,7 +195,7 @@ void OhosVideoDecoder::OnVideoFrameFactoryInitialized(
 
 void OhosVideoDecoder::OnSurfaceChosen() {
   DCHECK(state_ == State::kInitializing);
-
+  TRACE_EVENT0("media", "OhosVideoDecoder::OnSurfaceChosen");
   target_surface_bundle_ = texture_owner_bundle_;
 
   if (state_ == State::kInitializing) {
@@ -273,10 +278,12 @@ void OhosVideoDecoder::OnCodecConfigured(
     EnterTerminalState(State::kError, "Unable to allocate codec");
     return;
   }
-  double frame_rate = 60;
-  codec->ConfigureBridgeDecoder(decoder_config_.coded_size().width(),
-                                decoder_config_.coded_size().height(),
-                                frame_rate);
+
+  OHOS::NWeb::DecoderFormat decoderFormat;
+  decoderFormat.width = decoder_config_.coded_size().width();
+  decoderFormat.height = decoder_config_.coded_size().height();
+  codec->ConfigureBridgeDecoder(decoderFormat,
+                                base::SequencedTaskRunnerHandle::Get());
   codec->SetBridgeOutputSurface(surface_bundle->GetOHOSNativeWindow());
   codec->PrepareBridgeDecoder();
   codec->StartBridgeDecoder();
@@ -471,6 +478,7 @@ void OhosVideoDecoder::Reset(base::OnceClosure closure) {
 
 void OhosVideoDecoder::StartDrainingCodec(DrainType drain_type) {
   LOG(INFO) << "OhosVideoDecoder::StartDrainingCodec";
+  TRACE_EVENT0("media", "OhosVideoDecoder::StartDrainingCodec");
   DCHECK(pending_decodes_.empty());
   drain_type_ = drain_type;
 
@@ -493,6 +501,7 @@ void OhosVideoDecoder::StartDrainingCodec(DrainType drain_type) {
 
 void OhosVideoDecoder::OnCodecDrained() {
   LOG(INFO) << "OhosVideoDecoder::OnCodecDrained";
+  TRACE_EVENT0("media", "OhosVideoDecoder::OnCodecDrained");
   DrainType drain_type = *drain_type_;
   drain_type_.reset();
 

@@ -30,13 +30,19 @@ namespace {
 std::unique_ptr<MediaCodecDecoderBridgeImpl> CreateMediaCodecInternal(
     CodecAllocator::CodecFactoryCB factory_cb,
     std::unique_ptr<VideoBridgeCodecConfig> codec_config) {
+  TRACE_EVENT0("media", "CodecAllocator::CreateMediaCodecInternal");
   base::ScopedBlockingCall scoped_block(FROM_HERE,
                                         base::BlockingType::MAY_BLOCK);
-  return factory_cb.Run(*codec_config);
+  auto codecBridgeImpl = factory_cb.Run(*codec_config);
+  if (!codecBridgeImpl->CheckHasCreated()) {
+    return nullptr;
+  }
+  return codecBridgeImpl;
 }
 
 void ReleaseMediaCodecInternal(
     std::unique_ptr<MediaCodecDecoderBridgeImpl> codec) {
+  TRACE_EVENT0("media", "CodecAllocator::ReleaseMediaCodecInternal");
   base::ScopedBlockingCall scoped_block(FROM_HERE,
                                         base::BlockingType::MAY_BLOCK);
   codec->ReleaseBridgeDecoder();

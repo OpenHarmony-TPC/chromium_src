@@ -16,6 +16,8 @@
 #include "media/base/bind_to_current_loop.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
+#include "base/trace_event/trace_event.h"
+
 namespace media {
 class CodecWrapperImpl : public base::RefCountedThreadSafe<CodecWrapperImpl> {
  public:
@@ -184,6 +186,8 @@ bool CodecWrapperImpl::Flush() {
 
 CodecWrapperImpl::QueueStatus CodecWrapperImpl::QueueInputBuffer(
     const DecoderBuffer& buffer) {
+  TRACE_EVENT0("media", "CodecWrapperImpl::QueueInputBuffer");
+  LOG(DEBUG) << "CodecWrapperImpl::QueueInputBuffer";
   base::AutoLock l(lock_);
   DCHECK(codec_ && state_ != State::kError);
   LOG(DEBUG) << "QueueInputBuffer timedelta = "
@@ -223,6 +227,7 @@ CodecWrapperImpl::DequeueStatus CodecWrapperImpl::DequeueOutputBuffer(
     base::TimeDelta* presentation_time,
     bool* end_of_stream,
     std::unique_ptr<CodecOutputBuffer>* codec_buffer) {
+  TRACE_EVENT0("media", "CodecWrapperImpl::DequeueOutputBuffer");
   LOG(DEBUG) << "CodecWrapperImpl::DequeueOutputBuffer";
   base::AutoLock l(lock_);
   DCHECK(codec_ && state_ != State::kError);
@@ -253,18 +258,22 @@ CodecWrapperImpl::DequeueStatus CodecWrapperImpl::DequeueOutputBuffer(
         int64_t buffer_id = next_buffer_id_++;
         buffer_ids_[buffer_id] = index;
 
-        int32_t width, height;
-        auto result = codec_->GetOutputFormatBridgeDecoder(width, height);
+        OHOS::NWeb::DecoderFormat format;
+        auto result = codec_->GetOutputFormatBridgeDecoder(format);
         LOG(DEBUG) << "CodecWrapperImpl::DequeueOutputBuffer "
                       "des width: "
-                   << width << ", height: " << height;
+                   << format.width << ", height: " << format.height;
         LOG(DEBUG) << "CodecWrapperImpl::DequeueOutputBuffer "
                       "src width: "
-                   << codec_->width_ << ", height: " << codec_->height_;
+                   << codec_->GetConfigWidth()
+                   << ", height: " << codec_->GetConfigHeight();
         if (result == DecoderAdapterCode::DECODER_OK) {
-          size_ = gfx::Size(width, height);
+          size_ = gfx::Size(format.width, format.height);
         } else {
-          size_ = gfx::Size(codec_->width_, codec_->height_);
+          LOG(ERROR) << "CodecWrapperImpl::GetOutputFormatBridgeDecoder "
+                        "failed.";
+          size_ =
+              gfx::Size(codec_->GetConfigWidth(), codec_->GetConfigHeight());
         }
 
         *codec_buffer = base::WrapUnique(
@@ -292,8 +301,8 @@ bool CodecWrapperImpl::SetSurface(
   DCHECK(surface_bundle);
   DCHECK(codec_ && state_ != State::kError);
 
-  if (codec_->SetBridgeOutputSurface(surface_bundle->GetOHOSNativeWindow())
-      == DecoderAdapterCode::DECODER_ERROR) {
+  if (codec_->SetBridgeOutputSurface(surface_bundle->GetOHOSNativeWindow()) ==
+      DecoderAdapterCode::DECODER_ERROR) {
     state_ = State::kError;
     return false;
   }

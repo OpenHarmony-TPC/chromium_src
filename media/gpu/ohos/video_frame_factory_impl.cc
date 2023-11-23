@@ -169,6 +169,8 @@ void VideoFrameFactoryImpl::CreateVideoFrame_OnImageReady(
     std::unique_ptr<CodecOutputBufferRenderer> output_buffer_renderer,
     FrameInfoHelper::FrameInfo frame_info,
     SharedImageVideoProvider::ImageRecord record) {
+  TRACE_EVENT0("media", "VideoFrameFactoryImpl::CreateVideoFrame_OnImageReady");
+
   if (!thiz)
     return;
 

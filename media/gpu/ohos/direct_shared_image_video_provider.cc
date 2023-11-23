@@ -126,6 +126,8 @@ void GpuSharedImageVideoFactory::CreateImage(
   auto codec_image =
       base::MakeRefCounted<CodecImage>(spec.coded_size, drdc_lock);
 
+  TRACE_EVENT0("media", "GpuSharedImageVideoFactory::CreateVideoFrame");
+
   if (!CreateImageInternal(spec, mailbox, codec_image, std::move(drdc_lock))) {
     return;
   }
