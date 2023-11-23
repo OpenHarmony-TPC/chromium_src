@@ -1,11 +1,3 @@
-{   "name": "OHOS_ENABLE_ACCESSIBILITY",
-    "owner": "",
-    "desc": "accessibility",
-    "effect":"main gn blink_core other",
-    "genCommandline": "default",
-    "dependence": "",
-    "default": "true"
-},
 {   "name": "OHOS_ENABLE_DRAG_DROP",
     "owner": "",
     "desc": "drag and drop",
