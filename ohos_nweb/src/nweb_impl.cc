@@ -1513,7 +1513,7 @@ void NWebImpl::SetAccessibilityState(bool state) {
   }
 }
 
-bool NWebImpl::NeedSoftKeyboard() {
+bool NWebImpl::NeedSoftKeyboard() const {
   if (inputmethod_handler_) {
     return inputmethod_handler_->GetIsEditableNode();
   }
