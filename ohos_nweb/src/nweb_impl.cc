@@ -109,7 +109,7 @@ base::LazyInstance<NWebMap>::DestructorAtExit g_nweb_map =
 #ifdef OHOS_NWEB_EX
 base::LazyInstance<std::vector<std::string>>::DestructorAtExit g_browser_args =
     LAZY_INSTANCE_INITIALIZER;
-static double default_zoom_factor_ = 1.0;
+static double default_zoom_factor = 1.0;
 #endif  // OHOS_NWEB_EX
 
 void InitialWebEngineArgs(std::list<std::string>& web_engine_args,
@@ -1358,7 +1358,7 @@ void NWebImpl::SetBrowserZoomLevel(double zoom_factor) const {
 
 double NWebImpl::GetBrowserZoomLevel() const {
   if (nweb_delegate_ == nullptr) {
-    return default_zoom_factor_;
+    return default_zoom_factor;
   }
   return nweb_delegate_->GetBrowserZoomLevel();
 }
@@ -1396,7 +1396,7 @@ void NWebImpl::SetDefaultBrowserZoomLevel(double zoom_factor) {
 	->GetZoomLevelPrefs()
         ->SetDefaultZoomLevelPref(
 	    blink::PageZoomFactorToZoomLevel(zoom_factor));
-    default_zoom_factor_ = zoom_factor;
+    default_zoom_factor = zoom_factor;
   }
 }
 
