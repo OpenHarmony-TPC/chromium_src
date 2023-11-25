@@ -1639,6 +1639,23 @@ void NWebImpl::ResumeDownload(std::shared_ptr<NWebDownloadItem> web_download) {
   nweb_delegate_->ResumeDownload(web_download);
 }
 
+bool NWebImpl::WebDiscard() {
+   if (nweb_delegate_ == nullptr) {
+    WVLOG_E("WebDiscard failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return false;
+   }
+
+   return nweb_delegate_->WebDiscard();
+}
+bool NWebImpl::WebReload() {
+   if (nweb_delegate_ == nullptr) {
+    WVLOG_E("WebReload failed, nweb delegate is nullptr, nweb_id = %{public}u", nweb_id_);
+    return false;
+   }
+
+   return nweb_delegate_->WebReload();
+}
+
 // static
 void NWebImpl::ResumeDownloadStatic(
     std::shared_ptr<NWebDownloadItem> web_download) {

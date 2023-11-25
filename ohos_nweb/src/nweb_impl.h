@@ -245,7 +245,9 @@ class NWebImpl : public NWeb {
       int32_t direction,
       OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
   void SetAccessibilityState(bool state) override;
-
+  bool WebDiscard() override;
+  bool WebReload() override;
+  
  private:
   void ProcessInitArgs(const NWebInitArgs& init_args);
   void InitWebEngineArgs(const NWebInitArgs& init_args);

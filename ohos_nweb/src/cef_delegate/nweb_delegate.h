@@ -266,6 +266,8 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
       int32_t accessibilityId,
       int32_t direction,
       OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
+  bool WebDiscard() override;
+  bool WebReload() override; 
 
  public:
   int argc_;
@@ -326,6 +328,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   bool is_ready_ = false;
   bool is_onPause_ = false;
   static std::set<uint32_t> focus_nweb_id_;
+  bool is_discarded = false;
 };
 }  // namespace OHOS::NWeb
 #endif

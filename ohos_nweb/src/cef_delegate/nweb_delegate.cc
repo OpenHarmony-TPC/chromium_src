@@ -2330,4 +2330,37 @@ void NWebDelegate::AddAccessibilityNodeInfoActions(
         static_cast<uint32_t>(AceAction::ACTION_ACCESSIBILITY_FOCUS));
   }
 }
+
+bool NWebDelegate::WebDiscard() {
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "NWebDelegate::WebDiscard failed, browser is nullptr";
+    return false;
+  }
+
+  if (is_discarded) {
+    LOG(ERROR) << "NWebDelegate::WebDiscard failed, the webview window was discarded before";
+    return false;
+  }
+
+  is_discarded = GetBrowser()->GetHost()->FinishDiscard();
+  LOG(DEBUG) << "NWebDelegate::WebDiscard is_discarded: " << is_discarded; 
+  return is_discarded;  
+}
+
+bool NWebDelegate::WebReload() {
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "NWebDelegate::WebReload failed, browser is nullptr";
+    return false;
+  }
+
+  if (!is_discarded) {
+    LOG(ERROR) << "NWebDelegate::WebReload failed, the webview window was not discarded before";
+    return false;
+  }
+
+  bool is_reloaded = GetBrowser()->GetHost()->FinishReload();
+  is_discarded = !is_reloaded;  
+  LOG(DEBUG) << "NWebDelegate::WebDiscard is_reloaded: " << is_reloaded; 
+  return is_reloaded;  
+}
 }  // namespace OHOS::NWeb
