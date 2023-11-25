@@ -890,6 +890,13 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * @param state Indicate whether the accessibility state is enabled or disabled.
      */
     virtual void SetAccessibilityState(bool state) = 0;
+    
+     /**
+     * Get whether need soft keyboard.
+     *
+     * @return true if need soft keyboard, otherwise false.
+     */
+    virtual bool NeedSoftKeyboard() const = 0;
 };
 }  // namespace OHOS::NWeb
 
