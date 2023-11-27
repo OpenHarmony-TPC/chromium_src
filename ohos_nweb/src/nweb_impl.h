@@ -266,6 +266,7 @@ class NWebImpl : public NWeb {
   std::list<std::string> web_engine_args_;
   float device_pixel_ratio_ = 0.f;
   bool is_enhance_surface_ = false;
+  bool is_richtext_value_ = false;
 };
 }  // namespace OHOS::NWeb
 

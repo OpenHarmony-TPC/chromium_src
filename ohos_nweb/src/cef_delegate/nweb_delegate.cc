@@ -43,6 +43,10 @@
 #include <cmath>
 #endif
 
+namespace {
+static const float richtextDisplayRatio = 1.0;
+}
+
 namespace OHOS::NWeb {
 #ifdef OHOS_NWEB_EX
 static const double kZoomLevelToFactorRatio = 1.2;
@@ -283,6 +287,19 @@ void NWebDelegate::InitAppTempDir() {
   ohos_temp_dir_ = "/data/storage/el2/base/haps/entry/temp";
 }
 
+bool NWebDelegate::InitRichtextIdentifier() {
+  for (int i = 0; i < argc_; i++) {
+    if (argv_[i] == nullptr) {
+      continue;
+    }
+
+    if (!strncmp(argv_[i], "--init-richtext-data=", strlen("--init-richtext-data="))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool NWebDelegate::Init(bool is_enhance_surface,
                         void* window,
                         bool popup,
@@ -333,7 +350,12 @@ bool NWebDelegate::Init(bool is_enhance_surface,
       display_manager_adapter_->GetDefaultDisplay();
   if (display != nullptr) {
     NotifyScreenInfoChanged(display->GetRotation(), display->GetOrientation());
-    SetVirtualPixelRatio(display->GetVirtualPixelRatio());
+    if (InitRichtextIdentifier()) {
+      // Created a richtext component
+      SetVirtualPixelRatio(richtextDisplayRatio);
+    } else {
+      SetVirtualPixelRatio(display->GetVirtualPixelRatio());
+    }
   }
 
   return true;
@@ -628,7 +650,13 @@ void NWebDelegate::NotifyScreenInfoChanged(RotationType rotation,
       LOG(ERROR) << "Get display failed";
       return;
     }
-    double display_ratio = display->GetVirtualPixelRatio();
+    double display_ratio = 0.0;
+    if (InitRichtextIdentifier()) {
+      // Created a richtext component
+      display_ratio = richtextDisplayRatio;
+    } else {
+      display_ratio = display->GetVirtualPixelRatio();
+    }
     if (display_ratio <= 0) {
       LOG(ERROR) << "Invalid display_ratio, display_ratio = " << display_ratio;
       return;
