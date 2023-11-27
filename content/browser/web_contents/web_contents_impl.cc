@@ -286,6 +286,11 @@ class JavaScriptDialogDismissNotifier {
 
   ~JavaScriptDialogDismissNotifier() {
     for (auto& callback : callbacks_) {
+#if BUILDFLAG(IS_OHOS)
+      if (callback.is_null()) {
+        continue;
+      }
+#endif
       std::move(callback).Run();
     }
   }
