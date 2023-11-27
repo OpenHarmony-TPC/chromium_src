@@ -34,6 +34,9 @@ std::unique_ptr<MediaCodecDecoderBridgeImpl> CreateMediaCodecInternal(
   base::ScopedBlockingCall scoped_block(FROM_HERE,
                                         base::BlockingType::MAY_BLOCK);
   auto codecBridgeImpl = factory_cb.Run(*codec_config);
+  if (codecBridgeImpl == nullptr) {
+    return nullptr;
+  }
   if (!codecBridgeImpl->CheckHasCreated()) {
     return nullptr;
   }
