@@ -215,6 +215,7 @@ class NWebImpl : public NWeb {
   void SetBrowserZoomLevel(double zoom_factor) const;
   double GetBrowserZoomLevel() const;
 #endif  // OHOS_NWEB_EX
+  static bool InitializeICUStatic(const NWebInitArgs& init_args);
   static void ResumeDownloadStatic(std::shared_ptr<NWebDownloadItem> download_item);
   void PutWebDownloadDelegateCallback(
       std::shared_ptr<NWebDownloadDelegateCallback>);

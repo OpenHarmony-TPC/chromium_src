@@ -21,6 +21,10 @@
 namespace base {
 
 bool ParseAssetsOHOS(FilePath* result) {
+  if (!base::CommandLine::ForCurrentProcess()) {
+    LOG(ERROR) << "CommandLine not init";
+    return false;
+  }
   auto bundle_path = base::CommandLine::ForCurrentProcess()->
     GetSwitchValueASCII(switches::kBundleInstallationDir);
   if (bundle_path.empty()) {
