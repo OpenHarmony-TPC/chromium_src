@@ -873,7 +873,7 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * @return true if get accessibility node info successfully, otherwise false.
      */
     virtual bool GetAccessibilityNodeInfoById(
-        bool accessibilityId, OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const = 0;
+        int32_t accessibilityId, OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const = 0;
 
     /**
      * Get the information of the accessibility node by focus move in the browser.

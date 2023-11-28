@@ -238,7 +238,7 @@ class NWebImpl : public NWeb {
       bool isAccessibilityFocus,
       OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
   bool GetAccessibilityNodeInfoById(
-      bool accessibilityId,
+      int32_t accessibilityId,
       OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
   bool GetAccessibilityNodeInfoByFocusMove(
       int32_t accessibilityId,

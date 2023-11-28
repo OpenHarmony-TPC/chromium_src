@@ -1486,7 +1486,7 @@ bool NWebImpl::GetFocusedAccessibilityNodeInfo(
 }
 
 bool NWebImpl::GetAccessibilityNodeInfoById(
-    bool accessibilityId,
+    int32_t accessibilityId,
     OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const {
   if (nweb_delegate_ != nullptr) {
     return nweb_delegate_->GetAccessibilityNodeInfoById(accessibilityId,
