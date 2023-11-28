@@ -322,17 +322,11 @@ class BASE_EXPORT ThreadCache {
     uint8_t count = 0;
     std::atomic<uint8_t> limit{};  // Can be changed from another thread.
     uint16_t slot_size = 0;
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-    uintptr_t random_cookie;
-#endif
+
     Bucket();
   };
-
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-  static_assert(sizeof(Bucket) <= 3 * sizeof(void*), "Keep Bucket small.");
-#else
   static_assert(sizeof(Bucket) <= 2 * sizeof(void*), "Keep Bucket small.");
-#endif
+
   explicit ThreadCache(PartitionRoot<>* root);
   static void Delete(void* thread_cache_ptr);
   void PurgeInternal();
@@ -343,11 +337,7 @@ class BASE_EXPORT ThreadCache {
   ALWAYS_INLINE void PutInBucket(Bucket& bucket, uintptr_t slot_start);
   void ResetForTesting();
   // Releases the entire freelist starting at |head| to the root.
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-  void FreeAfter(PartitionFreelistEntry* head, size_t slot_size, uintptr_t random_cookie);
-#else
   void FreeAfter(PartitionFreelistEntry* head, size_t slot_size);
-#endif
   static void SetGlobalLimits(PartitionRoot<>* root, float multiplier);
 
 #if BUILDFLAG(IS_NACL)
@@ -500,11 +490,7 @@ ALWAYS_INLINE uintptr_t ThreadCache::GetFromCache(size_t bucket_index,
   // corruption, we know the bucket size that lead to the crash, helping to
   // narrow down the search for culprit. |bucket| was touched just now, so this
   // does not introduce another cache miss.
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-  auto* next = result->GetNextForThreadCache(bucket.slot_size, bucket.random_cookie);
-#else
   auto* next = result->GetNextForThreadCache(bucket.slot_size);
-#endif
   PA_DCHECK(result != next);
   bucket.count--;
   PA_DCHECK(bucket.count != 0 || !next);
@@ -565,11 +551,7 @@ ALWAYS_INLINE void ThreadCache::PutInBucket(Bucket& bucket,
         // defined(PA_HAS_64_BITS_POINTERS)
 
   auto* entry = PartitionFreelistEntry::InitForThreadCache(
-#if defined(OHOS_ENABLE_FREELIST_HARDENED)
-      slot_start, bucket.freelist_head, bucket.random_cookie);
-#else
       slot_start, bucket.freelist_head);
-#endif
   bucket.freelist_head = entry;
   bucket.count++;
 }
