@@ -224,6 +224,7 @@ class NWebImpl : public NWeb {
                                   bool animate) const;
   void UpdateBrowserControlsHeight(int height, bool animate);
 #endif  // OHOS_NWEB_EX
+  static bool InitializeICUStatic(const NWebInitArgs& init_args);
   static void ResumeDownloadStatic(std::shared_ptr<NWebDownloadItem> download_item);
   void PutWebDownloadDelegateCallback(
       std::shared_ptr<NWebDownloadDelegateCallback>);

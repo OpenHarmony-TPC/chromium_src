@@ -66,6 +66,10 @@
 #include "libcef/browser/predictors/loading_predictor_config.h"
 #include "libcef/browser/predictors/loading_predictor_factory.h"
 
+#include "base/command_line.h"
+#include "base/i18n/icu_util.h"
+#include "content/public/common/content_paths.h"
+
 namespace {
 uint32_t g_nweb_count = 0;
 const uint32_t kSurfaceMaxWidth = 7680;
@@ -1552,6 +1556,32 @@ extern "C" OHOS_NWEB_EXPORT void GetNWeb(int32_t nweb_id,
   if (auto it = map->find(nweb_id); it != map->end()) {
     nweb = it->second;
   }
+}
+
+bool NWebImpl::InitializeICUStatic(const NWebInitArgs& init_args) {
+  if (NWebApplication::GetDefault()->HasInitializedCef()) {
+    return true;
+  }
+  WVLOG_I("will initialize icu.");
+  static bool g_init_icu = false;
+  if (!g_init_icu) {
+    std::list<std::string> web_engine_args;
+    InitialWebEngineArgs(web_engine_args, init_args);
+    int argc = web_engine_args.size();
+    const char** argv = new const char*[argc];
+    int i = 0;
+    for (auto it = web_engine_args.begin(); i < argc; ++i, ++it) {
+      argv[i] = it->c_str();
+    }
+    base::CommandLine::Init(argc, argv);
+    content::RegisterPathProvider();
+    if (!base::i18n::InitializeICU()) {
+      WVLOG_E("initialize icu failed.");
+      return false;
+    }
+    g_init_icu = true;
+  }
+  return true;
 }
 
 extern "C" OHOS_NWEB_EXPORT void InitializeWebEngine(
