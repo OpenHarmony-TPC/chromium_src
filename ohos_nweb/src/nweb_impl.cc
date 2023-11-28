@@ -1516,6 +1516,13 @@ void NWebImpl::SetAccessibilityState(bool state) {
                                                 : STATE_DISABLED);
   }
 }
+
+bool NWebImpl::NeedSoftKeyboard() const {
+  if (inputmethod_handler_) {
+    return inputmethod_handler_->GetIsEditableNode();
+  }
+  return false;
+}
 }  // namespace OHOS::NWeb
 
 using namespace OHOS::NWeb;
