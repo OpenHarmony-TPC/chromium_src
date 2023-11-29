@@ -1810,7 +1810,7 @@ void NWebHandlerDelegate::CopyImageToClipboard(CefRefPtr<CefImage> image) {
     int pixel_width = 0;
     int pixel_height = 0;
     CefRefPtr<CefBinaryValue> bitMap =
-        image->GetAsBitmap(1, CEF_COLOR_TYPE_RGBA_8888, CEF_ALPHA_TYPE_OPAQUE,
+        image->GetAsBitmap(1, CEF_COLOR_TYPE_RGBA_8888, CEF_ALPHA_TYPE_PREMULTIPLIED,
                            pixel_width, pixel_height);
     size_t bitMapSize = bitMap->GetSize();
     uint8_t* data = (uint8_t*)calloc((size_t)bitMapSize, sizeof(uint8_t));
@@ -1822,7 +1822,7 @@ void NWebHandlerDelegate::CopyImageToClipboard(CefRefPtr<CefImage> image) {
 
     ClipBoardImageData imageInfo;
     imageInfo.colorType = ClipBoardImageColorType::COLOR_TYPE_RGBA_8888;
-    imageInfo.alphaType = ClipBoardImageAlphaType::ALPHA_TYPE_OPAQUE;
+    imageInfo.alphaType = ClipBoardImageAlphaType::ALPHA_TYPE_PREMULTIPLIED;
     imageInfo.data = (uint32_t*)data;
     imageInfo.dataSize = bitMapSize;
     imageInfo.width = pixel_width;
