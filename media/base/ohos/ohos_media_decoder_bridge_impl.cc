@@ -9,28 +9,20 @@
 #include <string>
 
 #include "base/logging.h"
+#include "base/task/post_task.h"
+#include "base/trace_event/trace_event.h"
 
 using namespace media;
 using namespace OHOS::NWeb;
 using namespace std;
 
-void clearIntqueue(std::queue<uint32_t>& q) {
-  std::queue<uint32_t> empty;
+void clearInputQueue(std::queue<VideoBridgeDecoderInputBuffer>& q) {
+  std::queue<VideoBridgeDecoderInputBuffer> empty;
   std::swap(empty, q);
 }
 
-void clearFlagqueue(std::queue<BufferFlag>& q) {
-  std::queue<BufferFlag> empty;
-  std::swap(empty, q);
-}
-
-void clearBufferqueue(std::queue<OhosBuffer>& q) {
-  std::queue<OhosBuffer> empty;
-  std::swap(empty, q);
-}
-
-void clearInfoqueue(std::queue<BufferInfo>& q) {
-  std::queue<BufferInfo> empty;
+void clearOutputQueue(std::queue<VideoBridgeDecoderOutputBuffer>& q) {
+  std::queue<VideoBridgeDecoderOutputBuffer> empty;
   std::swap(empty, q);
 }
 
@@ -50,6 +42,7 @@ MediaCodecDecoderBridgeImpl::CreateVideoDecoder(
     LOG(INFO) << "OhosVideoDecoder::CreateCodec video/hevc";
     codec_type = "video/hevc";
   } else {
+    LOG(ERROR) << "OhosVideoDecoder::CreateCodec not supported type.";
     return nullptr;
   }
   return absl::WrapUnique(new MediaCodecDecoderBridgeImpl(
@@ -68,12 +61,15 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::CreateVideoBridgeDecoderByMime(
     LOG(ERROR) << "create decoder failed.";
     return ret;
   }
+  hasCreated_ = true;
 
   if (signal_ == nullptr) {
     signal_ = make_shared<DecoderBridgeSignal>();
   }
 
-  cb_ = make_unique<CodecBridgeCallback>(signal_);
+  if (cb_ == nullptr) {
+    cb_ = make_shared<CodecBridgeCallback>(signal_);
+  }
   return videoDecoder_->SetCallbackDec(cb_);
 }
 
@@ -87,24 +83,26 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::CreateVideoBridgeDecoderByName(
 
   DecoderAdapterCode ret =
       videoDecoder_->CreateVideoDecoderByName(name.c_str());
-
   if (ret == DecoderAdapterCode::DECODER_ERROR) {
     LOG(ERROR) << "create decoder failed.";
     return ret;
   }
+  hasCreated_ = true;
 
   if (signal_ == nullptr) {
     signal_ = make_shared<DecoderBridgeSignal>();
   }
 
-  cb_ = make_shared<CodecBridgeCallback>(signal_);
+  if (cb_ == nullptr) {
+    cb_ = make_shared<CodecBridgeCallback>(signal_);
+  }
   return videoDecoder_->SetCallbackDec(cb_);
 }
 
 MediaCodecDecoderBridgeImpl::MediaCodecDecoderBridgeImpl(
     std::string codec_type,
     base::RepeatingClosure on_buffers_available_cb) {
-  LOG(INFO) << "MediaCodecDecoderBridgeImpl::MediaCodecDecoderBridgeImpl().";
+  LOG(INFO) << "MediaCodecDecoderBridgeImpl::MediaCodecDecoderBridgeImpl.";
   if (!on_buffers_available_cb)
     return;
   videoDecoder_ =
@@ -118,23 +116,25 @@ MediaCodecDecoderBridgeImpl::MediaCodecDecoderBridgeImpl(
 }
 
 MediaCodecDecoderBridgeImpl::~MediaCodecDecoderBridgeImpl() {
+  LOG(INFO) << "MediaCodecDecoderBridgeImpl::~MediaCodecDecoderBridgeImpl.";
   ReleaseBridgeDecoder();
 }
 
 DecoderAdapterCode MediaCodecDecoderBridgeImpl::ConfigureBridgeDecoder(
-    int32_t width,
-    int32_t height,
-    double framerate) {
+    const DecoderFormat& format,
+    scoped_refptr<base::SequencedTaskRunner> decoder_task_runner) {
   LOG(INFO) << "MediaCodecDecoderBridgeImpl::ConfigureBridgeDecoder configure "
                "decoder.";
-  width_ = width;
-  height_ = height;
+  width_ = format.width;
+  height_ = format.height;
+  decoder_task_runner_ = decoder_task_runner;
+  cb_->decoder_callback_task_runner_ = decoder_task_runner;
   if (videoDecoder_ == nullptr) {
     LOG(ERROR) << "MediaCodecDecoderBridgeImpl::ConfigureBridgeDecoder decoder "
                   "is NULL.";
     return DecoderAdapterCode::DECODER_ERROR;
   }
-  return videoDecoder_->ConfigureDecoder(width, height, framerate);
+  return videoDecoder_->ConfigureDecoder(format);
 }
 
 DecoderAdapterCode MediaCodecDecoderBridgeImpl::SetBridgeParameterDecoder(
@@ -162,8 +162,7 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::SetBridgeOutputSurface(
 }
 
 DecoderAdapterCode MediaCodecDecoderBridgeImpl::GetOutputFormatBridgeDecoder(
-    int32_t& width,
-    int32_t& height) {
+    DecoderFormat& format) {
   LOG(DEBUG) << "MediaCodecDecoderBridgeImpl::GetOutputFormatBridgeDecoder get "
                 "decoder outputformat.";
   if (videoDecoder_ == nullptr) {
@@ -171,7 +170,7 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::GetOutputFormatBridgeDecoder(
                   "decoder is NULL.";
     return DecoderAdapterCode::DECODER_ERROR;
   }
-  return videoDecoder_->GetOutputFormatDec(width, height);
+  return videoDecoder_->GetOutputFormatDec(format);
 }
 
 DecoderAdapterCode MediaCodecDecoderBridgeImpl::PrepareBridgeDecoder() {
@@ -216,29 +215,23 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::FlushBridgeDecoder() {
         << "MediaCodecDecoderBridgeImpl::FlushBridgeDecoder decoder is NULL.";
     return DecoderAdapterCode::DECODER_ERROR;
   }
-  unique_lock<mutex> lock(signal_->inMutex_);
-  unique_lock<mutex> lock2(signal_->outMutex_);
+
   signal_->isDecoderFlushing_.store(true);
-  lock.unlock();
-  lock2.unlock();
+
   DecoderAdapterCode ret = videoDecoder_->FlushDecoder();
   if (ret != DecoderAdapterCode::DECODER_OK) {
     LOG(ERROR) << " MediaCodecDecoderBridgeImpl::FlushBridgeDecoder flush "
                   "decoder failed.";
     return ret;
   }
-  unique_lock<mutex> lockIn(signal_->inMutex_);
-  clearIntqueue(signal_->inQueue_);
-  clearBufferqueue(signal_->inBufferQueue_);
-  lockIn.unlock();
 
-  unique_lock<mutex> lockOut(signal_->outMutex_);
-  clearIntqueue(signal_->outQueue_);
-  clearFlagqueue(signal_->flagQueue_);
-  clearInfoqueue(signal_->outBufferInfoQueue_);
-  lockOut.unlock();
+  clearInputQueue(signal_->inputQueue_);
+  clearOutputQueue(signal_->outputQueue_);
 
-  signal_->isDecoderFlushing_.store(false);
+  decoder_task_runner_->PostTask(
+      FROM_HERE,
+      base::BindOnce(&MediaCodecDecoderBridgeImpl::UpdateFlushToFalse,
+                      base::Unretained(this)));
   return videoDecoder_->StartDecoder();
 }
 
@@ -250,51 +243,41 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::ResetBridgeDecoder() {
     return DecoderAdapterCode::DECODER_ERROR;
   }
 
-  unique_lock<mutex> lock(signal_->inMutex_);
-  unique_lock<mutex> lock2(signal_->outMutex_);
   signal_->isDecoderFlushing_.store(true);
-  lock.unlock();
-  lock2.unlock();
-
   DecoderAdapterCode ret = videoDecoder_->ResetDecoder();
+  if (ret != DecoderAdapterCode::DECODER_OK) {
+    LOG(ERROR) << " MediaCodecDecoderBridgeImpl::ResetBridgeDecoder reset "
+                  "decoder failed.";
+    return ret;
+  }
 
-  unique_lock<mutex> lockIn(signal_->inMutex_);
-  clearIntqueue(signal_->inQueue_);
-  clearBufferqueue(signal_->inBufferQueue_);
-  lockIn.unlock();
+  clearInputQueue(signal_->inputQueue_);
+  clearOutputQueue(signal_->outputQueue_);
 
-  unique_lock<mutex> lockOut(signal_->outMutex_);
-  clearIntqueue(signal_->outQueue_);
-  clearFlagqueue(signal_->flagQueue_);
-  clearInfoqueue(signal_->outBufferInfoQueue_);
-  lockOut.unlock();
-
-  signal_->isDecoderFlushing_.store(false);
-  LOG(DEBUG) << "reset decoder success.";
+  decoder_task_runner_->PostTask(
+      FROM_HERE,
+      base::BindOnce(&MediaCodecDecoderBridgeImpl::UpdateFlushToFalse,
+                      base::Unretained(this)));
   return ret;
 }
 
 DecoderAdapterCode MediaCodecDecoderBridgeImpl::ReleaseBridgeDecoder() {
-  LOG(INFO) << "release decoder.";
+  LOG(INFO) << "MediaCodecDecoderBridgeImpl::ReleaseBridgeDecoder release decoder.";
+  if (videoDecoder_ == nullptr) {
+    LOG(ERROR)
+        << "MediaCodecDecoderBridgeImpl::ReleaseBridgeDecoder decoder is NULL.";
+    return DecoderAdapterCode::DECODER_ERROR;
+  }
   isRunning_.store(false);
 
-  if (videoDecoder_ != nullptr) {
-    videoDecoder_->ReleaseDecoder();
-    videoDecoder_ = nullptr;
-  }
+  DecoderAdapterCode ret = videoDecoder_->ReleaseDecoder();
 
-  LOG(DEBUG) << "release decoder success.";
-  return DecoderAdapterCode::DECODER_OK;
+  return ret;
 }
 
 void MediaCodecDecoderBridgeImpl::PopInqueueDec() {
-  LOG(INFO) << "MediaCodecDecoderBridgeImpl::PopInqueueDec";
-  if (videoDecoder_ == nullptr) {
-    LOG(ERROR) << "decoder is NULL.";
-    return;
-  }
-  signal_->inQueue_.pop();
-  signal_->inBufferQueue_.pop();
+  LOG(DEBUG) << "MediaCodecDecoderBridgeImpl::PopInqueueDec";
+  signal_->inputQueue_.pop();
 }
 
 DecoderAdapterCode MediaCodecDecoderBridgeImpl::PushInbufferDec(
@@ -335,20 +318,19 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::QueueInputBuffer(
     size_t data_size,
     int64_t presentation_time) {
   LOG(DEBUG) << "MediaCodecDecoderBridgeImpl::QueueInputBuffer";
+  if (signal_ == nullptr || signal_->isOnError_) {
+    return DecoderAdapterCode::DECODER_ERROR;
+  }
+  if (signal_->isDecoderFlushing_.load() || signal_->inputQueue_.empty()) {
+    return DecoderAdapterCode::DECODER_RETRY;
+  }
   if (videoDecoder_ == nullptr) {
     LOG(ERROR)
         << "MediaCodecDecoderBridgeImpl::QueueInputBuffer decoder is NULL.";
     return DecoderAdapterCode::DECODER_ERROR;
   }
-  unique_lock<mutex> lock(signal_->inMutex_);
-  if (signal_->isOnError_) {
-    return DecoderAdapterCode::DECODER_ERROR;
-  }
-  if (signal_->inBufferQueue_.empty()) {
-    return DecoderAdapterCode::DECODER_RETRY;
-  }
-  uint32_t index = signal_->inQueue_.front();
-  OhosBuffer buffer = signal_->inBufferQueue_.front();
+  uint32_t index = signal_->inputQueue_.front().inputBufferIndex;
+  OhosBuffer buffer = signal_->inputQueue_.front().inputBuffer;
   uint32_t bufferSize = buffer.bufferSize;
 
   size_t inputSize = bufferSize >= data_size ? data_size : bufferSize;
@@ -363,19 +345,18 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::QueueInputBuffer(
 
 DecoderAdapterCode MediaCodecDecoderBridgeImpl::QueueInputBufferEOS() {
   LOG(INFO) << "MediaCodecDecoderBridgeImpl::QueueInputBufferEOS";
+  if (signal_ == nullptr || signal_->isOnError_) {
+    return DecoderAdapterCode::DECODER_ERROR;
+  }
+  if (signal_->isDecoderFlushing_.load() || signal_->inputQueue_.empty()) {
+    return DecoderAdapterCode::DECODER_RETRY;
+  }
   if (videoDecoder_ == nullptr) {
     LOG(ERROR)
         << "MediaCodecDecoderBridgeImpl::QueueInputBufferEOS decoder is NULL.";
     return DecoderAdapterCode::DECODER_ERROR;
   }
-  unique_lock<mutex> lock(signal_->inMutex_);
-  if (signal_->isOnError_) {
-    return DecoderAdapterCode::DECODER_ERROR;
-  }
-  if (signal_->inBufferQueue_.empty()) {
-    return DecoderAdapterCode::DECODER_RETRY;
-  }
-  uint32_t index = signal_->inQueue_.front();
+  uint32_t index = signal_->inputQueue_.front().inputBufferIndex;
   DecoderAdapterCode ret = PushInbufferDecEos(index);
 
   PopInqueueDec();
@@ -396,9 +377,7 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::ReleaseOutputBuffer(
 
 void MediaCodecDecoderBridgeImpl::PopOutqueueDec() {
   LOG(DEBUG) << "MediaCodecDecoderBridgeImpl::PopOutqueueDec.";
-  signal_->outQueue_.pop();
-  signal_->flagQueue_.pop();
-  signal_->outBufferInfoQueue_.pop();
+  signal_->outputQueue_.pop();
 }
 
 DecoderAdapterCode MediaCodecDecoderBridgeImpl::DequeueOutputBuffer(
@@ -406,22 +385,22 @@ DecoderAdapterCode MediaCodecDecoderBridgeImpl::DequeueOutputBuffer(
     uint32_t& index,
     bool& eos) {
   LOG(DEBUG) << "MediaCodecDecoderBridgeImpl::DequeueOutputBuffer.";
+  if (signal_ == nullptr || signal_->isOnError_) {
+    return DecoderAdapterCode::DECODER_ERROR;
+  }
+  if (signal_->isDecoderFlushing_.load() || signal_->outputQueue_.empty()) {
+    LOG(INFO) << "CodecBridgeCallback::OnNeedOutputData Decoder is flushing.";
+    return DecoderAdapterCode::DECODER_RETRY;
+  }
   if (videoDecoder_ == nullptr) {
     LOG(ERROR)
         << "MediaCodecDecoderBridgeImpl::DequeueOutputBuffer decoder is NULL.";
     return DecoderAdapterCode::DECODER_ERROR;
   }
-  unique_lock<mutex> lock(signal_->outMutex_);
-  if (signal_->isOnError_) {
-    return DecoderAdapterCode::DECODER_ERROR;
-  }
-  if (signal_->outQueue_.empty()) {
-    return DecoderAdapterCode::DECODER_RETRY;
-  }
-  index = signal_->outQueue_.front();
-  eos = signal_->flagQueue_.front() == BufferFlag::CODEC_BUFFER_FLAG_EOS;
+  index = signal_->outputQueue_.front().outputBufferIndex;
+  eos = signal_->outputQueue_.front().outputBufferFlag == BufferFlag::CODEC_BUFFER_FLAG_EOS;
   *presentation_time = base::Microseconds(
-      signal_->outBufferInfoQueue_.front().presentationTimeUs);
+      signal_->outputQueue_.front().outputBufferInfo.presentationTimeUs);
 
   PopOutqueueDec();
   return DecoderAdapterCode::DECODER_OK;
@@ -436,19 +415,9 @@ void MediaCodecDecoderBridgeImpl::DestoryNativeWindow(void* window) {
 
 void CodecBridgeCallback::OnError(ErrorType errorType, int32_t errorCode) {
   LOG(ERROR) << "CodecBridgeCallback::OnError Error errorCode=" << errorCode;
-  unique_lock<mutex> lock(signal_->inMutex_);
-  unique_lock<mutex> lock2(signal_->outMutex_);
   signal_->isOnError_ = true;
-
-  clearIntqueue(signal_->inQueue_);
-  clearBufferqueue(signal_->inBufferQueue_);
-
-  clearIntqueue(signal_->outQueue_);
-  clearFlagqueue(signal_->flagQueue_);
-  clearInfoqueue(signal_->outBufferInfoQueue_);
-
-  lock.unlock();
-  lock2.unlock();
+  clearInputQueue(signal_->inputQueue_);
+  clearOutputQueue(signal_->outputQueue_);
 }
 
 void CodecBridgeCallback::OnStreamChanged(const DecoderFormat& format) {
@@ -456,16 +425,28 @@ void CodecBridgeCallback::OnStreamChanged(const DecoderFormat& format) {
 }
 
 void CodecBridgeCallback::OnNeedInputData(uint32_t index, OhosBuffer buffer) {
+  LOG(DEBUG) << "CodecBridgeCallback::OnNeedInputData";
+  if (!decoder_callback_task_runner_->RunsTasksInCurrentSequence()) {
+    decoder_callback_task_runner_->PostTask(
+        FROM_HERE,
+        base::BindOnce(&CodecBridgeCallback::OnNeedInputData,
+                       base::Unretained(this),
+                       std::move(index),
+                       std::move(buffer)));
+    return;
+  }
+  TRACE_EVENT0("media", "CodecBridgeCallback::OnNeedInputData");
   LOG(DEBUG)
       << "CodecBridgeCallback::OnNeedInputData Input Buffer Available, index = "
       << index;
-  unique_lock<mutex> lock(signal_->inMutex_);
   if (signal_->isDecoderFlushing_.load()) {
     LOG(INFO) << "CodecBridgeCallback::OnNeedInputData Decoder is flushing.";
     return;
   }
-  signal_->inQueue_.push(index);
-  signal_->inBufferQueue_.push(buffer);
+  VideoBridgeDecoderInputBuffer inputBuffer;
+  inputBuffer.inputBufferIndex = index;
+  inputBuffer.inputBuffer = buffer;
+  signal_->inputQueue_.push(inputBuffer);
   on_buffers_available_cb_.Run();
 }
 
@@ -473,17 +454,28 @@ void CodecBridgeCallback::OnNeedOutputData(uint32_t index,
                                            BufferInfo info,
                                            BufferFlag flag) {
   LOG(DEBUG) << "CodecBridgeCallback::OnNeedOutputData";
-  unique_lock<mutex> lock(signal_->outMutex_);
+  if (!decoder_callback_task_runner_->RunsTasksInCurrentSequence()) {
+    decoder_callback_task_runner_->PostTask(
+        FROM_HERE,
+        base::BindOnce(&CodecBridgeCallback::OnNeedOutputData,
+                       base::Unretained(this),
+                       std::move(index),
+                       std::move(info),
+                       std::move(flag)));
+    return;
+  }
+  TRACE_EVENT0("media", "CodecBridgeCallback::OnNeedOutputData");
+  LOG(DEBUG) << "CodecBridgeCallback::OnNeedOutputData Output Buffer "
+                "Available, index ="
+             << index << ", timestamp = " << info.presentationTimeUs;
   if (signal_->isDecoderFlushing_.load()) {
     LOG(INFO) << "CodecBridgeCallback::OnNeedOutputData Decoder is flushing.";
     return;
   }
-
-  LOG(DEBUG) << "CodecBridgeCallback::OnNeedOutputData Output Buffer "
-                "Available, index ="
-             << index << ", timestamp = " << info.presentationTimeUs;
-  signal_->outQueue_.push(index);
-  signal_->flagQueue_.push(flag);
-  signal_->outBufferInfoQueue_.push(info);
+  VideoBridgeDecoderOutputBuffer outputBuffer;
+  outputBuffer.outputBufferIndex = index;
+  outputBuffer.outputBufferFlag = flag;
+  outputBuffer.outputBufferInfo = info;
+  signal_->outputQueue_.push(outputBuffer);
   on_buffers_available_cb_.Run();
 }

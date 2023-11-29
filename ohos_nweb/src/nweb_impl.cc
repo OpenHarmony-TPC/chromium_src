@@ -66,6 +66,14 @@
 #include "libcef/browser/predictors/loading_predictor_config.h"
 #include "libcef/browser/predictors/loading_predictor_factory.h"
 
+#include "base/command_line.h"
+#include "base/i18n/icu_util.h"
+#include "content/public/common/content_paths.h"
+
+#ifdef OHOS_NWEB_EX
+#include "ohos_nweb_ex/overrides/cef/libcef/browser/alloy/alloy_browser_ua_config.h"
+#endif
+
 namespace {
 uint32_t g_nweb_count = 0;
 const uint32_t kSurfaceMaxWidth = 7680;
@@ -109,7 +117,7 @@ base::LazyInstance<NWebMap>::DestructorAtExit g_nweb_map =
 #ifdef OHOS_NWEB_EX
 base::LazyInstance<std::vector<std::string>>::DestructorAtExit g_browser_args =
     LAZY_INSTANCE_INITIALIZER;
-static double default_zoom_factor_ = 1.0;
+static double default_zoom_factor = 1.0;
 #endif  // OHOS_NWEB_EX
 
 void InitialWebEngineArgs(std::list<std::string>& web_engine_args,
@@ -1371,7 +1379,7 @@ void NWebImpl::SetBrowserZoomLevel(double zoom_factor) const {
 
 double NWebImpl::GetBrowserZoomLevel() const {
   if (nweb_delegate_ == nullptr) {
-    return default_zoom_factor_;
+    return default_zoom_factor;
   }
   return nweb_delegate_->GetBrowserZoomLevel();
 }
@@ -1409,13 +1417,43 @@ void NWebImpl::SetDefaultBrowserZoomLevel(double zoom_factor) {
 	->GetZoomLevelPrefs()
         ->SetDefaultZoomLevelPref(
 	    blink::PageZoomFactorToZoomLevel(zoom_factor));
-    default_zoom_factor_ = zoom_factor;
+    default_zoom_factor = zoom_factor;
   }
 }
 
 // static
 void NWebImpl::SetConnectTimeout(int32_t seconds) {
   content::GetNetworkService()->SetConnectTimeout(seconds);
+}
+
+// static
+void NWebImpl::UpdateCloudUAConfig(const std::string& file_path,
+                                   const std::string& version) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->UpdateCloudUAConfig(file_path,
+                                                                    version);
+}
+
+// static
+void NWebImpl::UpdateUAListConfig(const std::string& ua_name,
+                                  const std::string& ua_string) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->UpdateUAListConfig(ua_name,
+                                                                   ua_string);
+}
+
+// static
+void NWebImpl::SetUAForHosts(const std::string& ua_name,
+                             const std::vector<std::string>& hosts) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->SetUAForHosts(ua_name, hosts);
+}
+
+// static
+std::string NWebImpl::GetUANameConfig(const std::string& host) {
+  return nweb_ex::AlloyBrowserUAConfig::GetInstance()->GetUANameConfig(host);
+}
+
+// static
+void NWebImpl::SetBrowserUA(const std::string& ua_name) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->SetBrowserUA(ua_name);
 }
 #endif  // OHOS_NWEB_EX
 
@@ -1499,7 +1537,7 @@ bool NWebImpl::GetFocusedAccessibilityNodeInfo(
 }
 
 bool NWebImpl::GetAccessibilityNodeInfoById(
-    bool accessibilityId,
+    int32_t accessibilityId,
     OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const {
   if (nweb_delegate_ != nullptr) {
     return nweb_delegate_->GetAccessibilityNodeInfoById(accessibilityId,
@@ -1524,6 +1562,13 @@ void NWebImpl::SetAccessibilityState(bool state) {
     nweb_delegate_->SetAccessibilityState(state ? STATE_ENABLED
                                                 : STATE_DISABLED);
   }
+}
+
+bool NWebImpl::NeedSoftKeyboard() const {
+  if (inputmethod_handler_) {
+    return inputmethod_handler_->GetIsEditableNode();
+  }
+  return false;
 }
 }  // namespace OHOS::NWeb
 
@@ -1564,6 +1609,32 @@ extern "C" OHOS_NWEB_EXPORT void GetNWeb(int32_t nweb_id,
   if (auto it = map->find(nweb_id); it != map->end()) {
     nweb = it->second;
   }
+}
+
+bool NWebImpl::InitializeICUStatic(const NWebInitArgs& init_args) {
+  if (NWebApplication::GetDefault()->HasInitializedCef()) {
+    return true;
+  }
+  WVLOG_I("will initialize icu.");
+  static bool g_init_icu = false;
+  if (!g_init_icu) {
+    std::list<std::string> web_engine_args;
+    InitialWebEngineArgs(web_engine_args, init_args);
+    int argc = web_engine_args.size();
+    const char** argv = new const char*[argc];
+    int i = 0;
+    for (auto it = web_engine_args.begin(); i < argc; ++i, ++it) {
+      argv[i] = it->c_str();
+    }
+    base::CommandLine::Init(argc, argv);
+    content::RegisterPathProvider();
+    if (!base::i18n::InitializeICU()) {
+      WVLOG_E("initialize icu failed.");
+      return false;
+    }
+    g_init_icu = true;
+  }
+  return true;
 }
 
 extern "C" OHOS_NWEB_EXPORT void InitializeWebEngine(

@@ -40,7 +40,9 @@ struct NWebAppClientExtensionCallback {
                                       std::vector<std::string> sublabels,
                                       int nweb_id);
 
-  void (*ContentsBrowserZoomChange)(double zoom_factor, int nweb_id);
+  void (*ContentsBrowserZoomChange)(double zoom_factor,
+                                    bool can_show_bubble,
+                                    int nweb_id);
   int (*OnGetTopControlsHeight)(int nweb_id);
   void (*OnTopControlsChanged)(float top_controls_offset,
                                float top_content_offset,

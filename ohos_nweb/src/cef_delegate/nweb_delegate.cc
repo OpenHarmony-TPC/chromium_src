@@ -613,6 +613,15 @@ void NWebDelegate::SendMouseEvent(int x,
   if (render_handler_ != nullptr) {
     render_handler_->SetIrregularDragBackground(false);
   }
+
+  if (action == MouseAction::MOVE) {
+    auto* accessibilityManager = GetAccessibilityManager();
+    if (accessibilityManager != nullptr) {
+      gfx::PointF point(x / default_virtual_pixel_ratio_,
+                        y / default_virtual_pixel_ratio_);
+      accessibilityManager->OnHoverEvent(point);
+    }
+  }
 }
 
 void NWebDelegate::NotifyScreenInfoChanged(RotationType rotation,
@@ -2015,19 +2024,23 @@ void NWebDelegate::SetAudioExclusive(bool audioExclusive) {
 #ifdef OHOS_NWEB_EX
 void NWebDelegate::SetBrowserZoomLevel(double zoom_factor) {
   LOG(DEBUG) << "NWebDelegate::SetBrowserZoomLevel: " << zoom_factor;
-  if (GetBrowser().get()) {
-    GetBrowser()->GetHost()->SetBrowserZoomLevel(zoom_factor);
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "SetBrowserZoomLevel can not get browser";
+    return;
   }
+  
+  GetBrowser()->GetHost()->SetBrowserZoomLevel(zoom_factor);
 }
 
 double NWebDelegate::GetBrowserZoomLevel() {
   LOG(DEBUG) << "NWebDelegate::GetBrowserZoomLevel.";
-  double zoom_factor = 1.0;
-  if (GetBrowser().get()) {
-    zoom_factor =
-        std::pow(kZoomLevelToFactorRatio, GetBrowser()->GetHost()->GetZoomLevel());
+  if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
+    LOG(ERROR) << "GetBrowserZoomLevel can not get browser";
+    return 1.0;
   }
-  return zoom_factor;
+
+  return
+      std::pow(kZoomLevelToFactorRatio, GetBrowser()->GetHost()->GetZoomLevel());
 }
 #endif
 
@@ -2274,7 +2287,7 @@ bool NWebDelegate::PopulateAccessibilityNodeInfo(
   nodeInfo.checked = node->IsChecked();
   nodeInfo.selected = node->IsSelected();
   nodeInfo.password = node->IsPasswordField();
-  nodeInfo.hinting = node->IsHint();
+  nodeInfo.descriptionInfo = node->GetClassName();
   nodeInfo.checkable = node->IsCheckable();
   nodeInfo.scrollable = node->IsScrollable();
   nodeInfo.editable = node->IsTextField();
@@ -2305,10 +2318,9 @@ void NWebDelegate::AddAccessibilityNodeInfoRect(
     return;
   }
   ui::AXOffscreenResult offscreen_result = ui::AXOffscreenResult::kOnscreen;
-  float dip_scale = accessibilityManager->device_scale_factor();
   gfx::Rect absolute_rect = gfx::ScaleToEnclosingRect(
-      node->GetUnclippedRootFrameBoundsRect(&offscreen_result), dip_scale,
-      dip_scale);
+      node->GetUnclippedRootFrameBoundsRect(&offscreen_result),
+      default_virtual_pixel_ratio_, default_virtual_pixel_ratio_);
 
   nodeInfo.rectX = absolute_rect.x();
   nodeInfo.rectY = absolute_rect.y();

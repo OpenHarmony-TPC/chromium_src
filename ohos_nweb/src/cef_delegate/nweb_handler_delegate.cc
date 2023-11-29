@@ -1532,13 +1532,15 @@ bool NWebHandlerDelegate::OnCursorChange(CefRefPtr<CefBrowser> browser,
   return nweb_handler_->OnCursorChange(cursorType, info);
 }
 
-void NWebHandlerDelegate::OnContentsBrowserZoomChange(double zoom_factor) {
+void NWebHandlerDelegate::OnContentsBrowserZoomChange(double zoom_factor,
+    bool can_show_bubble) {
 #ifdef OHOS_NWEB_EX
   if (web_app_client_extension_listener_ != nullptr &&
       web_app_client_extension_listener_->ContentsBrowserZoomChange !=
           nullptr) {
     web_app_client_extension_listener_->ContentsBrowserZoomChange(
-        zoom_factor, web_app_client_extension_listener_->nweb_id);
+        zoom_factor, can_show_bubble,
+        web_app_client_extension_listener_->nweb_id);
   }
 #endif
 }

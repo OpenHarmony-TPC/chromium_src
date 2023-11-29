@@ -17,6 +17,8 @@
 #include "nweb_cookie_manager_delegate.h"
 #include "nweb_hilog.h"
 
+#include "nweb_impl.h"
+
 using namespace OHOS::NWeb;
 
 extern "C" OHOS_NWEB_EXPORT NWebCookieManager* GetCookieManager() {
@@ -35,6 +37,8 @@ NWebCookieManagerImpl::NWebCookieManagerImpl() {
 #if defined(USE_CEF)
   delegate_ = std::make_shared<NWebCookieManagerDelegate>();
 #endif
+  NWebInitArgs init_args;
+  (void)NWebImpl::InitializeICUStatic(init_args);
 }
 
 bool NWebCookieManagerImpl::IsAcceptCookieAllowed() const {

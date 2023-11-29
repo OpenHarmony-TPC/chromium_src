@@ -85,10 +85,6 @@ class HostZoomMap {
   // be temporary or host-specific depending on the particular WebContents.
   CONTENT_EXPORT static void SetZoomLevel(WebContents* web_contents,
                                           double level);
-#ifdef OHOS_NWEB_EX
-  CONTENT_EXPORT static double GetDefaultBrowserZoomLevel(
-      WebContents* web_contents);
-#endif
 
   // Send an IPC to refresh any displayed error page's zoom levels. Needs to
   // be called since error pages don't get loaded via the normal channel.
