@@ -268,8 +268,8 @@ class NWebDelegateInterface
       int32_t accessibilityId,
       int32_t direction,
       OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const = 0;
-  virtual bool WebDiscard() = 0;
-  virtual bool WebReload() = 0; 
+  virtual bool Discard() = 0;
+  virtual bool Restore() = 0; 
 };
 }  // namespace OHOS::NWeb
 

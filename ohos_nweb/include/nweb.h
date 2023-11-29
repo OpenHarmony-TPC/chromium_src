@@ -895,13 +895,13 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * Discard the webview window.
      * @return true if the discarding success, otherwise false.
      */
-    virtual bool WebDiscard() = 0;
+    virtual bool Discard() = 0;
 
     /**
      * Reload the webview window that has been discarded before.
      * @return true if the discarded window reload success, otherwise false.
      */
-    virtual bool WebReload() = 0;
+    virtual bool Restore() = 0;
 };
 }  // namespace OHOS::NWeb
 

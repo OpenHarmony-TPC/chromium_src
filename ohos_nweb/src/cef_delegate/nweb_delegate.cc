@@ -2335,36 +2335,36 @@ void NWebDelegate::AddAccessibilityNodeInfoActions(
   }
 }
 
-bool NWebDelegate::WebDiscard() {
+bool NWebDelegate::Discard() {
   if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
-    LOG(ERROR) << "NWebDelegate::WebDiscard failed, browser is nullptr";
+    LOG(ERROR) << "NWebDelegate::Discard failed, browser is nullptr";
     return false;
   }
 
-  if (is_discarded) {
-    LOG(ERROR) << "NWebDelegate::WebDiscard failed, the webview window was discarded before";
+  if (is_discarded_) {
+    LOG(ERROR) << "NWebDelegate::Discard failed, the webview window was discarded before";
     return false;
   }
 
-  is_discarded = GetBrowser()->GetHost()->FinishDiscard();
-  LOG(DEBUG) << "NWebDelegate::WebDiscard is_discarded: " << is_discarded; 
-  return is_discarded;  
+  is_discarded_ = GetBrowser()->GetHost()->Discard();
+  LOG(DEBUG) << "NWebDelegate::Discard is_discarded_: " << is_discarded_; 
+  return is_discarded_;  
 }
 
-bool NWebDelegate::WebReload() {
+bool NWebDelegate::Restore() {
   if (GetBrowser() == nullptr || GetBrowser()->GetHost() == nullptr) {
-    LOG(ERROR) << "NWebDelegate::WebReload failed, browser is nullptr";
+    LOG(ERROR) << "NWebDelegate::Restore failed, browser is nullptr";
     return false;
   }
 
-  if (!is_discarded) {
-    LOG(ERROR) << "NWebDelegate::WebReload failed, the webview window was not discarded before";
+  if (!is_discarded_) {
+    LOG(ERROR) << "NWebDelegate::Restore failed, the webview window was not discarded before";
     return false;
   }
 
-  bool is_reloaded = GetBrowser()->GetHost()->FinishReload();
-  is_discarded = !is_reloaded;  
-  LOG(DEBUG) << "NWebDelegate::WebDiscard is_reloaded: " << is_reloaded; 
-  return is_reloaded;  
+  bool is_restored = GetBrowser()->GetHost()->Restore();
+  is_discarded_ = !is_restored;  
+  LOG(DEBUG) << "NWebDelegate::Restore is_restored: " << is_restored; 
+  return is_restored;  
 }
 }  // namespace OHOS::NWeb
