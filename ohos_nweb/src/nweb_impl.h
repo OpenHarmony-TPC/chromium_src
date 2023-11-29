@@ -196,6 +196,14 @@ class NWebImpl : public NWeb {
   static bool GetBrowserServiceApiEnabled();
   static void SetDefaultBrowserZoomLevel(double zoom_factor);
   static void SetConnectTimeout(int32_t seconds);
+  static void UpdateCloudUAConfig(const std::string& file_path,
+                                  const std::string& version);
+  static void UpdateUAListConfig(const std::string& ua_name,
+                                 const std::string& ua_string);
+  static void SetUAForHosts(const std::string& ua_name,
+                            const std::vector<std::string>& hosts);
+  static std::string GetUANameConfig(const std::string& host);
+  static void SetBrowserUA(const std::string& ua_name);
 
   void PutWebAppClientExtensionCallback(
       std::shared_ptr<NWebAppClientExtensionCallback>

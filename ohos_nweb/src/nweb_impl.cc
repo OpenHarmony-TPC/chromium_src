@@ -70,6 +70,10 @@
 #include "base/i18n/icu_util.h"
 #include "content/public/common/content_paths.h"
 
+#ifdef OHOS_NWEB_EX
+#include "ohos_nweb_ex/overrides/cef/libcef/browser/alloy/alloy_browser_ua_config.h"
+#endif
+
 namespace {
 uint32_t g_nweb_count = 0;
 const uint32_t kSurfaceMaxWidth = 7680;
@@ -1407,6 +1411,36 @@ void NWebImpl::SetDefaultBrowserZoomLevel(double zoom_factor) {
 // static
 void NWebImpl::SetConnectTimeout(int32_t seconds) {
   content::GetNetworkService()->SetConnectTimeout(seconds);
+}
+
+// static
+void NWebImpl::UpdateCloudUAConfig(const std::string& file_path,
+                                   const std::string& version) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->UpdateCloudUAConfig(file_path,
+                                                                    version);
+}
+
+// static
+void NWebImpl::UpdateUAListConfig(const std::string& ua_name,
+                                  const std::string& ua_string) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->UpdateUAListConfig(ua_name,
+                                                                   ua_string);
+}
+
+// static
+void NWebImpl::SetUAForHosts(const std::string& ua_name,
+                             const std::vector<std::string>& hosts) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->SetUAForHosts(ua_name, hosts);
+}
+
+// static
+std::string NWebImpl::GetUANameConfig(const std::string& host) {
+  return nweb_ex::AlloyBrowserUAConfig::GetInstance()->GetUANameConfig(host);
+}
+
+// static
+void NWebImpl::SetBrowserUA(const std::string& ua_name) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->SetBrowserUA(ua_name);
 }
 #endif  // OHOS_NWEB_EX
 
