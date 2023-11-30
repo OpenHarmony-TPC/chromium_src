@@ -296,6 +296,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
     NWebAccessibilityNodeInfo& nodeInfo) const;
   bool PopulateAccessibilityNodeInfo(const content::BrowserAccessibilityOHOS* node,
                                      NWebAccessibilityNodeInfo& nodeInfo) const;
+  bool InitRichtextIdentifier();
 
  private:
   std::string ohos_temp_dir_;

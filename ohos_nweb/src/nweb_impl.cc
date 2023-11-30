@@ -79,6 +79,7 @@ uint32_t g_nweb_count = 0;
 const uint32_t kSurfaceMaxWidth = 7680;
 const uint32_t kSurfaceMaxHeight = 7680;
 const int32_t kMaxResumeInterval = 60;
+const float richtextDisplayRatio = 1.0;
 
 #ifdef OHOS_NWEB_EX
 bool g_browser_service_api_enabled = false;
@@ -286,7 +287,13 @@ bool NWebImpl::SetVirtualDeviceRatio() {
       WVLOG_E("display is nullptr.");
       return false;
     }
-    device_pixel_ratio_ = display->GetVirtualPixelRatio();
+
+    if (is_richtext_value_) {
+      // Created a richtext component
+      device_pixel_ratio_ = richtextDisplayRatio;
+    } else {
+      device_pixel_ratio_ = display->GetVirtualPixelRatio();
+    }
     if (device_pixel_ratio_ <= 0) {
       WVLOG_E("invalid ratio.");
       return false;
@@ -301,10 +308,7 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
     WVLOG_E("fail to init web engine, NWeb output handler is not ready");
     return false;
   }
-  if (!SetVirtualDeviceRatio()) {
-    WVLOG_E("fail to set virtual device ratio");
-    return false;
-  }
+
   if (web_engine_args_.empty()) {
     WVLOG_E("fail to init web engine args");
     return false;
@@ -315,7 +319,17 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
   int i = 0;
   for (auto it = web_engine_args_.begin(); i < argc; ++i, ++it) {
     argv[i] = it->c_str();
+    if (!strncmp(argv[i], "--init-richtext-data=", strlen("--init-richtext-data="))) {
+      is_richtext_value_ = true;
+    }
   }
+
+  if (!SetVirtualDeviceRatio()) {
+    WVLOG_E("fail to set virtual device ratio");
+    delete[] argv;
+    return false;
+  }
+
   is_enhance_surface_ = create_info.init_args.is_enhance_surface;
   void* window = nullptr;
   if (is_enhance_surface_) {
