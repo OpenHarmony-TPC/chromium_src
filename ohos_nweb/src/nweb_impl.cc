@@ -330,6 +330,20 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
     delete[] argv;
     return false;
   }
+
+  int32_t ret =
+      OHOS::NWeb::OhosAdapterHelper::GetInstance()
+          .GetWindowAdapterInstance()
+          .NativeWindowHandleOpt(reinterpret_cast<void*>(window),
+                                 OHOS::NWeb::WindowAdapter::SET_BUFFER_GEOMETRY,
+                                 create_info.width, create_info.height);
+
+  if (ret == OHOS::NWeb::GSErrorCode::GSERROR_OK) {
+      WVLOG_I("native window opt for emulator in init, result = %{public}d", ret);
+  } else {
+      WVLOG_W("native window opt for emulator in init failed, result = %{public}d", ret);
+  }
+
   WVLOG_D("nweb create_info.init_args.is_popup: %{public}d",
           create_info.init_args.is_popup);
   nweb_delegate_ = NWebDelegateAdapter::CreateNWebDelegate(
