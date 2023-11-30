@@ -432,8 +432,8 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * @param method_list vector<String>: vector list ,method list
      */
     virtual void RegisterArkJSfunction(
-            const std::string& object_name,
-            const std::vector<std::string>& method_list) = 0;
+        const std::string& object_name,
+        const std::vector<std::string>& method_list) = 0;
 
     /**
      * UnregisterArkJSfunction
@@ -897,6 +897,18 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * @return true if need soft keyboard, otherwise false.
      */
     virtual bool NeedSoftKeyboard() const = 0;
+
+    /**
+     * RegisterArkJSfunctionExt
+     *
+     * @param object_name  String: objector name
+     * @param method_list vector<String>: vector list ,method list
+     * @param object_id int32_t: object id
+     */
+    virtual void RegisterArkJSfunctionExt(
+        const std::string& object_name,
+        const std::vector<std::string>& method_list,
+        const int32_t object_id) = 0;
 };
 }  // namespace OHOS::NWeb
 

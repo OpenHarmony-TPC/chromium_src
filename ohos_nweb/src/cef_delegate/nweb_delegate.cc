@@ -1076,7 +1076,7 @@ void NWebDelegate::InitializeCef(std::string url,
     handler_delegate_ = NWebHandlerDelegate::Create(
       preference_delegate_, render_handler_, event_handler_, find_delegate_,
         is_enhance_surface, window);
-    is_ready_ = true;
+    is_popup_ready_ = true;
     return;
   }
   handler_delegate_ = NWebHandlerDelegate::Create(
@@ -1398,7 +1398,7 @@ const CefRefPtr<CefBrowser> NWebDelegate::GetBrowser() const {
 }
 
 bool NWebDelegate::IsReady() {
-  return is_ready_ || GetBrowser() != nullptr;
+  return is_popup_ready_ || GetBrowser() != nullptr;
 }
 
 void NWebDelegate::RequestVisitedHistory() {
@@ -1427,13 +1427,32 @@ int NWebDelegate::ContentHeight() {
 
 void NWebDelegate::RegisterArkJSfunction(
     const std::string& object_name,
-    const std::vector<std::string>& method_list) const {
-  LOG(DEBUG) << "RegisterArkJSfunction name : " << object_name.c_str();
+    const std::vector<std::string>& method_list,
+    const int32_t object_id) const {
+  LOG(INFO) << "RegisterArkJSfunction name : " << object_name.c_str();
   std::vector<CefString> method_vector;
   for (std::string method : method_list) {
     method_vector.push_back(method);
   }
-  GetBrowser()->GetHost()->RegisterArkJSfunction(object_name, method_vector);
+
+  if (is_popup_ready_) {
+    if (handler_delegate_) {
+      LOG(INFO) << "NWebDelegate::RegisterArkJSfunction popup case, the "
+                   "object_name is "
+                << object_name.c_str();
+      handler_delegate_->SavaArkJSFunctionForPopup(object_name, method_list,
+                                                   object_id);
+    }
+    return;
+  } else if (!GetBrowser()) {
+    LOG(ERROR) << "NWebDelegate::RegisterArkJSfunction fail due to "
+                  "GetBrowser() return null, the object_name is "
+               << object_name.c_str();
+    return;
+  } else {
+    GetBrowser()->GetHost()->RegisterArkJSfunction(object_name, method_vector,
+                                                   object_id);
+  }
 }
 
 void NWebDelegate::UnregisterArkJSfunction(
@@ -1444,6 +1463,14 @@ void NWebDelegate::UnregisterArkJSfunction(
   for (std::string method : method_list) {
     method_vector.push_back(method);
   }
+
+  if (!GetBrowser()) {
+    LOG(ERROR) << "NWebDelegate::UnregisterArkJSfunction fail due to "
+                  "GetBrowser() return null, the object_name is "
+               << object_name.c_str();
+    return;
+  }
+
   GetBrowser()->GetHost()->UnregisterArkJSfunction(object_name, method_vector);
 }
 
