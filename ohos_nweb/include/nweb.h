@@ -890,7 +890,7 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      * @param state Indicate whether the accessibility state is enabled or disabled.
      */
     virtual void SetAccessibilityState(bool state) = 0;
-    
+
      /**
      * Get whether need soft keyboard.
      *
@@ -909,6 +909,18 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
         const std::string& object_name,
         const std::vector<std::string>& method_list,
         const int32_t object_id) = 0;
+    
+    /**
+     * Discard the webview window.
+     * @return true if the discarding success, otherwise false.
+     */
+    virtual bool Discard() = 0;
+
+    /**
+     * Reload the webview window that has been discarded before.
+     * @return true if the discarded window reload success, otherwise false.
+     */
+    virtual bool Restore() = 0;
 };
 }  // namespace OHOS::NWeb
 

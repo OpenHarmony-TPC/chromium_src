@@ -256,6 +256,9 @@ class NWebImpl : public NWeb {
       int32_t direction,
       OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const override;
   void SetAccessibilityState(bool state) override;
+  bool Discard() override;
+  bool Restore() override;
+  
   bool NeedSoftKeyboard() const override;
 
  private:
