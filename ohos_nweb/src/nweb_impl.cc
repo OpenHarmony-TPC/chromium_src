@@ -66,11 +66,20 @@
 #include "libcef/browser/predictors/loading_predictor_config.h"
 #include "libcef/browser/predictors/loading_predictor_factory.h"
 
+#include "base/command_line.h"
+#include "base/i18n/icu_util.h"
+#include "content/public/common/content_paths.h"
+
+#ifdef OHOS_NWEB_EX
+#include "ohos_nweb_ex/overrides/cef/libcef/browser/alloy/alloy_browser_ua_config.h"
+#endif
+
 namespace {
 uint32_t g_nweb_count = 0;
 const uint32_t kSurfaceMaxWidth = 7680;
 const uint32_t kSurfaceMaxHeight = 7680;
 const int32_t kMaxResumeInterval = 60;
+const float richtextDisplayRatio = 1.0;
 
 #ifdef OHOS_NWEB_EX
 bool g_browser_service_api_enabled = false;
@@ -278,7 +287,13 @@ bool NWebImpl::SetVirtualDeviceRatio() {
       WVLOG_E("display is nullptr.");
       return false;
     }
-    device_pixel_ratio_ = display->GetVirtualPixelRatio();
+
+    if (is_richtext_value_) {
+      // Created a richtext component
+      device_pixel_ratio_ = richtextDisplayRatio;
+    } else {
+      device_pixel_ratio_ = display->GetVirtualPixelRatio();
+    }
     if (device_pixel_ratio_ <= 0) {
       WVLOG_E("invalid ratio.");
       return false;
@@ -293,10 +308,7 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
     WVLOG_E("fail to init web engine, NWeb output handler is not ready");
     return false;
   }
-  if (!SetVirtualDeviceRatio()) {
-    WVLOG_E("fail to set virtual device ratio");
-    return false;
-  }
+
   if (web_engine_args_.empty()) {
     WVLOG_E("fail to init web engine args");
     return false;
@@ -307,7 +319,17 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
   int i = 0;
   for (auto it = web_engine_args_.begin(); i < argc; ++i, ++it) {
     argv[i] = it->c_str();
+    if (!strncmp(argv[i], "--init-richtext-data=", strlen("--init-richtext-data="))) {
+      is_richtext_value_ = true;
+    }
   }
+
+  if (!SetVirtualDeviceRatio()) {
+    WVLOG_E("fail to set virtual device ratio");
+    delete[] argv;
+    return false;
+  }
+
   is_enhance_surface_ = create_info.init_args.is_enhance_surface;
   void* window = nullptr;
   if (is_enhance_surface_) {
@@ -322,6 +344,20 @@ bool NWebImpl::InitWebEngine(const NWebCreateInfo& create_info) {
     delete[] argv;
     return false;
   }
+
+  int32_t ret =
+      OHOS::NWeb::OhosAdapterHelper::GetInstance()
+          .GetWindowAdapterInstance()
+          .NativeWindowHandleOpt(reinterpret_cast<void*>(window),
+                                 OHOS::NWeb::WindowAdapter::SET_BUFFER_GEOMETRY,
+                                 create_info.width, create_info.height);
+
+  if (ret == OHOS::NWeb::GSErrorCode::GSERROR_OK) {
+      WVLOG_I("native window opt for emulator in init, result = %{public}d", ret);
+  } else {
+      WVLOG_W("native window opt for emulator in init failed, result = %{public}d", ret);
+  }
+
   WVLOG_D("nweb create_info.init_args.is_popup: %{public}d",
           create_info.init_args.is_popup);
   nweb_delegate_ = NWebDelegateAdapter::CreateNWebDelegate(
@@ -917,9 +953,22 @@ void NWebImpl::RegisterArkJSfunction(
     const std::string& object_name,
     const std::vector<std::string>& method_list) {
   if (nweb_delegate_ == nullptr) {
+    WVLOG_E("fail to register ark js function");
     return;
   }
-  return nweb_delegate_->RegisterArkJSfunction(object_name, method_list);
+  return nweb_delegate_->RegisterArkJSfunction(object_name, method_list, -1);
+}
+
+void NWebImpl::RegisterArkJSfunctionExt(
+    const std::string& object_name,
+    const std::vector<std::string>& method_list,
+    const int32_t object_id) {
+  if (nweb_delegate_ == nullptr) {
+    WVLOG_E("fail to register ark js function");
+    return;
+  }
+  return nweb_delegate_->RegisterArkJSfunction(object_name, method_list,
+                                               object_id);
 }
 
 void NWebImpl::UnregisterArkJSfunction(
@@ -1404,6 +1453,36 @@ void NWebImpl::SetDefaultBrowserZoomLevel(double zoom_factor) {
 void NWebImpl::SetConnectTimeout(int32_t seconds) {
   content::GetNetworkService()->SetConnectTimeout(seconds);
 }
+
+// static
+void NWebImpl::UpdateCloudUAConfig(const std::string& file_path,
+                                   const std::string& version) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->UpdateCloudUAConfig(file_path,
+                                                                    version);
+}
+
+// static
+void NWebImpl::UpdateUAListConfig(const std::string& ua_name,
+                                  const std::string& ua_string) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->UpdateUAListConfig(ua_name,
+                                                                   ua_string);
+}
+
+// static
+void NWebImpl::SetUAForHosts(const std::string& ua_name,
+                             const std::vector<std::string>& hosts) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->SetUAForHosts(ua_name, hosts);
+}
+
+// static
+std::string NWebImpl::GetUANameConfig(const std::string& host) {
+  return nweb_ex::AlloyBrowserUAConfig::GetInstance()->GetUANameConfig(host);
+}
+
+// static
+void NWebImpl::SetBrowserUA(const std::string& ua_name) {
+  nweb_ex::AlloyBrowserUAConfig::GetInstance()->SetBrowserUA(ua_name);
+}
 #endif  // OHOS_NWEB_EX
 
 void NWebImpl::PrefetchPage(
@@ -1486,7 +1565,7 @@ bool NWebImpl::GetFocusedAccessibilityNodeInfo(
 }
 
 bool NWebImpl::GetAccessibilityNodeInfoById(
-    bool accessibilityId,
+    int32_t accessibilityId,
     OHOS::NWeb::NWebAccessibilityNodeInfo& nodeInfo) const {
   if (nweb_delegate_ != nullptr) {
     return nweb_delegate_->GetAccessibilityNodeInfoById(accessibilityId,
@@ -1512,6 +1591,13 @@ void NWebImpl::SetAccessibilityState(bool state) {
                                                 : STATE_DISABLED);
   }
 }
+
+bool NWebImpl::NeedSoftKeyboard() const {
+  if (inputmethod_handler_) {
+    return inputmethod_handler_->GetIsEditableNode();
+  }
+  return false;
+}
 }  // namespace OHOS::NWeb
 
 using namespace OHOS::NWeb;
@@ -1526,7 +1612,6 @@ extern "C" OHOS_NWEB_EXPORT void CreateNWeb(const NWebCreateInfo& create_info,
           create_info.init_args.is_enhance_surface);
   nweb = std::make_shared<NWebImpl>(nweb_id);
   if (nweb == nullptr) {
-    WVLOG_E("fail to create nweb instance");
     return;
   }
 
@@ -1552,6 +1637,32 @@ extern "C" OHOS_NWEB_EXPORT void GetNWeb(int32_t nweb_id,
   if (auto it = map->find(nweb_id); it != map->end()) {
     nweb = it->second;
   }
+}
+
+bool NWebImpl::InitializeICUStatic(const NWebInitArgs& init_args) {
+  if (NWebApplication::GetDefault()->HasInitializedCef()) {
+    return true;
+  }
+  WVLOG_I("will initialize icu.");
+  static bool g_init_icu = false;
+  if (!g_init_icu) {
+    std::list<std::string> web_engine_args;
+    InitialWebEngineArgs(web_engine_args, init_args);
+    int argc = web_engine_args.size();
+    const char** argv = new const char*[argc];
+    int i = 0;
+    for (auto it = web_engine_args.begin(); i < argc; ++i, ++it) {
+      argv[i] = it->c_str();
+    }
+    base::CommandLine::Init(argc, argv);
+    content::RegisterPathProvider();
+    if (!base::i18n::InitializeICU()) {
+      WVLOG_E("initialize icu failed.");
+      return false;
+    }
+    g_init_icu = true;
+  }
+  return true;
 }
 
 extern "C" OHOS_NWEB_EXPORT void InitializeWebEngine(

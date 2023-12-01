@@ -6,9 +6,9 @@
     "dependence": "",
     "default": "true"
 },
-{   "name": "OHOS_ENABLE_FREELIST_HARDENED",
+{   "name": "OHOS_ENABLE_POINTER_HARDENED",
     "owner": "",
-    "desc": "partition allocator freelist hardened",
+    "desc": "partition allocator pointer hardened",
     "effect":"main gn blink_core other",
     "genCommandline": "default",
     "dependence": "",

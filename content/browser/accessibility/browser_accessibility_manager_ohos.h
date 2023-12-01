@@ -68,6 +68,8 @@ class CONTENT_EXPORT BrowserAccessibilityManagerOHOS
   void SendAccessibilityEvent(int32_t accessibilityId,
                               OHOS::NWeb::AccessibilityEventType eventType);
 
+  void OnHoverEvent(const gfx::PointF& point);
+
  private:
   void HandleHover(int accessibilityId);
 
@@ -75,6 +77,8 @@ class CONTENT_EXPORT BrowserAccessibilityManagerOHOS
       int newAccessibilityFocusId);
 
   void HandleFocusChanged(int32_t accessibilityId);
+
+  int32_t TranslateAccessibilityId(int32_t accessibilityId) const;
 
   int32_t lastHoverId_ = -1;
 

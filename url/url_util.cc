@@ -566,7 +566,11 @@ void EnableNonStandardSchemesForAndroidWebView() {
 }
 
 bool AllowNonStandardSchemesForAndroidWebView() {
+#if BUILDFLAG(IS_OHOS)
+  return true;
+#else
   return GetSchemeRegistry().allow_non_standard_schemes;
+#endif
 }
 
 void AddStandardScheme(const char* new_scheme, SchemeType type) {

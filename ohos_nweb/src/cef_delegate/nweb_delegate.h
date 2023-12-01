@@ -151,9 +151,9 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
                    const std::string& mimeType,
                    const std::string& encoding) override;
   int ContentHeight() override;
-  void RegisterArkJSfunction(
-      const std::string& object_name,
-      const std::vector<std::string>& method_list) const override;
+  void RegisterArkJSfunction(const std::string& object_name,
+                             const std::vector<std::string>& method_list,
+                             const int32_t object_id) const override;
 
   void UnregisterArkJSfunction(
       const std::string& object_name,
@@ -298,6 +298,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
     NWebAccessibilityNodeInfo& nodeInfo) const;
   bool PopulateAccessibilityNodeInfo(const content::BrowserAccessibilityOHOS* node,
                                      NWebAccessibilityNodeInfo& nodeInfo) const;
+  bool InitRichtextIdentifier();
 
  private:
   std::string ohos_temp_dir_;
@@ -325,7 +326,7 @@ class NWebDelegate : public NWebDelegateInterface, public virtual CefRefCount {
   uint32_t nweb_id_;
 #endif
   bool is_enhance_surface_ = false;
-  bool is_ready_ = false;
+  bool is_popup_ready_ = false;
   bool is_onPause_ = false;
   static std::set<uint32_t> focus_nweb_id_;
   bool is_discarded_ = false;

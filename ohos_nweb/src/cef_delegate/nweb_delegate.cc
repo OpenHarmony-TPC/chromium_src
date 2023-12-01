@@ -43,6 +43,10 @@
 #include <cmath>
 #endif
 
+namespace {
+static const float richtextDisplayRatio = 1.0;
+}
+
 namespace OHOS::NWeb {
 #ifdef OHOS_NWEB_EX
 static const double kZoomLevelToFactorRatio = 1.2;
@@ -283,6 +287,19 @@ void NWebDelegate::InitAppTempDir() {
   ohos_temp_dir_ = "/data/storage/el2/base/haps/entry/temp";
 }
 
+bool NWebDelegate::InitRichtextIdentifier() {
+  for (int i = 0; i < argc_; i++) {
+    if (argv_[i] == nullptr) {
+      continue;
+    }
+
+    if (!strncmp(argv_[i], "--init-richtext-data=", strlen("--init-richtext-data="))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool NWebDelegate::Init(bool is_enhance_surface,
                         void* window,
                         bool popup,
@@ -333,7 +350,12 @@ bool NWebDelegate::Init(bool is_enhance_surface,
       display_manager_adapter_->GetDefaultDisplay();
   if (display != nullptr) {
     NotifyScreenInfoChanged(display->GetRotation(), display->GetOrientation());
-    SetVirtualPixelRatio(display->GetVirtualPixelRatio());
+    if (InitRichtextIdentifier()) {
+      // Created a richtext component
+      SetVirtualPixelRatio(richtextDisplayRatio);
+    } else {
+      SetVirtualPixelRatio(display->GetVirtualPixelRatio());
+    }
   }
 
   return true;
@@ -613,6 +635,15 @@ void NWebDelegate::SendMouseEvent(int x,
   if (render_handler_ != nullptr) {
     render_handler_->SetIrregularDragBackground(false);
   }
+
+  if (action == MouseAction::MOVE) {
+    auto* accessibilityManager = GetAccessibilityManager();
+    if (accessibilityManager != nullptr) {
+      gfx::PointF point(x / default_virtual_pixel_ratio_,
+                        y / default_virtual_pixel_ratio_);
+      accessibilityManager->OnHoverEvent(point);
+    }
+  }
 }
 
 void NWebDelegate::NotifyScreenInfoChanged(RotationType rotation,
@@ -628,7 +659,13 @@ void NWebDelegate::NotifyScreenInfoChanged(RotationType rotation,
       LOG(ERROR) << "Get display failed";
       return;
     }
-    double display_ratio = display->GetVirtualPixelRatio();
+    double display_ratio = 0.0;
+    if (InitRichtextIdentifier()) {
+      // Created a richtext component
+      display_ratio = richtextDisplayRatio;
+    } else {
+      display_ratio = display->GetVirtualPixelRatio();
+    }
     if (display_ratio <= 0) {
       LOG(ERROR) << "Invalid display_ratio, display_ratio = " << display_ratio;
       return;
@@ -1067,7 +1104,7 @@ void NWebDelegate::InitializeCef(std::string url,
     handler_delegate_ = NWebHandlerDelegate::Create(
       preference_delegate_, render_handler_, event_handler_, find_delegate_,
         is_enhance_surface, window);
-    is_ready_ = true;
+    is_popup_ready_ = true;
     return;
   }
   handler_delegate_ = NWebHandlerDelegate::Create(
@@ -1389,7 +1426,7 @@ const CefRefPtr<CefBrowser> NWebDelegate::GetBrowser() const {
 }
 
 bool NWebDelegate::IsReady() {
-  return is_ready_ || GetBrowser() != nullptr;
+  return is_popup_ready_ || GetBrowser() != nullptr;
 }
 
 void NWebDelegate::RequestVisitedHistory() {
@@ -1418,13 +1455,32 @@ int NWebDelegate::ContentHeight() {
 
 void NWebDelegate::RegisterArkJSfunction(
     const std::string& object_name,
-    const std::vector<std::string>& method_list) const {
-  LOG(DEBUG) << "RegisterArkJSfunction name : " << object_name.c_str();
+    const std::vector<std::string>& method_list,
+    const int32_t object_id) const {
+  LOG(INFO) << "RegisterArkJSfunction name : " << object_name.c_str();
   std::vector<CefString> method_vector;
   for (std::string method : method_list) {
     method_vector.push_back(method);
   }
-  GetBrowser()->GetHost()->RegisterArkJSfunction(object_name, method_vector);
+
+  if (is_popup_ready_) {
+    if (handler_delegate_) {
+      LOG(INFO) << "NWebDelegate::RegisterArkJSfunction popup case, the "
+                   "object_name is "
+                << object_name.c_str();
+      handler_delegate_->SavaArkJSFunctionForPopup(object_name, method_list,
+                                                   object_id);
+    }
+    return;
+  } else if (!GetBrowser()) {
+    LOG(ERROR) << "NWebDelegate::RegisterArkJSfunction fail due to "
+                  "GetBrowser() return null, the object_name is "
+               << object_name.c_str();
+    return;
+  } else {
+    GetBrowser()->GetHost()->RegisterArkJSfunction(object_name, method_vector,
+                                                   object_id);
+  }
 }
 
 void NWebDelegate::UnregisterArkJSfunction(
@@ -1435,6 +1491,14 @@ void NWebDelegate::UnregisterArkJSfunction(
   for (std::string method : method_list) {
     method_vector.push_back(method);
   }
+
+  if (!GetBrowser()) {
+    LOG(ERROR) << "NWebDelegate::UnregisterArkJSfunction fail due to "
+                  "GetBrowser() return null, the object_name is "
+               << object_name.c_str();
+    return;
+  }
+
   GetBrowser()->GetHost()->UnregisterArkJSfunction(object_name, method_vector);
 }
 
@@ -2251,7 +2315,7 @@ bool NWebDelegate::PopulateAccessibilityNodeInfo(
   nodeInfo.checked = node->IsChecked();
   nodeInfo.selected = node->IsSelected();
   nodeInfo.password = node->IsPasswordField();
-  nodeInfo.hinting = node->IsHint();
+  nodeInfo.descriptionInfo = node->GetClassName();
   nodeInfo.checkable = node->IsCheckable();
   nodeInfo.scrollable = node->IsScrollable();
   nodeInfo.editable = node->IsTextField();
@@ -2282,10 +2346,9 @@ void NWebDelegate::AddAccessibilityNodeInfoRect(
     return;
   }
   ui::AXOffscreenResult offscreen_result = ui::AXOffscreenResult::kOnscreen;
-  float dip_scale = accessibilityManager->device_scale_factor();
   gfx::Rect absolute_rect = gfx::ScaleToEnclosingRect(
-      node->GetUnclippedRootFrameBoundsRect(&offscreen_result), dip_scale,
-      dip_scale);
+      node->GetUnclippedRootFrameBoundsRect(&offscreen_result),
+      default_virtual_pixel_ratio_, default_virtual_pixel_ratio_);
 
   nodeInfo.rectX = absolute_rect.x();
   nodeInfo.rectY = absolute_rect.y();
