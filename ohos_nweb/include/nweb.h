@@ -892,13 +892,6 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
      */
     virtual void SetAccessibilityState(bool state) = 0;
 
-     /**
-     * Get whether need soft keyboard.
-     *
-     * @return true if need soft keyboard, otherwise false.
-     */
-    virtual bool NeedSoftKeyboard() const = 0;
-
     /**
      * RegisterArkJSfunctionExt
      *
@@ -910,6 +903,13 @@ class OHOS_NWEB_EXPORT NWeb : public std::enable_shared_from_this<NWeb> {
         const std::string& object_name,
         const std::vector<std::string>& method_list,
         const int32_t object_id) = 0;
+
+     /**
+     * Get whether need soft keyboard.
+     *
+     * @return true if need soft keyboard, otherwise false.
+     */
+    virtual bool NeedSoftKeyboard() const = 0;
 
     /**
      * Discard the webview window.
