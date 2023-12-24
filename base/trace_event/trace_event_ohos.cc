@@ -23,9 +23,6 @@
 
 using OHOS::NWeb::OhosAdapterHelper;
 
-static std::chrono::high_resolution_clock::time_point g_lastTime;
-static bool g_lastTraceStatus = false;
-
 bool IsBytraceEnable() {
   static bool traceStatus = false;
   static time_t lastTime = 0;

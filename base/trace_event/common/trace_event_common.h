@@ -669,6 +669,9 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
       FinishBytrace();                                                         \
     }                                                                          \
   } while (0);                                                                 \
+  INTERNAL_TRACE_EVENT_ADD(TRACE_EVENT_PHASE_END, category_group, name,  \
+                           TRACE_EVENT_FLAG_COPY, arg1_name, arg1_val,   \
+                           arg2_name, arg2_val)
 
 #else
 // Records a single END event for "name" immediately. If the category
@@ -922,6 +925,9 @@ struct BASE_EXPORT TraceTimestampTraits<::base::TimeTicks> {
       CountBytrace(name, value);                                              \
     }                                                                         \
    } while (0);                                                               \
+   INTERNAL_TRACE_EVENT_ADD_WITH_TIMESTAMP(                                   \
+      TRACE_EVENT_PHASE_COUNTER, category_group, name, timestamp,             \
+      TRACE_EVENT_FLAG_NONE, "value", static_cast<int>(value))
 #else
 // Similar to TRACE_COUNTERx, but with a custom |timestamp| provided.
 // - |timestamp| must be non-null or it crashes. Use DCHECK(timestamp) before
