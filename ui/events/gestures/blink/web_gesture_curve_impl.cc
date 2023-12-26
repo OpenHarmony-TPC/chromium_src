@@ -24,6 +24,10 @@
 #include "ui/display/win/screen_win.h"
 #endif  // BUILDFLAG(IS_WIN)
 
+#if BUILDFLAG(IS_OHOS)
+#include "base/system/sys_info.h"
+#endif  // BUILDFLAG(IS_OHOS)
+
 using blink::WebGestureCurve;
 
 namespace ui {
