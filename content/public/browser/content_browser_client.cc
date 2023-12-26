@@ -162,7 +162,7 @@ bool ContentBrowserClient::IsExplicitNavigation(ui::PageTransition transition) {
 bool ContentBrowserClient::ShouldUseMobileFlingCurve() {
 #if BUILDFLAG(IS_OHOS)
   if (base::SysInfo::IsLowEndDevice()) {
-    LOG(INFO) << "low device do not trigger fling";
+    LOG(DEBUG) << "low device do not trigger fling";
     return false;
   }
 #endif
