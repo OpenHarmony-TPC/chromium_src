@@ -13,21 +13,39 @@
  * limitations under the License.
  */
 
-#ifndef ARK_WEB_CORE_STRUCT_UTILS_H_
-#define ARK_WEB_CORE_STRUCT_UTILS_H_
+#ifndef ARK_WEB_BRIDGE_HELPER_H_
+#define ARK_WEB_BRIDGE_HELPER_H_
 #pragma once
 
-#include "include/nweb_handler.h"
-#include "ohos_nweb/include/ark_web_nweb_structs.h"
+#include <string>
 
 namespace OHOS::ArkWeb {
 
-ArkWebDateTime
-ArkWebDateTimeClassToStruct(const OHOS::NWeb::DateTime &class_value);
+class ArkWebBridgeHelper {
+public:
+  virtual ~ArkWebBridgeHelper();
 
-OHOS::NWeb::DateTime
-ArkWebDateTimeStructToClass(const ArkWebDateTime &struct_value);
+  virtual bool Init(bool runMode, const std::string &baseDir) = 0;
+
+  void *LoadFuncSymbol(const std::string &funcName);
+
+protected:
+  ArkWebBridgeHelper() = default;
+
+#ifdef __MUSL__
+  bool LoadLibFile(int mode, const std::string &libNsName,
+                   const std::string &libDirPath,
+                   const std::string &libFileName);
+#else
+  bool LoadLibFile(int mode, const std::string &libFilePath);
+#endif
+
+private:
+  void UnloadLibFile();
+
+  void *libFileHandler_;
+};
 
 } // namespace OHOS::ArkWeb
 
-#endif // ARK_WEB_CORE_STRUCT_UTILS_H_
+#endif // ARK_WEB_BRIDGE_HELPER_H_
