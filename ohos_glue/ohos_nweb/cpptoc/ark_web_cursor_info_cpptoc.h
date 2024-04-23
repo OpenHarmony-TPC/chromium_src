@@ -13,21 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef ARK_WEB_CORE_STRUCT_UTILS_H_
-#define ARK_WEB_CORE_STRUCT_UTILS_H_
+#ifndef ARK_WEB_CURSOR_INFO_CPPTOC_H_
+#define ARK_WEB_CURSOR_INFO_CPPTOC_H_
 #pragma once
 
-#include "include/nweb_handler.h"
-#include "ohos_nweb/include/ark_web_nweb_structs.h"
+#include "base/cpptoc/ark_web_cpptoc_ref_counted.h"
+#include "ohos_nweb/capi/ark_web_cursor_info_capi.h"
+#include "ohos_nweb/include/ark_web_cursor_info.h"
 
 namespace OHOS::ArkWeb {
 
-ArkWebDateTime
-ArkWebDateTimeClassToStruct(const OHOS::NWeb::DateTime &class_value);
-
-OHOS::NWeb::DateTime
-ArkWebDateTimeStructToClass(const ArkWebDateTime &struct_value);
+// Wrap a C++ class with a C structure.
+// This class may be instantiated and accessed DLL-side only.
+class ArkWebCursorInfoCppToC
+    : public ArkWebCppToCRefCounted<ArkWebCursorInfoCppToC, ArkWebCursorInfo,
+                                    ark_web_cursor_info_t> {
+public:
+  ArkWebCursorInfoCppToC();
+  virtual ~ArkWebCursorInfoCppToC();
+};
 
 } // namespace OHOS::ArkWeb
 
-#endif // ARK_WEB_CORE_STRUCT_UTILS_H_
+#endif // ARK_WEB_CURSOR_INFO_CPPTOC_H_
