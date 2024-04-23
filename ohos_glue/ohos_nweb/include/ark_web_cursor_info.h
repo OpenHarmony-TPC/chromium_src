@@ -13,21 +13,36 @@
  * limitations under the License.
  */
 
-#ifndef ARK_WEB_CORE_STRUCT_UTILS_H_
-#define ARK_WEB_CORE_STRUCT_UTILS_H_
+#ifndef ARK_WEB_CURSOR_INFO_H_
+#define ARK_WEB_CURSOR_INFO_H_
 #pragma once
 
-#include "include/nweb_handler.h"
-#include "ohos_nweb/include/ark_web_nweb_structs.h"
+#include "base/include/ark_web_base_ref_counted.h"
 
 namespace OHOS::ArkWeb {
 
-ArkWebDateTime
-ArkWebDateTimeClassToStruct(const OHOS::NWeb::DateTime &class_value);
+/*--ark web(source=web core)--*/
+class ArkWebCursorInfo : public virtual ArkWebBaseRefCounted {
+public:
+  /*--ark web()--*/
+  virtual int32_t GetX() = 0;
 
-OHOS::NWeb::DateTime
-ArkWebDateTimeStructToClass(const ArkWebDateTime &struct_value);
+  /*--ark web()--*/
+  virtual int32_t GetY() = 0;
+
+  /*--ark web()--*/
+  virtual uint8_t *GetBuff() = 0;
+
+  /*--ark web()--*/
+  virtual float GetScale() = 0;
+
+  /*--ark web()--*/
+  virtual int32_t GetWidth() = 0;
+
+  /*--ark web()--*/
+  virtual int32_t GetHeight() = 0;
+};
 
 } // namespace OHOS::ArkWeb
 
-#endif // ARK_WEB_CORE_STRUCT_UTILS_H_
+#endif // ARK_WEB_CURSOR_INFO_H_
