@@ -13,34 +13,32 @@
  * limitations under the License.
  */
 
-#ifndef ARK_AAFWK_RENDER_SCHEDULER_HOST_ADAPTER_CAPI_H_
-#define ARK_AAFWK_RENDER_SCHEDULER_HOST_ADAPTER_CAPI_H_
+#ifndef ARK_AAFWK_BROWSER_HOST_ADAPTER_CAPI_H
+#define ARK_AAFWK_BROWSER_HOST_ADAPTER_CAPI_H
 #pragma once
 
 #include "base/capi/ark_web_base_ref_counted_capi.h"
+#include "base/include/ark_web_types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct _ark_aafwk_render_scheduler_host_adapter_t {
-  /**
-   * @brief Base structure.
-   */
-  ark_web_base_ref_counted_t base;
+typedef struct _ark_aafwk_browser_host_adapter_t {
+    /**
+     * @brief Base structure
+    */
+    ark_web_base_ref_counted_t base;
 
-  void(ARK_WEB_CALLBACK *notify_browser_fd)(
-      struct _ark_aafwk_render_scheduler_host_adapter_t *self, int32_t ipcFd,
-      int32_t sharedFd, int32_t crashFd);
+    void*(ARK_WEB_CALLBACK* get_surface_from_kernel)(
+        struct _ark_aafwk_browser_host_adapter_t* self, int32_t surface_id);
 
-  void(ARK_WEB_CALLBACK *notify_browser)(
-      struct _ark_aafwk_render_scheduler_host_adapter_t *self, int32_t ipcFd,
-      int32_t sharedFd, int32_t crashFd,
-      struct _ark_aafwk_browser_client_adapter_t* adapter);
-} ark_aafwk_render_scheduler_host_adapter_t;
+    void(ARK_WEB_CALLBACK* destroy_surface_from_kernel)(
+        struct _ark_aafwk_browser_host_adapter_t* self, int32_t surface_id);
+} ark_aafwk_browser_host_adapter_t;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ARK_AAFWK_RENDER_SCHEDULER_HOST_ADAPTER_CAPI_H_
+#endif // ARK_AAFWK_BROWSER_HOST_ADAPTER_CAPI_H
