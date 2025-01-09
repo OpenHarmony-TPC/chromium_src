@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef GPU_COMMAND_BUFFER_SERVICE_OHOS_NATIVE_BUFFER_GL_OWNER_H_
-#define GPU_COMMAND_BUFFER_SERVICE_OHOS_NATIVE_BUFFER_GL_OWNER_H_
+#ifndef GPU_COMMAND_BUFFER_SERVICE_OHOS_HW_VIDEO_NATIVE_BUFFER_GL_OWNER_H_
+#define GPU_COMMAND_BUFFER_SERVICE_OHOS_HW_VIDEO_NATIVE_BUFFER_GL_OWNER_H_
 
 #include <memory>
 
@@ -23,14 +23,12 @@ class AbstractTextureOHOS;
 class ScopedNativeBufferFenceSync;
 class TextureBase;
 
-
-
-class GPU_GLES2_EXPORT SameLayerNativeBufferGLOwner
+class GPU_GLES2_EXPORT HwVideoNativeBufferGLOwner
     : public NativeImageTextureOwner,
       public RefCountedLockHelperDrDc {
  public:
-  SameLayerNativeBufferGLOwner(const SameLayerNativeBufferGLOwner&) = delete;
-  SameLayerNativeBufferGLOwner& operator=(const SameLayerNativeBufferGLOwner&) = delete;
+  HwVideoNativeBufferGLOwner(const HwVideoNativeBufferGLOwner&) = delete;
+  HwVideoNativeBufferGLOwner& operator=(const HwVideoNativeBufferGLOwner&) = delete;
 
   gl::GLContext* GetContext() const override;
   gl::GLSurface* GetSurface() const override;
@@ -63,7 +61,7 @@ class GPU_GLES2_EXPORT SameLayerNativeBufferGLOwner
   // ensuring synchronization of its use in GL using fences.
   class ScopedCurrentImageRef {
    public:
-    ScopedCurrentImageRef(SameLayerNativeBufferGLOwner* texture_owner,
+    ScopedCurrentImageRef(HwVideoNativeBufferGLOwner* texture_owner,
                           OhosWindowBuffer* image,
                           base::ScopedFD ready_fence);
 
@@ -75,15 +73,15 @@ class GPU_GLES2_EXPORT SameLayerNativeBufferGLOwner
     base::ScopedFD GetReadyFence() const;
 
    private:
-    raw_ptr<SameLayerNativeBufferGLOwner> texture_owner_;
+    raw_ptr<HwVideoNativeBufferGLOwner> texture_owner_;
     raw_ptr<OhosWindowBuffer> image_;
     base::ScopedFD ready_fence_;
   };
 
-  SameLayerNativeBufferGLOwner(std::unique_ptr<AbstractTextureOHOS> texture,
+  HwVideoNativeBufferGLOwner(std::unique_ptr<AbstractTextureOHOS> texture,
                      scoped_refptr<SharedContextState> context_state,
                      scoped_refptr<RefCountedLock> drdc_lock);
-  ~SameLayerNativeBufferGLOwner() override;
+  ~HwVideoNativeBufferGLOwner() override;
 
   // Registers and releases a ref on the image. Once the ref-count for an image
   // goes to 0, it is released back to the gl::OhosNativeImage with an optional release
@@ -140,4 +138,4 @@ class GPU_GLES2_EXPORT SameLayerNativeBufferGLOwner
 
 }  // namespace gpu
 
-#endif  // GPU_COMMAND_BUFFER_SERVICE_OHOS_NATIVE_BUFFER_GL_OWNER_H_
+#endif  // GPU_COMMAND_BUFFER_SERVICE_OHOS_HW_VIDEO_NATIVE_BUFFER_GL_OWNER_H_
