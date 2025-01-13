@@ -1,19 +1,19 @@
-// Copyright 2021 The Chromium Authors
+// Copyright (c) 2025 Huawei Device Co., Ltd. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "gpu/command_buffer/service/shared_image/skia_vk_ozone_image_representation.h"
+#include "gpu/command_buffer/service/shared_image/skia_vk_ohos_native_buffer_image_representation.h"
 
 #include <utility>
 
 #include "components/viz/common/gpu/vulkan_context_provider.h"
 #include "components/viz/common/resources/resource_format_utils.h"
 #include "gpu/command_buffer/common/shared_image_usage.h"
-#include "gpu/command_buffer/service/external_semaphore_pool.h"
+#include "gpu/command_buffer/service/mailbox_manager.h"
 #include "gpu/command_buffer/service/memory_tracking.h"
 #include "gpu/command_buffer/service/shared_context_state.h"
 #include "gpu/command_buffer/service/shared_image/shared_image_representation.h"
-#include "gpu/command_buffer/service/skia_utils.h"
+#include "gpu/command_buffer/service/shared_image/skia_gl_image_representation.h"
 #include "gpu/command_buffer/service/texture_manager.h"
 #include "gpu/vulkan/vulkan_device_queue.h"
 #include "gpu/vulkan/vulkan_fence_helper.h"
@@ -24,38 +24,27 @@
 #include "third_party/skia/include/core/SkColorSpace.h"
 #include "third_party/skia/include/core/SkPromiseImageTexture.h"
 #include "third_party/skia/include/gpu/GrBackendSemaphore.h"
+#include "third_party/skia/include/gpu/GrBackendSurface.h"
+#include "ui/gl/gl_utils.h"
 
 namespace gpu {
-
-// Vk backed Skia representation of OzoneImageBacking.
-SkiaVkOzoneImageRepresentation::SkiaVkOzoneImageRepresentation(
+const int semaphoresNum = 2;
+SkiaVkNBImageRepresentation::SkiaVkNBImageRepresentation(
     SharedImageManager* manager,
-#if BUILDFLAG(IS_OHOS)
-    SharedImageBacking* backing,
-#else
-    OzoneImageBacking* backing,
-#endif
+    OhosImageBacking* backing,
     scoped_refptr<SharedContextState> context_state,
-    std::unique_ptr<VulkanImage> vulkan_image,
     MemoryTypeTracker* tracker)
     : SkiaGaneshImageRepresentation(context_state->gr_context(),
                                     manager,
                                     backing,
                                     tracker),
-      vulkan_image_(std::move(vulkan_image)),
       context_state_(std::move(context_state)) {
   DCHECK(backing);
   DCHECK(context_state_);
   DCHECK(context_state_->vk_context_provider());
-  DCHECK(vulkan_image_);
-
-  promise_texture_ = SkPromiseImageTexture::Make(
-      GrBackendTexture(size().width(), size().height(),
-                       CreateGrVkImageInfo(vulkan_image_.get())));
-  DCHECK(promise_texture_);
 }
 
-SkiaVkOzoneImageRepresentation::~SkiaVkOzoneImageRepresentation() {
+SkiaVkNBImageRepresentation::~SkiaVkNBImageRepresentation() {
   DCHECK_EQ(mode_, RepresentationAccessMode::kNone);
   surface_.reset();
   if (vulkan_image_) {
@@ -67,7 +56,8 @@ SkiaVkOzoneImageRepresentation::~SkiaVkOzoneImageRepresentation() {
   }
 }
 
-std::vector<sk_sp<SkSurface>> SkiaVkOzoneImageRepresentation::BeginWriteAccess(
+std::vector<sk_sp<SkSurface>>
+SkiaVkNBImageRepresentation::BeginWriteAccess(
     int final_msaa_count,
     const SkSurfaceProps& surface_props,
     const gfx::Rect& update_rect,
@@ -77,15 +67,14 @@ std::vector<sk_sp<SkSurface>> SkiaVkOzoneImageRepresentation::BeginWriteAccess(
   DCHECK_EQ(mode_, RepresentationAccessMode::kNone);
   DCHECK(promise_texture_);
 
-  if (!BeginAccess(/*readonly=*/false, begin_semaphores, end_semaphores))
+  if (!BeginAccess(/*readonly=*/false, begin_semaphores, end_semaphores,
+                   base::ScopedFD())) {
     return {};
+  }
 
   auto* gr_context = context_state_->gr_context();
   if (gr_context->abandoned()) {
     LOG(ERROR) << "GrContext is abandoned.";
-    ozone_backing()->EndAccess(/*readonly=*/false,
-                               OzoneImageBacking::AccessStream::kVulkan,
-                               gfx::GpuFenceHandle());
     return {};
   }
 
@@ -99,9 +88,6 @@ std::vector<sk_sp<SkSurface>> SkiaVkOzoneImageRepresentation::BeginWriteAccess(
         &surface_props);
     if (!surface_) {
       LOG(ERROR) << "MakeFromBackendTexture() failed.";
-      ozone_backing()->EndAccess(/*readonly=*/false,
-                                 OzoneImageBacking::AccessStream::kVulkan,
-                                 gfx::GpuFenceHandle());
       return {};
     }
     surface_msaa_count_ = final_msaa_count;
@@ -115,14 +101,15 @@ std::vector<sk_sp<SkSurface>> SkiaVkOzoneImageRepresentation::BeginWriteAccess(
 }
 
 std::vector<sk_sp<SkPromiseImageTexture>>
-SkiaVkOzoneImageRepresentation::BeginWriteAccess(
+SkiaVkNBImageRepresentation::BeginWriteAccess(
     std::vector<GrBackendSemaphore>* begin_semaphores,
     std::vector<GrBackendSemaphore>* end_semaphores,
     std::unique_ptr<GrBackendSurfaceMutableState>* end_state) {
   DCHECK_EQ(mode_, RepresentationAccessMode::kNone);
   DCHECK(promise_texture_);
 
-  if (!BeginAccess(/*readonly=*/false, begin_semaphores, end_semaphores)) {
+  if (!BeginAccess(/*readonly=*/false, begin_semaphores, end_semaphores,
+                   base::ScopedFD())) {
     return {};
   }
 
@@ -133,15 +120,22 @@ SkiaVkOzoneImageRepresentation::BeginWriteAccess(
   return {promise_texture_};
 }
 
-void SkiaVkOzoneImageRepresentation::EndWriteAccess() {
+void SkiaVkNBImageRepresentation::EndWriteAccess() {
   DCHECK_EQ(mode_, RepresentationAccessMode::kWrite);
   if (surface_)
     DCHECK(surface_->unique());
+
+  // TODO(penghuang): reset canvas cached in |surface_|, when skia provides an
+  // API to do it.
+  // Currently, the |surface_| is only used with SkSurface::draw(ddl), it
+  // doesn't create a canvas and change the state of it, so we don't get any
+  // render issues. But we shouldn't assume this backing will only be used in
+  // this way.
   EndAccess(/*readonly=*/false);
 }
 
 std::vector<sk_sp<SkPromiseImageTexture>>
-SkiaVkOzoneImageRepresentation::BeginReadAccess(
+SkiaVkNBImageRepresentation::BeginReadAccess(
     std::vector<GrBackendSemaphore>* begin_semaphores,
     std::vector<GrBackendSemaphore>* end_semaphores,
     std::unique_ptr<GrBackendSurfaceMutableState>* end_state) {
@@ -149,7 +143,8 @@ SkiaVkOzoneImageRepresentation::BeginReadAccess(
   DCHECK(!surface_);
   DCHECK(promise_texture_);
 
-  if (!BeginAccess(/*readonly=*/true, begin_semaphores, end_semaphores)) {
+  if (!BeginAccess(/*readonly=*/true, begin_semaphores, end_semaphores,
+                   std::move(init_read_fence_))) {
     return {};
   }
 
@@ -160,60 +155,72 @@ SkiaVkOzoneImageRepresentation::BeginReadAccess(
   return {promise_texture_};
 }
 
-void SkiaVkOzoneImageRepresentation::EndReadAccess() {
+void SkiaVkNBImageRepresentation::EndReadAccess() {
   DCHECK_EQ(mode_, RepresentationAccessMode::kRead);
   DCHECK(!surface_);
 
   EndAccess(/*readonly=*/true);
 }
 
-gpu::VulkanImplementation* SkiaVkOzoneImageRepresentation::vk_implementation() {
+gpu::VulkanImplementation*
+SkiaVkNBImageRepresentation::vk_implementation() {
   return context_state_->vk_context_provider()->GetVulkanImplementation();
 }
 
-VkDevice SkiaVkOzoneImageRepresentation::vk_device() {
+VkDevice SkiaVkNBImageRepresentation::vk_device() {
   return context_state_->vk_context_provider()
       ->GetDeviceQueue()
       ->GetVulkanDevice();
 }
 
-bool SkiaVkOzoneImageRepresentation::BeginAccess(
+VkPhysicalDevice SkiaVkNBImageRepresentation::vk_phy_device() {
+  return context_state_->vk_context_provider()
+      ->GetDeviceQueue()
+      ->GetVulkanPhysicalDevice();
+}
+
+VkQueue SkiaVkNBImageRepresentation::vk_queue() {
+  return context_state_->vk_context_provider()
+      ->GetDeviceQueue()
+      ->GetVulkanQueue();
+}
+
+bool SkiaVkNBImageRepresentation::BeginAccess(
     bool readonly,
     std::vector<GrBackendSemaphore>* begin_semaphores,
-    std::vector<GrBackendSemaphore>* end_semaphores) {
+    std::vector<GrBackendSemaphore>* end_semaphores,
+    base::ScopedFD init_read_fence) {
   DCHECK(begin_semaphores);
   DCHECK(end_access_semaphore_ == VK_NULL_HANDLE);
 
-  std::vector<gfx::GpuFenceHandle> fences;
-  if (!ozone_backing()->BeginAccess(readonly,
-                                    OzoneImageBacking::AccessStream::kVulkan,
-                                    &fences, need_end_fence_))
-    return false;
-
-  VkDevice device = vk_device();
-  auto* implementation = vk_implementation();
-
-  for (auto& fence : fences) {
-    VkSemaphore vk_semaphore = implementation->ImportSemaphoreHandle(
-        device, SemaphoreHandle(std::move(fence)));
-
-    begin_access_semaphores_.emplace_back(vk_semaphore);
-    begin_semaphores->emplace_back();
-    begin_semaphores->back().initVulkan(vk_semaphore);
+  // Synchronise the read access with the writes.
+  base::ScopedFD sync_fd;
+  if (readonly) {
+    if (!ohos_backing()->BeginRead(this, &sync_fd))
+      return false;
+  } else {
+    if (!ohos_backing()->BeginWrite(&sync_fd))
+      return false;
   }
 
-  if (end_semaphores && need_end_fence_) {
-    end_access_semaphore_ =
-        vk_implementation()->CreateExternalSemaphore(vk_device());
-
-    if (end_access_semaphore_ == VK_NULL_HANDLE) {
-      DLOG(ERROR) << "Failed to create the external semaphore.";
-      ozone_backing()->EndAccess(readonly,
-                                 OzoneImageBacking::AccessStream::kVulkan,
-                                 gfx::GpuFenceHandle());
+  sync_fd = gl::MergeFDs(std::move(sync_fd), std::move(init_read_fence));
+  DCHECK(begin_access_semaphore_ == VK_NULL_HANDLE);
+  if (sync_fd.is_valid()) {
+    begin_access_semaphore_ = vk_implementation()->ImportSemaphoreHandle(
+        vk_device(),
+        SemaphoreHandle(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
+                        std::move(sync_fd)));
+    if (begin_access_semaphore_ == VK_NULL_HANDLE) {
+      DLOG(ERROR) << "Failed to import semaphore from sync_fd.";
       return false;
     }
+  }
 
+  if (begin_access_semaphore_ != VK_NULL_HANDLE) {
+    begin_semaphores->emplace_back();
+    begin_semaphores->back().initVulkan(begin_access_semaphore_);
+  }
+  if (end_semaphores) {
     end_semaphores->emplace_back();
     end_semaphores->back().initVulkan(end_access_semaphore_);
   }
@@ -223,20 +230,27 @@ bool SkiaVkOzoneImageRepresentation::BeginAccess(
   return true;
 }
 
-void SkiaVkOzoneImageRepresentation::EndAccess(bool readonly) {
-  gfx::GpuFenceHandle fence;
+void SkiaVkNBImageRepresentation::EndAccess(bool readonly) {
+  base::ScopedFD sync_fd;
   if (end_access_semaphore_ != VK_NULL_HANDLE) {
     SemaphoreHandle semaphore_handle = vk_implementation()->GetSemaphoreHandle(
         vk_device(), end_access_semaphore_);
-    fence = std::move(semaphore_handle).ToGpuFenceHandle();
-    DCHECK(!fence.is_null());
+    sync_fd = semaphore_handle.TakeHandle();
+    DCHECK(sync_fd.is_valid());
   }
 
-  ozone_backing()->EndAccess(readonly, OzoneImageBacking::AccessStream::kVulkan,
-                             std::move(fence));
+  if (readonly) {
+    ohos_backing()->EndRead(this, std::move(sync_fd));
+  } else {
+    ohos_backing()->EndWrite(std::move(sync_fd));
+  }
 
-  std::vector<VkSemaphore> semaphores = std::move(begin_access_semaphores_);
-  begin_access_semaphores_.clear();
+  std::vector<VkSemaphore> semaphores;
+  semaphores.reserve(semaphoresNum);
+  if (begin_access_semaphore_ != VK_NULL_HANDLE) {
+    semaphores.emplace_back(begin_access_semaphore_);
+    begin_access_semaphore_ = VK_NULL_HANDLE;
+  }
   if (end_access_semaphore_ != VK_NULL_HANDLE) {
     semaphores.emplace_back(end_access_semaphore_);
     end_access_semaphore_ = VK_NULL_HANDLE;
@@ -253,7 +267,7 @@ void SkiaVkOzoneImageRepresentation::EndAccess(bool readonly) {
 }
 
 std::unique_ptr<GrBackendSurfaceMutableState>
-SkiaVkOzoneImageRepresentation::GetEndAccessState() {
+SkiaVkNBImageRepresentation::GetEndAccessState() {
   // There is no layout to change if there is no image.
   if (!vulkan_image_)
     return nullptr;
@@ -267,13 +281,12 @@ SkiaVkOzoneImageRepresentation::GetEndAccessState() {
   // same vkDevice, so technically we could transfer between queues instead of
   // jumping to external queue. But currently it's not possible because we
   // create new vkImage each time.
-  if ((ozone_backing()->usage() & ~kSingleDeviceUsage) ||
-      ozone_backing()->is_thread_safe()) {
-    DCHECK_NE(vulkan_image_->queue_family_index(), VK_QUEUE_FAMILY_IGNORED);
-
+  if ((ohos_backing()->usage() & ~kSingleDeviceUsage) ||
+      ohos_backing()->is_thread_safe()) {
     return std::make_unique<GrBackendSurfaceMutableState>(
         VK_IMAGE_LAYOUT_UNDEFINED, vulkan_image_->queue_family_index());
   }
+
   return nullptr;
 }
 
