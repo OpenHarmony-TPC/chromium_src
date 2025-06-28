@@ -13,26 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef CHILD_PROCESS_UTILS_H_
-#define CHILD_PROCESS_UTILS_H_
+#ifndef UI_LONG_PRESS_DRAG_SELECTOR_UTILS_H_
+#define UI_LONG_PRESS_DRAG_SELECTOR_UTILS_H_
 
 #include "arkweb/build/features/features.h"
+#include "ui/gfx/geometry/point_f.h"
+#include "base/memory/raw_ptr.h"
 
-namespace content {
-class ChildProcess;
-class ChildThreadImpl;
+namespace ui {
+class LongPressDragSelector;
 
-class ChildProcessUtils {
-public:
-  ChildProcess* childProcess;
-  ChildProcessUtils(ChildProcess* impl);
-#if BUILDFLAG(ARKWEB_PERFORMANCE_SCHEDULING)
-  void ReportIoThreadStatus(bool is_created, bool is_in_browser_process);
-  void ReportCompositorKeyThread(bool is_created, bool is_in_browser_process);
-#endif
-#if BUILDFLAG(ARKWEB_DFX_TRACING)
-  void ReportHisyevent(int64_t block_time, const std::string& mode, bool is_in_browser_process);
-#endif
+class LongPressDragSelectorUtils {
+ public:
+  LongPressDragSelectorUtils(LongPressDragSelector* controller);
+  ~LongPressDragSelectorUtils();
+  bool PositionInSelection(gfx::PointF position,
+                           gfx::PointF start,
+                           gfx::PointF end);
+  raw_ptr<LongPressDragSelector> controller_;
 };
-}
-#endif
+}  // namespace ui
+#endif  // UI_LONG_PRESS_DRAG_SELECTOR_UTILS_H_
