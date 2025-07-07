@@ -6,7 +6,7 @@
 <translation id="1088086359088493902">秒</translation>
 <translation id="1142001580032786438">显示星期选择器</translation>
 <translation id="1188858454923323853">补充内容</translation>
-<translation id="1206619573307042055">marquee</translation>
+<translation id="1206619573307042055">滚动文字</translation>
 <translation id="1206693055195146388">滑块</translation>
 <translation id="1211441953136645838">尾注</translation>
 <translation id="1281252709823657822">对话框</translation>
@@ -57,7 +57,7 @@
 <translation id="3078740164268491126">表格</translation>
 <translation id="3086746722712840547">备注</translation>
 <translation id="3175736971608411871">定时器</translation>
-<translation id="3199563858620722075">组合框</translation>
+<translation id="3199563858620722075">下拉列表</translation>
 <translation id="3220661731597678625">当前步骤</translation>
 <translation id="3329013043687509092">饱和度</translation>
 <translation id="3486220673238053218">定义</translation>
@@ -204,13 +204,13 @@
 <translation id="8403857369060869934">已播放时间：<ph name="ELAPSED_TIME" /></translation>
 <translation id="8415319359811155763">部分</translation>
 <translation id="8433900881053900389">工具栏</translation>
-<translation id="8461852803063341183">单选按钮</translation>
+<translation id="8461852803063341183">单选框</translation>
 <translation id="8474886197722836894">献辞</translation>
 <translation id="8531739829932800271">勘误表</translation>
 <translation id="8534579021159131403">分钟</translation>
 <translation id="8541249477527128034">媒体控件</translation>
 <translation id="8550857728288566671">图形符号</translation>
-<translation id="8583702881314752957">定义列表</translation>
+<translation id="8583702881314752957">列表</translation>
 <translation id="8597182159515967513">标题</translation>
 <translation id="860475260694818407">目录</translation>
 <translation id="8613126697340063924">控制远程播放</translation>
@@ -236,4 +236,6 @@
 <translation id="945780513535800434">已部分选中</translation>
 <translation id="954003015749068518">进入“画中画”模式</translation>
 <translation id="966787709310836684">菜单</translation>
+<translation id="7972837668077967426">图片</translation>
+<translation id="219963704726703688">编辑框</translation>
 </translationbundle>
