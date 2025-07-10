@@ -13,8 +13,8 @@
  * limitations under the License.
  */
  
-#ifndef NWEB_EXTENSION_WINDOW_HANDLER_DELEGATE_H
-#define NWEB_EXTENSION_WINDOW_HANDLER_DELEGATE_H
+#ifndef NWEB_EXTENSION_WINDOW_CEF_DELEGATE_H
+#define NWEB_EXTENSION_WINDOW_CEF_DELEGATE_H
  
 #include <string>
 #include <mutex>
@@ -26,19 +26,17 @@
 #include "ohos_nweb/src/capi/web_extension_window_items.h"
  
 namespace OHOS::NWeb {
+
 using WindowCreatedCallback = base::RepeatingCallback<void(const std::optional<WebExtensionWindow>&,
                                                            const std::optional<std::string>&)>;
 using WindowUpdatedCallback = base::RepeatingCallback<void(const std::optional<WebExtensionWindow>&,
                                                            const std::optional<std::string>&)>;
 using WindowRemovedCallback = base::RepeatingCallback<void(const std::optional<std::string>&)>;
- 
-class NweExtensionWindowDelegateHandler {
+
+class NweExtensionWindowCefDelegate {
   public:
-    static NweExtensionWindowDelegateHandler* GetInstance();
-    static void RegisterWebExtensionWindowsApiListener(
-      std::shared_ptr<NWebExtensionWindowsApiCallback> web_extension_windows_api_callback);
-    static void UnRegisterWebExtensionWindowsApiListener();
-  
+    static NweExtensionWindowCefDelegate* GetInstance();
+
     void WindowCreated(const WebExtensionWindow& window);
     void WindowRemoved(const WebExtensionWindow& window);
     void WindowBoundsChanged(const WebExtensionWindow& window);
@@ -53,6 +51,8 @@ class NweExtensionWindowDelegateHandler {
     std::optional<WebExtensionWindow> OnGetWindow(
       int windowId,
       const WebExtensionWindowQueryOptions& queryOptions);
+    std::vector<WebExtensionWindow> OnGetAllWindows(
+      const WebExtensionWindowQueryOptions& queryOptions);
     std::optional<WebExtensionWindow> OnGetCurrentWindow(
       int currentWindowId,
       const WebExtensionWindowQueryOptions& queryOptions);
@@ -66,12 +66,9 @@ class NweExtensionWindowDelegateHandler {
                               const std::optional<WebExtensionWindow>& window,
                               const std::optional<std::string>& error);
     void WindowRemoveCallback(int request_id, const std::optional<std::string>& error);
-
-    std::vector<WebExtensionWindow> OnGetAllWindows(
-      const WebExtensionWindowQueryOptions& queryOptions);
  
   private:
-    NweExtensionWindowDelegateHandler();
+    NweExtensionWindowCefDelegate();
 };
 } // namespace OHOS::NWeb
-#endif  // NWEB_EXTENSION_WINDOW_HANDLER_DELEGATE_H
+#endif  // NWEB_EXTENSION_WINDOW_CEF_DELEGATE_H
