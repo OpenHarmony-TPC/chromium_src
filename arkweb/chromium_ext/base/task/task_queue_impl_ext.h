@@ -13,22 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef NWEB_EXTENSION_UTILS_H_
-#define NWEB_EXTENSION_UTILS_H_
+#ifndef TASK_QUEUE_IMPL_EXT_H_
+#define TASK_QUEUE_IMPL_EXT_H_
 
-#include "content/public/browser/browser_context.h"
+#include "arkweb/build/features/features.h"
+#include "base/task/sequence_manager/tasks.h"
 
-namespace OHOS::NWeb {
+#if BUILDFLAG(ARKWEB_CRASHPAD)
+namespace base {
 
-content::BrowserContext* GetBrowserContext();
+namespace sequence_manager {
 
-std::optional<std::string> GetExtensionContextType(
-    content::BrowserContext* browser_context);
+namespace internal {
 
-std::optional<bool> GetIncludeIncognitoInformation(
-    const std::string& extension_id,
-    content::BrowserContext* browser_context);
+void TaskCheckWithFatalMessage(const Task& task);
 
-}  // namespace OHOS::NWeb
+} // namespace internal 
 
-#endif  // NWEB_EXTENSION_UTILS_H_
+} // namespace sequence_manager
+
+} // namespace base
+#endif
+
+#endif // TASK_QUEUE_IMPL_EXT_H_
