@@ -13,27 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef NWEB_EXTENSION_UTILS_H_
-#define NWEB_EXTENSION_UTILS_H_
+#ifndef NWEB_EXTENSION_PERMISSIONS_HANDLER_H_
+#define NWEB_EXTENSION_PERMISSIONS_HANDLER_H_
 
-#include "content/public/browser/browser_context.h"
-#include "extensions/common/extension.h"
+#include <string>
 
 namespace OHOS::NWeb {
 
-content::BrowserContext* GetBrowserContext();
-
-const extensions::Extension* FindExtensionById(
-    content::BrowserContext* browser_context,
-    const std::string& extension_id);
-
-std::optional<std::string> GetExtensionContextType(
-    content::BrowserContext* browser_context);
-
-std::optional<bool> GetIncludeIncognitoInformation(
-    const std::string& extension_id,
-    content::BrowserContext* browser_context);
+class NWebExtensionPermissionsHandler {
+ public:
+  static int GetExtensionSiteInteraction(const std::string& extension_id,
+                                         int tab_id);
+};
 
 }  // namespace OHOS::NWeb
 
-#endif  // NWEB_EXTENSION_UTILS_H_
+#endif  // NWEB_EXTENSION_PERMISSIONS_HANDLER_H_
