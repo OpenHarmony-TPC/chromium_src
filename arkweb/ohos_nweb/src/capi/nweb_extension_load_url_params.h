@@ -12,26 +12,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef NWEB_EXTENSION_UTILS_H_
-#define NWEB_EXTENSION_UTILS_H_
-
-#include "content/public/browser/browser_context.h"
-
-namespace OHOS::NWeb {
-
-content::BrowserContext* GetBrowserContext();
-
-std::optional<std::string> GetExtensionContextType(
-    content::BrowserContext* browser_context);
-
-std::optional<bool> GetIncludeIncognitoInformation(
-    const std::string& extension_id,
-    content::BrowserContext* browser_context);
-
-content::BrowserContext* GetIncognitoContext(
-    content::BrowserContext* browser_context);
-
-}  // namespace OHOS::NWeb
-
-#endif  // NWEB_EXTENSION_UTILS_H_
+ 
+#ifndef OHOS_NWEB_SRC_WEB_EXTENSION_LOAD_URL_PARAMS_H_
+#define OHOS_NWEB_SRC_WEB_EXTENSION_LOAD_URL_PARAMS_H_
+ 
+#include <string>
+#include <vector>
+ 
+typedef enum {
+	LOAD_TYPE_DEFAULT = 0,
+	LOAD_TYPE_HTTP_POST = 1,
+} LoadUrlType;
+ 
+ 
+struct LoadUrlParams {
+  std::string url;
+  LoadUrlType load_type;
+  std::string refer;
+  std::string headers;
+  std::string post_data;
+  bool allow_https_upgrade;
+  int32_t transition_type = -1;
+};
+ 
+ 
+#endif //OHOS_NWEB_SRC_WEB_EXTENSION_LOAD_URL_PARAMS_H_
