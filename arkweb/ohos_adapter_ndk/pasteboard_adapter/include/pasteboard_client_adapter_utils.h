@@ -13,30 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_NWEB_SRC_WEB_EXTENSION_DISTILL_ITEM_H_
-#define OHOS_NWEB_SRC_WEB_EXTENSION_DISTILL_ITEM_H_
+#ifndef PASTEBOARD_CLIENT_ADAPTER_UTILS_H
+#define PASTEBOARD_CLIENT_ADAPTER_UTILS_H
 
-#include <string>
-
-enum class DistillType: int32_t {
-    NOVEL_BOOKDETAIL = 0,
-    NOVEL_CONTENT = 1,
-    UNKNOWN,
+namespace OHOS::NWeb {
+class PasteboardClientAdapterUtils {
+ public:
+  static int GetUriFromPath(const char* path,
+                            unsigned int length,
+                            char** result);
 };
+}  // namespace OHOS::NWeb
 
-enum class FetchAction: int32_t {
-    FORWARD = 0,
-    BACKWARD = 1,
-    UNKNOWN,
-};
-
-struct DistillOptions {
-    DistillType distill_type;
-    FetchAction fetch_action;
-    int32_t max_distill_pages;
-    std::string distill_url;
-};
-
-typedef void (*DistillCallback)(int32_t nweb_id, uint64_t request_id, const char* distill_info);
-
-#endif //OHOS_NWEB_SRC_WEB_EXTENSION_DISTILL_ITEM_H_
+#endif  // PASTEBOARD_CLIENT_ADAPTER_UTILS_H
