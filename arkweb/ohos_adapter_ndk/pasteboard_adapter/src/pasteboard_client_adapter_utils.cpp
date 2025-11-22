@@ -13,30 +13,17 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_NWEB_SRC_WEB_EXTENSION_DISTILL_ITEM_H_
-#define OHOS_NWEB_SRC_WEB_EXTENSION_DISTILL_ITEM_H_
+#include "arkweb/ohos_adapter_ndk/pasteboard_adapter/include/pasteboard_client_adapter_utils.h"
 
-#include <string>
+#include <filemanagement/file_uri/oh_file_uri.h>
 
-enum class DistillType: int32_t {
-    NOVEL_BOOKDETAIL = 0,
-    NOVEL_CONTENT = 1,
-    UNKNOWN,
-};
+#include "arkweb/ohos_nweb/src/nweb_hilog.h"
 
-enum class FetchAction: int32_t {
-    FORWARD = 0,
-    BACKWARD = 1,
-    UNKNOWN,
-};
+namespace OHOS::NWeb {
 
-struct DistillOptions {
-    DistillType distill_type;
-    FetchAction fetch_action;
-    int32_t max_distill_pages;
-    std::string distill_url;
-};
-
-typedef void (*DistillCallback)(int32_t nweb_id, uint64_t request_id, const char* distill_info);
-
-#endif //OHOS_NWEB_SRC_WEB_EXTENSION_DISTILL_ITEM_H_
+int PasteboardClientAdapterUtils::GetUriFromPath(const char* path,
+                                                unsigned int length,
+                                                char** result) {
+  return OH_FileUri_GetUriFromPath(path, length, result);
+}
+}  // namespace OHOS::NWeb
