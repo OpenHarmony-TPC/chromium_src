@@ -27,44 +27,36 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SERVICES_DEVICE_GENERIC_SENSOR_PLATFORM_SENSOR_PROVIDER_OHOS_H_
-#define SERVICES_DEVICE_GENERIC_SENSOR_PLATFORM_SENSOR_PROVIDER_OHOS_H_
+#ifndef SERVICES_DEVICE_GENERIC_SENSOR_PLATFORM_SENSOR_MAGNETOMETER_OHOS_H_
+#define SERVICES_DEVICE_GENERIC_SENSOR_PLATFORM_SENSOR_MAGNETOMETER_OHOS_H_
 
-#include <sensors/oh_sensor_type.h>
-
-#include "services/device/generic_sensor/platform_sensor_provider.h"
+#include "services/device/generic_sensor/platform_sensor_ohos.h"
 
 namespace device {
 
-class PlatformSensorProviderOhos : public PlatformSensorProvider {
+// Implementation of PlatformSensor for OHOS to query the gyroscope sensor.
+// This is a single instance object per browser process which is created by
+// PlatformSensorProviderOhos.
+class PlatformSensorMagnetometerOhos : public PlatformSensorOhos {
  public:
-  PlatformSensorProviderOhos();
+  PlatformSensorMagnetometerOhos(SensorReadingSharedBuffer* reading_buffer,
+                              base::WeakPtr<PlatformSensorProvider> provider,
+                              Sensor_Info* sensor_info);
 
-  PlatformSensorProviderOhos(const PlatformSensorProviderOhos&) = delete;
-  PlatformSensorProviderOhos& operator=(const PlatformSensorProviderOhos&) =
+  PlatformSensorMagnetometerOhos(const PlatformSensorMagnetometerOhos&) = delete;
+  PlatformSensorMagnetometerOhos& operator=(const PlatformSensorMagnetometerOhos&) =
       delete;
+  ~PlatformSensorMagnetometerOhos();
 
-  ~PlatformSensorProviderOhos() override;
-  base::WeakPtr<PlatformSensorProvider> AsWeakPtr() override;
-
- protected:
-  void CreateSensorInternal(mojom::SensorType type,
-                            CreateSensorCallback callback) override;
+protected:
+  void ReadAndUpdate(std::vector<float>& data, uint32_t length) override;
 
  private:
-  bool IsFusionSensorType(mojom::SensorType type) const;
-  void CreateFusionSensor(mojom::SensorType type,
-                          CreateSensorCallback callback);
-  void CreateBaseSensor(mojom::SensorType type, CreateSensorCallback callback);
-  Sensor_Info* GetSenorInfo(mojom::SensorType type);
+  const uint32_t kMagnDataLength = 3;
 
-  std::unordered_map <Sensor_Type, Sensor_Info*> sensor_map_;
-  RAW_PTR_EXCLUSION Sensor_Info** sensors_;
-  uint32_t count_;
-
-  base::WeakPtrFactory<PlatformSensorProviderOhos> weak_factory_{this};
+  bool ReadData(std::vector<float>& data, uint32_t length, SensorReading& reading);
 };
 
 }  // namespace device
 
-#endif  // SERVICES_DEVICE_GENERIC_SENSOR_PLATFORM_SENSOR_PROVIDER_OHOS_H_
+#endif  // SERVICES_DEVICE_GENERIC_SENSOR_PLATFORM_SENSOR_MAGNETOMETER_OHOS_H_
