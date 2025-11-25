@@ -13,20 +13,16 @@
  * limitations under the License.
  */
 
-#if BUILDFLAG(ARKWEB_COOKIE)
-bool ProfileManager::GetPersistSessionCookies() {
-  return persist_session_cookies_;
-}
+#include "extensions/browser/process_manager.h"
+#include "chrome/browser/profiles/profile.h"
 
-void ProfileManager::SetPersistSessionCookies(bool persist_session_cookies) {
-  persist_session_cookies_ = persist_session_cookies;
-}
-#endif
+namespace extensions {
 
-#if BUILDFLAG(ARKWEB_ARKWEB_EXTENSIONS)
-void ProfileManager::OnOtrProfileAdded(Profile* profile) {
-  for (auto& observer : observers_) {
-    observer.OnOtrProfileAdded(profile);
+void ChromeProcessManagerDelegate::OnOtrProfileAdded(Profile* profile) {
+  if (!profile->IsOffTheRecord()) {
+    return;
   }
+
+  ProcessManager::Get(profile)->MaybeCreateStartupBackgroundHosts();
 }
-#endif // ARKWEB_ARKWEB_EXTENSIONS
+} // namespace extensions
