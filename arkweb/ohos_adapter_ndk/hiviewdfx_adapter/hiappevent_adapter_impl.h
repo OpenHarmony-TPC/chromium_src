@@ -12,31 +12,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+#ifndef HIAPPEVENT_ADAPTER_IMPL_H
+#define HIAPPEVENT_ADAPTER_IMPL_H
 
+#include "arkweb/ohos_adapter_ndk/interfaces/hiappevent_adapter.h"
 
-#ifndef GPU_CONFIG_GPU_FINCH_FEATURES_EXT_H_
-#define GPU_CONFIG_GPU_FINCH_FEATURES_EXT_H_
+namespace OHOS::NWeb {
 
-#include "arkweb/build/features/features.h"
-#include "base/command_line.h"
+class HiAppeventAdapterImpl : public HiAppeventAdapter {
+public:
+    static HiAppeventAdapterImpl& GetInstance();
 
-#if BUILDFLAG(ARKWEB_VULKAN)
-#include "third_party/ohos_ndk/includes/ohos_adapter/ohos_adapter_helper.h"
-#endif
-#include "gpu/config/gpu_finch_features.h"
+    ~HiAppeventAdapterImpl() override = default;
 
-namespace features {
-#if BUILDFLAG(ARKWEB_VULKAN)
-bool IsEnableVulkan();
-#endif
+    void ReportDynamicStastic(const std::string& domain, const std::string& eventName,
+            int32_t eventType, const HiAppeventAdapter::DynamicFrameDropInfo& dynamicFrameDropInfo) override;
 
-#if BUILDFLAG(ARKWEB_VULKAN)
-GPU_EXPORT BASE_DECLARE_FEATURE(kInsertVKEndSemaphore);
-#endif
+};
+} // namespace OHOS::NWeb
 
-#if BUILDFLAG(ARKWEB_DRDC)
-bool IsDrDcForVulkan();
-#endif
-}
-
-#endif
+#endif // HIAPPEVENT_ADAPTER_IMPL_H
