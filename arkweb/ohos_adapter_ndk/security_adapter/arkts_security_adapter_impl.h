@@ -12,12 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-module device.mojom;
 
-interface ResSchedReport {
-  ReportData(uint8 status, uint32 pid, uint32 platform_id);
-  ReportGestureId(uint32 id);
-  ReportGestureEx(uint32 id, bool tag);
-  StartPerformanceBoost();
-  ReportMemoryUsage(string msg);
+#ifndef ARKTS_SECURITY_ADAPTER_IMPL_H
+#define ARKTS_SECURITY_ADAPTER_IMPL_H
+
+#include "napi/native_api.h"
+#include "js_native_api.h"
+#include <string>
+
+class ArktsSecurityAdapter {
+public:
+    static napi_env GetEnv();
+    static napi_value GetSecurityGuardModule();
+    static int RegisterEvent(const std::string& event);
 };
+
+#endif // ARKTS_SECURITY_ADAPTER_IMPL_H
