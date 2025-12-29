@@ -13,31 +13,29 @@
  * limitations under the License.
  */
 
-#ifndef NWEB_AGENT_MANAGER_IMPL_H
-#define NWEB_AGENT_MANAGER_IMPL_H
-
-#include "ohos_nweb/include/nweb_agent_manager.h"
+#ifndef NWEB_HIGHLIGHT_SPECIFIED_CONTENT_H
+#define NWEB_HIGHLIGHT_SPECIFIED_CONTENT_H
 
 #include "nweb_delegate.h"
-#include "nweb_highlight_specified_content.h"
 
 namespace OHOS::NWeb {
-class NWebAgentManagerImpl : public NWebAgentManager {
-public:
-    explicit NWebAgentManagerImpl(
-        base::WeakPtr<NWebDelegate> nweb_delegate);
-    ~NWebAgentManagerImpl() override = default;
 
-    void SetAgentEnabled(bool enabled) override;
+class NWebHighlightSpecifiedContent {
+ public:
+  explicit NWebHighlightSpecifiedContent(
+      base::WeakPtr<NWebDelegate> nweb_delegate);
+  void SetHighlightSpecifiedContentEnable(bool enable);
 
-    bool IsAgentEnabled() override;
+ private:
+  void RegisterHighlight();
+  void RemoveHighlightFunctions();
 
-    void SetAgentNeedHighlight(bool enabled) override;
-private:
-    base::WeakPtr<NWebDelegate> nweb_delegate_;
+  bool enable_ = false;
 
-    std::unique_ptr<NWebHighlightSpecifiedContent> highlight_specified_content_;
+  base::WeakPtr<NWebDelegate> nweb_delegate_;
+  base::WeakPtrFactory<NWebHighlightSpecifiedContent> weak_factory_;
 };
+
 }  // namespace OHOS::NWeb
 
-#endif  // NWEB_AGENT_MANAGER_IMPL_H
+#endif  // NWEB_HIGHLIGHT_SPECIFIED_CONTENT_H
