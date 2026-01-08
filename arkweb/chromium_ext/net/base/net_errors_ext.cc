@@ -13,25 +13,14 @@
  * limitations under the License.
  */
 
-#if BUILDFLAG(ARKWEB_EX_HTTP_DNS_FALLBACK)
-void ResolveContext::NotifyDohStatsInit() {
-  if (!is_https_dns_fallback_enabled_) {
-    return;
-  }
+#include "net/base/net_errors.h"
 
-  if (doh_server_stats_.empty()) {
-    return;
-  }
+namespace net {
 
-  for (size_t i = 0; i < doh_server_stats_.size(); i++) {
-    ServerStats* stats = &doh_server_stats_[i];
-    stats->last_failure_count = 0;
-    stats->current_connection_success = true;
-    stats->last_failure = base::TimeTicks();
-    stats->last_success = base::TimeTicks();
-#if BUILDFLAG(ARKWEB_LOGGER_REPORT)
-    LOG_FEEDBACK(INFO) << "Doh server " << i << " stats init successfully.";
-#endif
-  }
+#if BUILDFLAG(ARKWEB_LOGGER_REPORT) && !BUILDFLAG(ARKWEB_NWEB_EX)
+std::string ErrorToDebugString(int error) {
+  return std::string();
 }
 #endif
+
+}  // namespace net
