@@ -49,3 +49,4 @@ tools/luci-go/isolate.exe filter=lfs diff=lfs merge=lfs -text
 tools/luci-go/swarming.exe filter=lfs diff=lfs merge=lfs -text
 tools/resultdb/result_adapter.exe filter=lfs diff=lfs merge=lfs -text
 tools/traffic_annotation/bin/win32/traffic_annotation_extractor.exe filter=lfs diff=lfs merge=lfs -text
+ohos_sdk/ohos-sdk-linux-6.0.2.130.tar.gz filter=lfs diff=lfs merge=lfs -text
