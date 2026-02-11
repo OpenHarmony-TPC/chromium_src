@@ -3,9 +3,11 @@
   <head>
     <meta charset="utf-8">
     <meta name="theme-color" content="#fff">
+    <meta name="color-scheme" content="only light">
     <meta name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <link rel="stylesheet" href="safe_browsing_ohos.css">
+    <link rel="stylesheet" href="minor_control.css">
+    <script src="../core/common/resources/interstitial_common.js"></script>
     <title>$i18n{title}</title>
     <script type="text/javascript">
       var policy = parseInt('$i18n{policy}')
@@ -36,10 +38,6 @@
         window.domAutomationController?.send(cmd);
       }
 
-      if (policy === FORBIDDEN_POLICY) {
-        document.documentElement.className += ' forbidden-policy';
-      }
-
       function onFillErrorPageHtml() {
         if (policy == FORBIDDEN_POLICY) {
           document.getElementById("hw_proceed").style.display = 'none';
@@ -51,11 +49,11 @@
           }
           document.body.classList.add('using-mouse');
         });
- 
+
         document.body.addEventListener('touchstart', function () {
           document.body.classList.remove('using-mouse');
         });
- 
+
         document.addEventListener('touchend', function () {
           const buttons = document.querySelectorAll('button');
           buttons.forEach(button => {
@@ -79,7 +77,7 @@
       window.onload = function() {
         onFillErrorPageHtml()
       }
-      
+
       function calcViewportSize() {
         let vh = window.innerHeight * 0.09 > MIN_GAP ? window.innerHeight * 0.09 : MIN_GAP;
         document.documentElement.style.setProperty('--vh', vh + 'px');
@@ -94,7 +92,6 @@
       }
 
       function onProceed() {
-        sendCommand(SecurityInterstitialCommandId.CMD_PROCEED);
       }
     </script>
   </head>
@@ -102,24 +99,18 @@
     <div id="main"></div>
     <div class="hw_block_page" style="direction: $i18n{page_direction};">
       <div class="hw-content--wrap">
-        <div class="hw-block-img threat-non-high-risk">
-          <img src="ic_safe_browsing_error_non_high_risk.svg" id="hw_block_img" aria-label="$i18n{block_info_title}"/>
+        <div class="hw-block-img">
+          <img src="ic_minor_control.svg" id="hw_block_img"/>
         </div>
 
         <div class="hw-block-info">
-          <div class="hw-block-info__title"><p>$i18n{block_info_title}</p></div>
-          <div class="hw-block-info__body">
-            <p>$i18n{block_info_body}</p>
-          </div>
+          <div class="hw-block-info__body"><p>$i18n{block_info_body}</p></div>
         </div>
 
         <div class="hw-block-link">
           <div class="hw-link">
-            <button id="hw_not_proceed" onclick="onDontProceed()">
-                <p><span>$i18n{dontproceed}</span></p>
-            </button>
-            <button id="hw_proceed" onclick="onProceed()">
-                <p><span>$i18n{proceed}</span></p>
+            <button id="hw-not-proceed" href="#" onclick="onDontProceed()">
+              <p><span>$i18n{dontproceed}</span></p>
             </button>
           </div>
         </div>
