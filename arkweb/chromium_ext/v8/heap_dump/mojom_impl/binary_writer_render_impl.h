@@ -13,49 +13,50 @@
  * limitations under the License.
  */
 
-#ifndef BINARY_WRITER_H
-#define BINARY_WRITER_H
-
-#if defined(OH_ENABLE_HEAP_DUMP) && \
-    (defined(USING_OHOS) || defined(OH_ENABLE_HEAP_DUMP_TEST))
-
-#include <string>
-#include <vector>
+#ifndef BINARY_WRITER_RENDER_IMPL_H
+#define BINARY_WRITER_RENDER_IMPL_H
 
 #include "arkweb/chromium_ext/v8/heap_dump/binary_writer_base.h"
-#include "src/base/logging.h"
+#include "arkweb/chromium_ext/v8/heap_dump/mojom/dfx_heapdump.mojom.h"
+#include "mojo/public/cpp/bindings/remote.h"
 
 namespace dfx {
-
-class BinaryWriter : public BinaryWriterBase {
+class BinaryWriterRender : public BinaryWriterBase {
  public:
-  explicit BinaryWriter();
-  explicit BinaryWriter(const uint32_t chunk_size);
-  ~BinaryWriter() override;
+  BinaryWriterRender();
+
+  ~BinaryWriterRender() override = default;
   void OpenFile(const std::string& path) override;
   const std::string& GetFilePath() override;
-
   bool WriteBinBlock(const uint8_t* block, uint32_t block_size) override;
-
   void CloseFile() override;
 
- private:
-  void Flush();
-  bool MaybeWriteChunk() override;
-  bool Write();
-  bool WriteChunk() override;
+  mojo::PendingReceiver<heapdump::mojom::ChunkWriter>& GetPendingReceiver();
+  // a render has only one
+  static std::shared_ptr<BinaryWriterRender> GetInstance();
+  bool IsInitialized() { return is_intialized_; }
+  void SetInitialized() { is_intialized_ = true; }
 
+ private:
+  bool MaybeWriteChunk() override;
+  bool WriteChunk() override;
+  void clear();
+
+  std::string path_{""};
   const uint32_t chunk_size_;
-  uint32_t cur_size_{0};
   std::vector<uint8_t> chunk_;
-  int fd_{-1};
-  std::string path_;
- protected:
-  static constexpr size_t kBufferMB = 1024 * 1024;
+  uint32_t cur_size_{0};
+  bool is_intialized_{false};
+
+  // mojo related
+  mojo::Remote<heapdump::mojom::ChunkWriter> remote_;
+  mojo::PendingReceiver<heapdump::mojom::ChunkWriter> receiver_ =
+      remote_.BindNewPipeAndPassReceiver();
+
+  mojo::ScopedDataPipeProducerHandle producer_;
+
   static constexpr size_t kChunkSize = 4 * 1024 * 1024;
 };
 
 }  // namespace dfx
-
-#endif  // OH_ENABLE_HEAP_DUMP
-#endif  // BINARY_WRITER_H
+#endif
